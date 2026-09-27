@@ -52,6 +52,8 @@ if ($action === 'reset' || (isset($data['action']) && $data['action'] === 'reset
 if ($method === 'POST' || $action === 'install') {
     // Record installation lock on the server
 
+    $logo = $data['logo'] ?? $data['logoUrl'] ?? ($data['settings']['logoUrl'] ?? ($data['settings']['logo'] ?? ''));
+
     $lockData = [
         'success' => true,
         'isInstalled' => true,
@@ -61,7 +63,8 @@ if ($method === 'POST' || $action === 'install') {
         'adminEmail' => $data['adminEmail'] ?? 'admin@butabomma.in',
         'adminUsername' => $data['adminUsername'] ?? 'admin',
         'settings' => $data['settings'] ?? null,
-        'adminUser' => $data['adminUser'] ?? null
+        'adminUser' => $data['adminUser'] ?? null,
+        'logoUrl' => $logo ?: null
     ];
 
     $jsonEncoded = json_encode($lockData, JSON_PRETTY_PRINT);
@@ -105,6 +108,7 @@ foreach ($possiblePaths as $path) {
 }
 
 if ($foundLock) {
+    $logo = $foundLock['logoUrl'] ?? ($foundLock['settings']['logoUrl'] ?? ($foundLock['settings']['logo'] ?? null));
     echo json_encode([
         'success' => true,
         'isInstalled' => true,
@@ -112,7 +116,8 @@ if ($foundLock) {
         'businessName' => $foundLock['businessName'] ?? null,
         'adminEmail' => $foundLock['adminEmail'] ?? null,
         'settings' => $foundLock['settings'] ?? null,
-        'adminUser' => $foundLock['adminUser'] ?? null
+        'adminUser' => $foundLock['adminUser'] ?? null,
+        'logoUrl' => $logo
     ]);
     exit;
 }

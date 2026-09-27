@@ -233,6 +233,9 @@ interface ErpContextType {
   // Active view
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (open: boolean) => void;
+  toggleMobileSidebar: () => void;
   settingsSubTab: SettingsSubTab;
   setSettingsSubTab: (tab: SettingsSubTab) => void;
   businessSettingsSection: string;
@@ -837,6 +840,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return 'dashboard';
   });
+
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen((prev) => !prev);
+  };
 
   const [inventorySubTab, setInventorySubTab] = useState<'matrix' | 'categories' | 'brands' | 'warranties' | 'racks' | 'units' | 'adjustments' | 'transfers' | 'add_product' | 'edit_product' | 'import_products' | 'product_history' | 'variations' | 'batch_guide'>(() => {
     const route = getInitialRouteInfo();
@@ -6064,6 +6072,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleSmartSetActiveTab = (tab: string) => {
+    setIsMobileSidebarOpen(false);
     if (activeTab === 'pos' && tab !== 'pos' && !isPosExitAllowed()) {
       setPendingPosExitTarget(tab);
       setShowRegisterExitLockModal(true);
@@ -8412,6 +8421,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         calculateItemTax,
         activeTab,
         setActiveTab: handleSmartSetActiveTab,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen,
+        toggleMobileSidebar,
         settingsSubTab,
         setSettingsSubTab,
         businessSettingsSection,

@@ -6,6 +6,7 @@ export interface SystemStatusResponse {
   adminEmail?: string | null;
   settings?: any;
   adminUser?: any;
+  logoUrl?: string | null;
 }
 
 export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> => {
@@ -32,6 +33,7 @@ export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> =
           const data = JSON.parse(trimmed);
           if (data && typeof data === 'object') {
             const isInstalled = Boolean(data.isInstalled || data.installationCompleted);
+            const logo = data.logoUrl || data.logo || data.settings?.logoUrl || data.settings?.logo || null;
             return {
               success: true,
               isInstalled,
@@ -40,6 +42,7 @@ export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> =
               adminEmail: data.adminEmail || null,
               settings: data.settings || null,
               adminUser: data.adminUser || null,
+              logoUrl: logo,
             };
           }
         }

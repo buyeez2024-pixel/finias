@@ -58,6 +58,7 @@ import {
   Database,
   Upload,
 } from 'lucide-react';
+import { RoyalLogo } from '../common/RoyalLogo';
 
 interface SubItemMeta {
   id: string;
@@ -90,6 +91,8 @@ export const Sidebar: React.FC = () => {
     users = [],
     hasModuleAccess = () => true,
     settings = {},
+    isMobileSidebarOpen = false,
+    setIsMobileSidebarOpen = () => {},
   } = useErp() || {};
 
   const lockedUsers = (users || []).filter((u: any) => u?.status === 'locked');
@@ -1067,13 +1070,8 @@ export const Sidebar: React.FC = () => {
 
   const isLight = settings?.themeMode === 'light';
 
-  return (
-    <aside
-      id="main-sidebar-aside"
-      className={`w-64 lg:w-72 ${
-        isLight ? 'bg-white border-r border-slate-200 text-slate-800' : 'bg-slate-950 border-r border-slate-800/90 text-slate-100'
-      } flex flex-col shrink-0 h-full overflow-hidden transition-all select-none`}
-    >
+  const sidebarContent = (
+    <>
       {/* Top Search / Command Bar */}
       <div className={`sidebar-search-container px-3 py-2.5 border-b ${isLight ? 'border-slate-100 bg-white' : 'border-slate-800/80 bg-slate-900/40'} shrink-0`}>
         <div className="relative flex items-center">
@@ -1110,7 +1108,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Navigation Container - Seamless non-scrolling / hidden-scrollbar layout */}
+      {/* Main Navigation Container */}
       <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2.5 min-h-0">
         {/* If searching, render instant search results */}
         {searchQuery ? (
@@ -1131,7 +1129,10 @@ export const Sidebar: React.FC = () => {
                 return (
                   <button
                     key={idx}
-                    onClick={res.onClick}
+                    onClick={() => {
+                      res.onClick();
+                      setIsMobileSidebarOpen(false);
+                    }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium ${
                       isLight
                         ? 'text-slate-900 bg-white hover:bg-indigo-50/70 hover:text-indigo-950 border-slate-200 hover:border-indigo-300'
@@ -1255,7 +1256,7 @@ export const Sidebar: React.FC = () => {
                         )}
                       </button>
 
-                      {/* Clean Full-Width Single-Column Inline Submenu with Vertical Tree Guide */}
+                      {/* Clean Full-Width Single-Column Inline Submenu */}
                       {item.isExpandable && isExpanded && item.subItems && (
                         <div
                           className={`relative mt-1 mb-1.5 ml-3.5 pl-3.5 border-l-2 ${
@@ -1268,7 +1269,10 @@ export const Sidebar: React.FC = () => {
                               <button
                                 key={sub.id}
                                 id={`nav-sub-${item.id}-${sub.id}`}
-                                onClick={sub.onClick}
+                                onClick={() => {
+                                  sub.onClick();
+                                  setIsMobileSidebarOpen(false);
+                                }}
                                 title={sub.label}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left ${
                                   sub.isActive
@@ -1288,8 +1292,8 @@ export const Sidebar: React.FC = () => {
                                           ? 'text-indigo-600'
                                           : 'text-indigo-400'
                                         : isLight
-                                        ? 'text-slate-500 group-hover:text-indigo-600'
-                                        : 'text-slate-400 group-hover:text-indigo-300'
+                                          ? 'text-slate-500 group-hover:text-indigo-600'
+                                          : 'text-slate-400 group-hover:text-indigo-300'
                                     }`}
                                   />
                                   <span
@@ -1319,6 +1323,58 @@ export const Sidebar: React.FC = () => {
           ))
         )}
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (visible on lg and above) */}
+      <aside
+        id="main-sidebar-aside"
+        className={`hidden lg:flex w-64 lg:w-72 ${
+          isLight ? 'bg-white border-r border-slate-200 text-slate-800' : 'bg-slate-950 border-r border-slate-800/90 text-slate-100'
+        } flex-col shrink-0 h-full overflow-hidden transition-all select-none`}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile & Tablet Drawer (sliding off-canvas overlay) */}
+      {isMobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+
+          {/* Sliding Drawer */}
+          <aside
+            id="mobile-sidebar-drawer"
+            className={`relative z-10 w-72 sm:w-80 max-w-[85vw] ${
+              isLight ? 'bg-white text-slate-800 border-slate-200' : 'bg-slate-950 text-slate-100 border-slate-800'
+            } shadow-2xl flex flex-col h-full overflow-hidden border-r animate-in slide-in-from-left duration-200`}
+          >
+            {/* Drawer Header */}
+            <div className={`px-4 py-3 border-b flex items-center justify-between shrink-0 ${
+              isLight ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/60'
+            }`}>
+              <RoyalLogo size="sm" showText={true} />
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className={`p-1.5 rounded-lg border ${
+                  isLight ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                } transition cursor-pointer`}
+                aria-label="Close navigation menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

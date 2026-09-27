@@ -230,6 +230,19 @@ const MainAppContent: React.FC = () => {
           localStorage.setItem('system_installed', 'true');
           localStorage.setItem('installation_locked', 'true');
           localStorage.setItem('installation_wizard_deleted', 'true');
+
+          const logo = res.logoUrl || res.settings?.logoUrl || res.settings?.logo || '';
+          if (logo) {
+            localStorage.setItem('royal_pos_v1_primary_logo', logo);
+            localStorage.setItem('pos_custom_logo', logo);
+          }
+
+          if (res.settings && typeof res.settings === 'object') {
+            const existingSettings = localStorage.getItem('ultimate_erp_pos_database_v1_settings');
+            if (!existingSettings || existingSettings === '{}') {
+              localStorage.setItem('ultimate_erp_pos_database_v1_settings', JSON.stringify(res.settings));
+            }
+          }
         }
       }
       setIsVerifyingSystem(false);

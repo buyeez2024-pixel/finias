@@ -7,6 +7,7 @@ import { PosCalculatorModal } from '../pos/PosCalculatorModal';
 import { UserProfileModal } from '../users/UserProfileModal';
 import { resetServerInstallation } from '../../services/systemService';
 import {
+  Menu,
   Building2,
   Database,
   ShoppingCart,
@@ -73,6 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     openAddProductPage = () => {},
     navigateToInventory = () => {},
     navigateToSettings = () => {},
+    toggleMobileSidebar = () => {},
   } = useErp() || {};
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -100,13 +102,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 z-30 shadow-xs transition-colors duration-300">
-      <div className="flex items-center justify-between px-4 py-2.5">
-        {/* Left Branding & Location Switcher */}
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5">
+        {/* Left Branding & Mobile Drawer Toggle & Location Switcher */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          {/* Mobile Navigation Drawer Toggle */}
+          {activeTab !== 'pos' && (
+            <button
+              id="mobile-nav-toggle-btn"
+              type="button"
+              onClick={toggleMobileSidebar}
+              className="lg:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center transition cursor-pointer"
+              title="Open Navigation Menu"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="w-5 h-5 text-indigo-400" />
+            </button>
+          )}
+
           <div
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
-            className="cursor-pointer transition-opacity hover:opacity-90 flex items-center"
+            className="cursor-pointer transition-opacity hover:opacity-90 flex items-center shrink-0 min-w-fit"
             title="Dashboard"
           >
             <RoyalLogo
@@ -118,14 +134,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="h-6 w-px bg-slate-800 hidden md:block" />
 
           {/* Location / Warehouse Selector */}
-          <div className="relative hidden sm:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/70">
+          <div className="relative hidden md:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/70">
             <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
             <span className="text-xs text-slate-400 font-medium">Branch:</span>
             <select
               id="branch-location-select"
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 max-w-[220px] truncate"
+              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 max-w-[200px] truncate"
             >
               {(locations || []).map((loc) => (
                 <option key={loc.id} value={loc.id} className="bg-slate-900 text-white">
@@ -137,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Action Icons & Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Quick Calculator Tool - Only enabled when POS screen/terminal is active */}
           {(() => {
             const isPosActive = activeTab === 'pos';
@@ -151,7 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setShowCalculator(true);
                   }
                 }}
-                className={`p-1.5 rounded-lg border flex items-center justify-center transition group ${
+                className={`hidden sm:flex p-1.5 rounded-lg border items-center justify-center transition group ${
                   isPosActive
                     ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-300 border-slate-700 cursor-pointer'
                     : 'bg-slate-800/40 text-slate-600 border-slate-800/60 cursor-not-allowed opacity-40'
@@ -175,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               const nextMode = settings?.themeMode === 'light' ? 'dark' : 'light';
               updateSettings({ themeMode: nextMode });
             }}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center transition group cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center transition group cursor-pointer shrink-0"
             title={settings?.themeMode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >
             {settings?.themeMode === 'light' ? (
@@ -186,20 +202,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Network & Offline Sync Status Indicator */}
-          <NetworkSyncStatusBadge onClick={() => setShowOfflineManager(true)} />
+          <div className="hidden xs:block sm:block">
+            <NetworkSyncStatusBadge onClick={() => setShowOfflineManager(true)} />
+          </div>
 
           {/* Register Status Indicator */}
           <button
             id="register-shift-status-btn"
             onClick={onOpenRegisterModal}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition ${
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg border transition shrink-0 ${
               cashRegister.status === 'open'
                 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
                 : 'bg-rose-950/60 text-rose-300 border-rose-700/50 hover:bg-rose-900/60'
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full shrink-0 ${
                 cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
@@ -212,20 +230,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="launch-pos-nav-btn"
             onClick={() => setActiveTab('pos')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold rounded-lg shadow-sm transition ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 text-xs font-bold rounded-lg shadow-sm transition shrink-0 ${
               activeTab === 'pos'
                 ? 'bg-indigo-600 text-white ring-2 ring-indigo-400'
                 : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white'
             }`}
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span>POS Screen</span>
+            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">POS Screen</span>
+            <span className="sm:hidden text-xs">POS</span>
             {cart.length > 0 && (
               <span 
                 id="nav-pos-cart-badge"
-                className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full ml-1.5 shadow-md border leading-none bg-white border-slate-200"
+                className="h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full ml-0.5 sm:ml-1.5 shadow-md border leading-none bg-white border-slate-200"
               >
-                <span className="text-[11px] font-black leading-none">
+                <span className="text-[10px] sm:text-[11px] font-black leading-none text-slate-950">
                   {cart.reduce((a, b) => a + (Number(b.quantity) || 0), 0)}
                 </span>
               </span>

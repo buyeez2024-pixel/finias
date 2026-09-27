@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Crown } from 'lucide-react';
 import { useErp } from '../../context/ErpContext';
+import defaultLogoAsset from '../../assets/images/royal_pos_logo_1786972896086.jpg';
 
 interface RoyalLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -19,18 +20,24 @@ export const RoyalLogo: React.FC<RoyalLogoProps> = ({
   className = '',
   themeMode: propThemeMode,
 }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+
   // Safely grab settings logoUrl and darkLogoUrl from our ERP context provider
   let customLogoUrl = '';
   let activeThemeMode: 'dark' | 'light' = 'light';
-  let businessTitle = 'Royal POSfini';
+  let businessTitle = 'Royal POS';
 
   try {
     const context = useErp();
     const storedPrimaryLogo =
-      typeof localStorage !== 'undefined' ? localStorage.getItem('royal_pos_v1_primary_logo') || '' : '';
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('royal_pos_v1_primary_logo') ||
+          localStorage.getItem('pos_custom_logo') ||
+          ''
+        : '';
 
     if (context && (context.currentUser || context.settings)) {
-      businessTitle = context.currentUser?.businessName || context.settings?.businessName || context.settings?.name || 'Royal POSfini';
+      businessTitle = context.currentUser?.businessName || context.settings?.businessName || context.settings?.name || 'Royal POS';
       activeThemeMode =
         propThemeMode ||
         context.settings?.themeMode ||
@@ -40,11 +47,9 @@ export const RoyalLogo: React.FC<RoyalLogoProps> = ({
       const primaryLogo = context.settings?.logoUrl || context.settings?.logo || storedPrimaryLogo || '';
 
       if (isDark) {
-        // When dark theme is active, prefer dedicated darkLogoUrl, fallback to primary logo
-        customLogoUrl = context.settings.darkLogoUrl || primaryLogo || '';
+        customLogoUrl = context.settings?.darkLogoUrl || primaryLogo || '';
       } else {
-        // When light theme is active, prefer primary logoUrl, fallback to darkLogoUrl
-        customLogoUrl = primaryLogo || context.settings.darkLogoUrl || '';
+        customLogoUrl = primaryLogo || context.settings?.darkLogoUrl || '';
       }
     } else if (storedPrimaryLogo) {
       customLogoUrl = storedPrimaryLogo;
@@ -52,27 +57,30 @@ export const RoyalLogo: React.FC<RoyalLogoProps> = ({
   } catch (err) {
     try {
       if (typeof localStorage !== 'undefined') {
-        customLogoUrl = localStorage.getItem('royal_pos_v1_primary_logo') || '';
+        customLogoUrl =
+          localStorage.getItem('royal_pos_v1_primary_logo') ||
+          localStorage.getItem('pos_custom_logo') ||
+          '';
       }
     } catch (e) {}
   }
 
   // Dimensions map for default icon container
   const imageSizes = {
-    xs: 'w-7 h-7 rounded-lg',
-    sm: 'w-9 h-9 rounded-xl',
-    md: 'w-10 h-10 rounded-xl',
-    lg: 'w-12 h-12 rounded-2xl',
-    xl: 'w-16 h-16 rounded-2xl',
+    xs: 'w-7 h-7 min-w-[28px] rounded-lg',
+    sm: 'w-8 h-8 sm:w-9 sm:h-9 min-w-[32px] sm:min-w-[36px] rounded-xl',
+    md: 'w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] sm:min-w-[40px] rounded-xl',
+    lg: 'w-11 h-11 sm:w-12 sm:h-12 min-w-[44px] sm:min-w-[48px] rounded-2xl',
+    xl: 'w-14 h-14 sm:w-16 sm:h-16 min-w-[56px] sm:min-w-[64px] rounded-2xl',
   };
 
-  // Dimensions map for custom uploaded logos
+  // Dimensions map for custom uploaded logos (mobile & tablet optimized)
   const customLogoSizes = {
-    xs: 'max-h-7 max-w-[120px]',
-    sm: 'max-h-8 max-w-[170px]',
-    md: 'max-h-10 max-w-[210px]',
-    lg: 'max-h-12 max-w-[250px]',
-    xl: 'max-h-16 max-w-[300px]',
+    xs: 'h-6 sm:h-7 max-w-[110px] object-contain shrink-0',
+    sm: 'h-7 sm:h-8 max-w-[140px] object-contain shrink-0',
+    md: 'h-8 sm:h-9 md:h-10 max-w-[170px] sm:max-w-[210px] object-contain shrink-0',
+    lg: 'h-10 sm:h-12 max-w-[210px] sm:max-w-[250px] object-contain shrink-0',
+    xl: 'h-12 sm:h-16 max-w-[240px] sm:max-w-[300px] object-contain shrink-0',
   };
 
   const titleSizes = {
@@ -83,44 +91,44 @@ export const RoyalLogo: React.FC<RoyalLogoProps> = ({
     xl: 'text-2xl',
   };
 
-  // The custom uploaded logo, fallback to default AI emblem asset
-  const logoSrc = customLogoUrl || '/src/assets/images/royal_pos_logo_1786972896086.jpg';
+  // The custom uploaded logo, fallback to default bundled AI emblem asset
+  const logoSrc = customLogoUrl || defaultLogoAsset;
 
   return (
-    <div className={`flex items-center gap-3 select-none ${className}`}>
+    <div className={`flex items-center gap-2 sm:gap-3 select-none shrink-0 ${className}`}>
       {/* Emblem / Custom Logo Image */}
-      <div className="relative group shrink-0">
-        <div
-          className={
-            customLogoUrl
-              ? 'flex items-center justify-center shrink-0'
-              : `${imageSizes[size]} overflow-hidden relative shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40 bg-slate-900 flex items-center justify-center`
-          }
-        >
-          <img
-            key={customLogoUrl || logoSrc}
-            src={logoSrc}
-            alt={businessTitle || "Logo"}
-            referrerPolicy="no-referrer"
-            className={
-              customLogoUrl
-                ? `${customLogoSizes[size]} w-auto object-contain transition-all duration-200`
-                : 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
-            }
-            onError={(e) => {
-              // Fallback to high-craft SVG if image fails
-              const target = e.target as HTMLElement;
-              target.style.display = 'none';
-              if (target.parentElement) {
-                target.parentElement.classList.add('bg-gradient-to-tr', 'from-amber-600', 'to-yellow-500');
-              }
-            }}
-          />
-          {/* Subtle Crown overlay badge for ultra crisp luxury feel on default emblem */}
-          {!customLogoUrl && (
+      <div className="relative group shrink-0 flex items-center">
+        {imgFailed ? (
+          <div
+            className={`${imageSizes[size]} bg-gradient-to-tr from-amber-600 via-yellow-500 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20 ring-1 ring-amber-400/40 text-slate-950 shrink-0`}
+            title={businessTitle}
+          >
+            <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 drop-shadow-xs" />
+          </div>
+        ) : customLogoUrl ? (
+          <div className="flex items-center justify-center shrink-0 min-h-[30px] min-w-[30px]">
+            <img
+              key={customLogoUrl}
+              src={customLogoUrl}
+              alt={businessTitle || 'Logo'}
+              referrerPolicy="no-referrer"
+              className={`${customLogoSizes[size]} transition-all duration-200`}
+              onError={() => setImgFailed(true)}
+            />
+          </div>
+        ) : (
+          <div
+            className={`${imageSizes[size]} overflow-hidden relative shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40 bg-slate-900 flex items-center justify-center shrink-0`}
+          >
+            <img
+              src={defaultLogoAsset}
+              alt={businessTitle || 'Logo'}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={() => setImgFailed(true)}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-white/10 pointer-events-none" />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Brand Text Hierarchy */}
@@ -140,19 +148,31 @@ export const RoyalLogo: React.FC<RoyalLogoProps> = ({
               >
                 <span>{mainPart}</span>
                 {lastPart && (
-                  <span className={activeThemeMode === 'dark' ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent' : 'text-indigo-600'}>
+                  <span
+                    className={
+                      activeThemeMode === 'dark'
+                        ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent'
+                        : 'text-indigo-600'
+                    }
+                  >
                     {lastPart}
                   </span>
                 )}
               </span>
 
               {badge && (
-                <span className={`text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full flex items-center gap-1 ${
-                  activeThemeMode === 'dark'
-                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                    : 'bg-amber-100 text-amber-800 border border-amber-300'
-                }`}>
-                  <Crown className={`w-2.5 h-2.5 ${activeThemeMode === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} />
+                <span
+                  className={`text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full flex items-center gap-1 ${
+                    activeThemeMode === 'dark'
+                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                      : 'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}
+                >
+                  <Crown
+                    className={`w-2.5 h-2.5 ${
+                      activeThemeMode === 'dark' ? 'text-amber-400' : 'text-amber-600'
+                    }`}
+                  />
                   <span>{badge}</span>
                 </span>
               )}
