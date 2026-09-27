@@ -99,3 +99,39 @@ export const completeServerInstallation = async (payload: {
 
   return anySuccess;
 };
+
+export const resetServerInstallation = async (): Promise<boolean> => {
+  const endpoints = [
+    '/api/system/reset',
+    '/api/system.php?action=reset',
+    '/api/system.php',
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      await fetch(ep + (ep.includes('?') ? '&' : '?') + 'action=reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+    } catch {}
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('pos_installed');
+    localStorage.removeItem('app_installed');
+    localStorage.removeItem('app_installation_completed');
+    localStorage.removeItem('is_installed');
+    localStorage.removeItem('system_installed');
+    localStorage.removeItem('installation_locked');
+    localStorage.removeItem('installation_wizard_deleted');
+    localStorage.removeItem('app_fresh_installed');
+    localStorage.removeItem('installation_type');
+    localStorage.removeItem('pos_db_engine');
+    localStorage.removeItem('pos_db_name');
+    localStorage.removeItem('pos_db_prefix');
+    localStorage.removeItem('ultimate_erp_pos_database_v1_auth_user');
+  }
+
+  return true;
+};

@@ -1684,6 +1684,82 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_notification_logs`, JSON.stringify(notificationLogs));
   }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, taxRates, taxGroups, currencies, users, locations, salesCommissionAgents, rolePermissions, currentUser, cart, selectedCustomer, suspendedSales, notificationTemplates, notificationLogs]);
 
+  // Universal Live MySQL Sync: Push updates to server database across Desktop, Mobile, and Tablet
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        fetch('/api/sync.php?action=push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            updates: {
+              settings,
+              products,
+              categories,
+              brands,
+              warranties,
+              racks,
+              units,
+              customers,
+              customerGroups,
+              suppliers,
+              transactions,
+              stockAdjustments,
+              stockTransfers,
+              expenses,
+              accounts,
+              paymentMethods,
+              cashRegister,
+              users,
+              locations,
+            },
+          }),
+        }).catch(() => {});
+      } catch {}
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations]);
+
+  // Universal Live MySQL Sync: Pull latest database records on startup, tab focus, and every 15s
+  useEffect(() => {
+    let active = true;
+    const syncFromRemote = async () => {
+      try {
+        const res = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
+          headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const result = await res.json();
+            if (result.success && result.isConfigured && result.data && active) {
+              const d = result.data;
+              if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
+              if (Array.isArray(d.transactions) && d.transactions.length > 0) setTransactions(d.transactions);
+              if (Array.isArray(d.customers) && d.customers.length > 0) setCustomers(d.customers);
+              if (Array.isArray(d.suppliers) && d.suppliers.length > 0) setSuppliers(d.suppliers);
+              if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
+              if (Array.isArray(d.brands) && d.brands.length > 0) setBrands(d.brands);
+              if (Array.isArray(d.expenses) && d.expenses.length > 0) setExpenses(d.expenses);
+              if (Array.isArray(d.users) && d.users.length > 0) setUsers(d.users);
+            }
+          }
+        }
+      } catch {}
+    };
+
+    syncFromRemote();
+    const interval = setInterval(syncFromRemote, 15000);
+    window.addEventListener('focus', syncFromRemote);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', syncFromRemote);
+    };
+  }, []);
+
   // Listen for storage events across tabs to synchronize users and unlock states immediately
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {

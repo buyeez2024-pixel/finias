@@ -24,13 +24,33 @@ $possiblePaths = [
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $action = $_GET['action'] ?? ($method === 'POST' ? 'install' : 'status');
 
+$rawInput = file_get_contents('php://input');
+$data = json_decode($rawInput, true);
+if (!is_array($data)) {
+    $data = $_POST;
+}
+
+// Handle Reset / Unlock for fresh installation
+if ($action === 'reset' || (isset($data['action']) && $data['action'] === 'reset')) {
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            @unlink($path);
+        }
+    }
+    $dbConfig = __DIR__ . '/db_config.json';
+    if (file_exists($dbConfig)) {
+        @unlink($dbConfig);
+    }
+    echo json_encode([
+        'success' => true,
+        'isInstalled' => false,
+        'message' => 'System installation lock removed successfully. You can now start a fresh installation.'
+    ]);
+    exit;
+}
+
 if ($method === 'POST' || $action === 'install') {
     // Record installation lock on the server
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true);
-    if (!is_array($data)) {
-        $data = $_POST;
-    }
 
     $lockData = [
         'success' => true,

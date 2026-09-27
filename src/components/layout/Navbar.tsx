@@ -5,8 +5,10 @@ import { NetworkSyncStatusBadge } from '../common/NetworkSyncStatusBadge';
 import { OfflineSyncManagerModal } from '../pos/OfflineSyncManagerModal';
 import { PosCalculatorModal } from '../pos/PosCalculatorModal';
 import { UserProfileModal } from '../users/UserProfileModal';
+import { resetServerInstallation } from '../../services/systemService';
 import {
   Building2,
+  Database,
   ShoppingCart,
   PlusCircle,
   Sparkles,
@@ -502,6 +504,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Reset Demo Database</span>
+                </button>
+
+                <button
+                  id="profile-menu-reinstall-btn"
+                  onClick={async () => {
+                    setShowProfileMenu(false);
+                    if (window.confirm('Re-Run Setup Wizard? This will unlock the domain setup so you can configure MySQL for Universal Live Sync.')) {
+                      await resetServerInstallation();
+                      window.location.href = '/setup?reset=true';
+                    }
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-700/60 text-amber-400 flex items-center gap-2"
+                >
+                  <Database className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Re-Run Setup Wizard (Configure MySQL)</span>
                 </button>
 
                 <div className="border-t border-slate-700/80 my-1" />

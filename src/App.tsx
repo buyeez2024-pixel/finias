@@ -49,7 +49,7 @@ import { InstallationWizard } from './components/installer/InstallationWizard';
 import { PosRegisterLockModal } from './components/pos/PosRegisterLockModal';
 import { FlashNotification } from './components/common/FlashNotification';
 import { Product, Transaction } from './types/erp';
-import { checkServerSystemStatus } from './services/systemService';
+import { checkServerSystemStatus, resetServerInstallation } from './services/systemService';
 import { UserPlus, X, ShieldAlert, Unlock } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -194,6 +194,30 @@ const MainAppContent: React.FC = () => {
 
   React.useEffect(() => {
     let active = true;
+
+    // Check if user requested to unlock / re-run setup wizard via URL (e.g. ?reset=installer or /setup?reset=true)
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const isResetRequested =
+      searchParams?.get('reset') === 'installer' ||
+      searchParams?.get('reset') === 'true' ||
+      searchParams?.get('unlock') === 'true' ||
+      searchParams?.get('reinstall') === 'true' ||
+      (typeof window !== 'undefined' && window.location.pathname === '/setup' && searchParams?.has('reset'));
+
+    if (isResetRequested) {
+      resetServerInstallation().then(() => {
+        if (!active) return;
+        setSystemInstalled(false);
+        setIsVerifyingSystem(false);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', '/setup');
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }
+
     checkServerSystemStatus().then((res) => {
       if (!active) return;
       if (res.isInstalled) {

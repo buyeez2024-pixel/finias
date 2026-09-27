@@ -148,6 +148,24 @@ async function startServer() {
     });
   });
 
+  // System Reset API - unlocks installer for fresh installation
+  app.post("/api/system/reset", (req, res) => {
+    try {
+      if (fs.existsSync(STATUS_FILE)) fs.unlinkSync(STATUS_FILE);
+      const pubFile = path.join(process.cwd(), "public", "system_status.json");
+      const distFile = path.join(process.cwd(), "dist", "system_status.json");
+      if (fs.existsSync(pubFile)) fs.unlinkSync(pubFile);
+      if (fs.existsSync(distFile)) fs.unlinkSync(distFile);
+    } catch (e) {
+      console.error("Error clearing system status:", e);
+    }
+    res.json({
+      success: true,
+      isInstalled: false,
+      message: "System installation lock removed successfully.",
+    });
+  });
+
   // System Sync API
   app.post("/api/system/sync-status", (req, res) => {
     const current = getSystemStatus();
