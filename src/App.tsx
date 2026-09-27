@@ -183,12 +183,19 @@ const MainAppContent: React.FC = () => {
     };
   }, []);
 
+  const [isVerifyingSystem, setIsVerifyingSystem] = useState<boolean>(() => {
+    // If browser already has installation flag in localStorage, render immediately
+    return !checkIsSystemInstalled();
+  });
+
   const [systemInstalled, setSystemInstalled] = useState<boolean>(() => {
     return checkIsSystemInstalled();
   });
 
   React.useEffect(() => {
+    let active = true;
     checkServerSystemStatus().then((res) => {
+      if (!active) return;
       if (res.isInstalled) {
         setSystemInstalled(true);
         if (typeof localStorage !== 'undefined') {
@@ -198,10 +205,38 @@ const MainAppContent: React.FC = () => {
           localStorage.setItem('is_installed', 'true');
           localStorage.setItem('system_installed', 'true');
           localStorage.setItem('installation_locked', 'true');
+          localStorage.setItem('installation_wizard_deleted', 'true');
         }
       }
+      setIsVerifyingSystem(false);
+    }).catch(() => {
+      if (active) setIsVerifyingSystem(false);
     });
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // While checking server for a new device/browser (e.g. mobile or incognito), display a smooth verification screen
+  if (isVerifyingSystem) {
+    return (
+      <div className="h-screen w-full bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+          <div className="relative">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center animate-pulse">
+              <ShieldAlert className="w-7 h-7 text-indigo-400" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-950 animate-ping" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-white tracking-wide">Connecting to ERP Server</h3>
+            <p className="text-xs text-slate-400">Verifying domain installation status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 1. Initial State: If system is NOT installed, ANY URL accessed on farm.butabomma.in MUST show the Installation and Setup Wizard!
   if (!systemInstalled) {

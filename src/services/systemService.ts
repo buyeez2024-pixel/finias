@@ -9,23 +9,55 @@ export interface SystemStatusResponse {
 }
 
 export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> => {
-  try {
-    const res = await fetch('/api/system/status');
-    if (res.ok) {
-      const data = await res.json();
-      return data;
+  // Check endpoints in order of priority: Node.js server, PHP on cPanel, static JSON mirrors
+  const endpoints = [
+    '/api/system/status',
+    '/api/system.php?action=status',
+    '/system_status.json',
+    '/api/system_status.json',
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const url = endpoint + (endpoint.includes('?') ? '&' : '?') + 't=' + Date.now();
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (res.ok) {
+        const text = await res.text();
+        const trimmed = text.trim();
+        // Guard against Apache rewrite returning index.html (starts with '<')
+        if (trimmed && !trimmed.startsWith('<')) {
+          const data = JSON.parse(trimmed);
+          if (data && typeof data === 'object') {
+            const isInstalled = Boolean(data.isInstalled || data.installationCompleted);
+            return {
+              success: true,
+              isInstalled,
+              installedAt: data.installedAt || null,
+              businessName: data.businessName || null,
+              adminEmail: data.adminEmail || null,
+              settings: data.settings || null,
+              adminUser: data.adminUser || null,
+            };
+          }
+        }
+      }
+    } catch {
+      // Continue to next fallback endpoint
     }
-  } catch (err) {
-    console.error('Failed to fetch system status from server:', err);
   }
 
-  // Local fallback
+  // Local fallback (in case browser is offline or on standalone static hosting)
   const localInstalled = typeof window !== 'undefined' && (
     localStorage.getItem('pos_installed') === 'true' ||
     localStorage.getItem('app_installed') === 'true' ||
     localStorage.getItem('app_installation_completed') === 'true' ||
     localStorage.getItem('is_installed') === 'true' ||
-    localStorage.getItem('system_installed') === 'true'
+    localStorage.getItem('system_installed') === 'true' ||
+    localStorage.getItem('installation_locked') === 'true' ||
+    localStorage.getItem('installation_wizard_deleted') === 'true'
   );
 
   return {
@@ -43,15 +75,27 @@ export const completeServerInstallation = async (payload: {
   adminUser?: any;
   isDemoInstallation?: boolean;
 }): Promise<boolean> => {
-  try {
-    const res = await fetch('/api/system/install', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('Failed to report installation completion to server:', err);
-    return false;
+  let anySuccess = false;
+  const endpoints = [
+    '/api/system/install',
+    '/api/system.php?action=install',
+    '/api/system.php',
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        anySuccess = true;
+      }
+    } catch {
+      // Continue to next endpoint
+    }
   }
+
+  return anySuccess;
 };

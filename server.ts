@@ -95,6 +95,18 @@ async function startServer() {
         fs.mkdirSync(STORAGE_DIR, { recursive: true });
       }
       fs.writeFileSync(STATUS_FILE, JSON.stringify(data, null, 2), "utf-8");
+
+      // Also mirror to public and dist folders for universal direct access on any web host
+      const pubFile = path.join(process.cwd(), "public", "system_status.json");
+      const distFile = path.join(process.cwd(), "dist", "system_status.json");
+      try {
+        fs.writeFileSync(pubFile, JSON.stringify(data, null, 2), "utf-8");
+      } catch {}
+      try {
+        if (fs.existsSync(path.join(process.cwd(), "dist"))) {
+          fs.writeFileSync(distFile, JSON.stringify(data, null, 2), "utf-8");
+        }
+      } catch {}
     } catch (e) {
       console.error("Error saving system status:", e);
     }
