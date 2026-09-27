@@ -105,10 +105,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
             className="cursor-pointer transition-opacity hover:opacity-90 flex items-center"
+            title="Dashboard"
           >
             <RoyalLogo
               size="md"
-              showText={true}
+              showText={false}
             />
           </div>
 

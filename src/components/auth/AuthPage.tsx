@@ -892,13 +892,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             isLight ? 'bg-gradient-to-b from-slate-50 via-white to-slate-50 border-slate-200' : 'bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-slate-800'
           }`}>
             <div className="space-y-6">
-              {/* Brand Header */}
-              <RoyalLogo
-                size="lg"
-                subtitle="Omnichannel ERP & Real-Time POS Engine"
-                badge="Enterprise Edition"
-                themeMode={isLight ? 'light' : 'dark'}
-              />
+              {/* Brand Header - Logo Alone */}
+              <div className="flex items-center">
+                <RoyalLogo
+                  size="xl"
+                  showText={false}
+                  themeMode={isLight ? 'light' : 'dark'}
+                />
+              </div>
 
               {/* Tagline */}
               <div className="space-y-2 pt-2">
