@@ -1,0 +1,762 @@
+import React, { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { useErp } from '../../context/ErpContext';
+import { Customer, Supplier } from '../../types/erp';
+import {
+  FileSpreadsheet,
+  Download,
+  Upload,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowLeft,
+  Users,
+  Truck,
+  Info,
+  X,
+  FileText,
+  Sparkles,
+  RefreshCw
+} from 'lucide-react';
+
+interface ParsedContactRow {
+  id: string;
+  selected: boolean;
+  name: string;
+  businessName?: string;
+  customerGroup?: string;
+  email?: string;
+  phone?: string;
+  alternatePhone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipcode?: string;
+  country?: string;
+  taxNumber?: string;
+  openingBalance?: number;
+  creditLimit?: number;
+  payTerm?: string;
+  notes?: string;
+  isValid: boolean;
+  validationError?: string;
+  raw: Record<string, any>;
+}
+
+export const ImportContactsPage: React.FC = () => {
+  const {
+    importCustomers,
+    importSuppliers,
+    customerGroups,
+    navigateToContacts,
+    showFlashNotification,
+  } = useErp();
+
+  const [contactType, setContactType] = useState<'customer' | 'supplier'>('customer');
+  const [file, setFile] = useState<File | null>(null);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
+  const [parsedRows, setParsedRows] = useState<ParsedContactRow[]>([]);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [dragActive, setDragActive] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Template Data Generator
+  const generateCustomerTemplateData = () => {
+    const headers = [
+      'Name',
+      'Business Name',
+      'Customer Group',
+      'Email',
+      'Phone',
+      'Alternate Phone',
+      'Address',
+      'City',
+      'State',
+      'Zipcode',
+      'Country',
+      'Tax Number / GSTIN',
+      'Opening Balance',
+      'Credit Limit',
+      'Pay Term',
+      'Notes',
+    ];
+
+    const sampleRows = [
+      [
+        'John Doe',
+        'Doe Retail Enterprises',
+        'Retail Customer',
+        'john.doe@example.com',
+        '+1 555-0199',
+        '+1 555-0198',
+        '100 Main Street, Suite 400',
+        'New York',
+        'NY',
+        '10001',
+        'United States',
+        'US987654321',
+        '250.00',
+        '5000.00',
+        '30 Days',
+        'Key VIP retail client',
+      ],
+      [
+        'Sarah Smith',
+        'Apex Wholesale Ltd',
+        'Wholesale Client',
+        'sarah@apexwholesale.com',
+        '+1 555-0288',
+        '',
+        '75 Industrial Parkway',
+        'Chicago',
+        'IL',
+        '60601',
+        'United States',
+        'US123456789',
+        '0.00',
+        '10000.00',
+        '15 Days',
+        'Bulk buyer for electronics',
+      ],
+      [
+        'Robert Johnson',
+        '',
+        'Walk-In Customer',
+        'robert.j@example.com',
+        '+1 555-0377',
+        '',
+        '42 Oak Lane',
+        'Austin',
+        'TX',
+        '78701',
+        'United States',
+        '',
+        '0.00',
+        '1000.00',
+        'Due on Receipt',
+        'Walk-in customer',
+      ],
+    ];
+
+    return [headers, ...sampleRows];
+  };
+
+  const generateSupplierTemplateData = () => {
+    const headers = [
+      'Name',
+      'Business Name',
+      'Email',
+      'Phone',
+      'Alternate Phone',
+      'Address',
+      'City',
+      'State',
+      'Zipcode',
+      'Country',
+      'Tax Number / GSTIN',
+      'Opening Balance',
+      'Pay Term',
+      'Notes',
+    ];
+
+    const sampleRows = [
+      [
+        'Global Tech Logistics',
+        'Global Tech Suppliers Inc.',
+        'sales@globaltechlogistics.com',
+        '+1 800-555-0144',
+        '+1 800-555-0145',
+        '500 Technology Drive',
+        'San Jose',
+        'CA',
+        '95110',
+        'United States',
+        'US555123987',
+        '1200.00',
+        '30 Days',
+        'Primary hardware and chip vendor',
+      ],
+      [
+        'Pacific Wholesale Foods',
+        'Pacific Goods Co',
+        'orders@pacificwholesale.com',
+        '+1 800-555-0299',
+        '',
+        '120 Harbor View Way',
+        'Seattle',
+        'WA',
+        '98101',
+        'United States',
+        'US444987123',
+        '0.00',
+        '15 Days',
+        'Organic beans and specialty coffee supplier',
+      ],
+    ];
+
+    return [headers, ...sampleRows];
+  };
+
+  // Download Sample Files
+  const handleDownloadTemplate = (type: 'customer' | 'supplier', format: 'csv' | 'xlsx') => {
+    const data = type === 'customer' ? generateCustomerTemplateData() : generateSupplierTemplateData();
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Set column widths for nice appearance
+    const cols = data[0].map(() => ({ wch: 22 }));
+    worksheet['!cols'] = cols;
+
+    const workbook = XLSX.utils.book_new();
+    const sheetName = type === 'customer' ? 'Customer Import Template' : 'Supplier Import Template';
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    const fileName = `${type}_import_template.${format}`;
+    if (format === 'xlsx') {
+      XLSX.writeFile(workbook, fileName);
+    } else {
+      XLSX.writeFile(workbook, fileName, { bookType: 'csv' });
+    }
+
+    showFlashNotification(`Downloaded ${type === 'customer' ? 'Customer' : 'Supplier'} ${format.toUpperCase()} template file.`, 'info');
+  };
+
+  // Process File Parsing
+  const processWorkbook = (wb: XLSX.WorkBook, sheetNameToParse?: string) => {
+    const nameToUse = sheetNameToParse || wb.SheetNames[0];
+    setSelectedSheet(nameToUse);
+
+    const worksheet = wb.Sheets[nameToUse];
+    if (!worksheet) return;
+
+    // Convert worksheet to JSON rows with header objects
+    const rawJson: Record<string, any>[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+    if (!rawJson || rawJson.length === 0) {
+      setParsedRows([]);
+      showFlashNotification('The uploaded file is empty or missing data rows.', 'error');
+      return;
+    }
+
+    // Map rows flexibly
+    const parsed: ParsedContactRow[] = rawJson.map((row, index) => {
+      // Find key matching helpers
+      const findVal = (...aliases: string[]): string => {
+        for (const alias of aliases) {
+          const matchedKey = Object.keys(row).find(
+            (k) => k.toLowerCase().replace(/[^a-z0-9]/g, '') === alias.toLowerCase().replace(/[^a-z0-9]/g, '')
+          );
+          if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== null) {
+            return String(row[matchedKey]).trim();
+          }
+        }
+        return '';
+      };
+
+      const name = findVal('Name', 'Contact Name', 'Customer Name', 'Supplier Name', 'Full Name');
+      const businessName = findVal('Business Name', 'Company Name', 'Company', 'Organization', 'Business');
+      const customerGroup = findVal('Customer Group', 'Group', 'Pricing Group');
+      const email = findVal('Email', 'Email Address', 'E-mail');
+      const phone = findVal('Phone', 'Phone Number', 'Mobile', 'Mobile Number', 'Contact Number', 'Telephone');
+      const alternatePhone = findVal('Alternate Phone', 'Alt Phone', 'Secondary Phone');
+      const address = findVal('Address', 'Street', 'Street Address');
+      const city = findVal('City', 'Town');
+      const state = findVal('State', 'Province');
+      const zipcode = findVal('Zipcode', 'Zip Code', 'Zip', 'Postal Code', 'Pincode');
+      const country = findVal('Country');
+      const taxNumber = findVal('Tax Number / GSTIN', 'Tax Number', 'GSTIN', 'Tax ID', 'VAT Number');
+      const openingBalStr = findVal('Opening Balance', 'Balance');
+      const creditLimitStr = findVal('Credit Limit');
+      const payTerm = findVal('Pay Term', 'Payment Term');
+      const notes = findVal('Notes', 'Note', 'Comments');
+
+      const openingBalance = openingBalStr ? parseFloat(openingBalStr) || 0 : 0;
+      const creditLimit = creditLimitStr ? parseFloat(creditLimitStr) || 0 : 0;
+
+      let isValid = true;
+      let validationError = '';
+
+      if (!name) {
+        isValid = false;
+        validationError = 'Missing Contact Name';
+      }
+
+      return {
+        id: `row_${index}_${Date.now()}`,
+        selected: isValid,
+        name,
+        businessName: businessName || undefined,
+        customerGroup: customerGroup || (contactType === 'customer' ? 'Retail Customer' : undefined),
+        email: email || 'N/A',
+        phone: phone || 'N/A',
+        alternatePhone: alternatePhone || undefined,
+        address: address || 'N/A',
+        city: city || undefined,
+        state: state || undefined,
+        zipcode: zipcode || undefined,
+        country: country || 'United States',
+        taxNumber: taxNumber || undefined,
+        openingBalance,
+        creditLimit,
+        payTerm: payTerm || undefined,
+        notes: notes || undefined,
+        isValid,
+        validationError,
+        raw: row,
+      };
+    });
+
+    setParsedRows(parsed);
+  };
+
+  const handleFileUpload = (f: File) => {
+    if (!f) return;
+    setIsProcessing(true);
+    setFile(f);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const buffer = e.target?.result;
+        const wb = XLSX.read(buffer, { type: 'array' });
+        setSheetNames(wb.SheetNames);
+        processWorkbook(wb);
+        showFlashNotification(`Successfully parsed file "${f.name}".`, 'success');
+      } catch (err) {
+        console.error('Error parsing file:', err);
+        showFlashNotification('Failed to parse Excel/CSV file. Please ensure it is a valid format.', 'error');
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+    reader.onerror = () => {
+      setIsProcessing(false);
+      showFlashNotification('Failed to read file.', 'error');
+    };
+    reader.readAsArrayBuffer(f);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleSelectRowToggle = (id: string) => {
+    setParsedRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, selected: !r.selected } : r))
+    );
+  };
+
+  const handleSelectAllToggle = (selectAll: boolean) => {
+    setParsedRows((prev) => prev.map((r) => ({ ...r, selected: selectAll ? r.isValid : false })));
+  };
+
+  const handleExecuteImport = () => {
+    const selectedRows = parsedRows.filter((r) => r.selected && r.name);
+    if (selectedRows.length === 0) {
+      showFlashNotification('No valid rows selected for import.', 'error');
+      return;
+    }
+
+    if (contactType === 'customer') {
+      const formattedCustomers = selectedRows.map((r) => {
+        const matchedGrp = customerGroups.find(
+          (g) => g.name.toLowerCase() === (r.customerGroup || '').toLowerCase()
+        );
+
+        return {
+          name: r.name,
+          businessName: r.businessName,
+          customerGroup: r.customerGroup || 'Retail Customer',
+          customerGroupId: matchedGrp?.id,
+          email: r.email || 'N/A',
+          phone: r.phone || 'N/A',
+          alternatePhone: r.alternatePhone,
+          address: r.address || 'N/A',
+          city: r.city,
+          state: r.state,
+          zipcode: r.zipcode,
+          country: r.country || 'United States',
+          taxNumber: r.taxNumber,
+          openingBalance: r.openingBalance || 0,
+          creditLimit: r.creditLimit || 0,
+          payTerm: r.payTerm,
+          notes: r.notes,
+        };
+      });
+
+      importCustomers(formattedCustomers);
+      navigateToContacts('customers');
+    } else {
+      const formattedSuppliers = selectedRows.map((r) => ({
+        name: r.name,
+        businessName: r.businessName || r.name,
+        email: r.email || 'N/A',
+        phone: r.phone || 'N/A',
+        alternatePhone: r.alternatePhone,
+        address: r.address || 'N/A',
+        city: r.city,
+        state: r.state,
+        zipcode: r.zipcode,
+        country: r.country || 'United States',
+        taxNumber: r.taxNumber,
+        openingBalance: r.openingBalance || 0,
+        payTerm: r.payTerm,
+        notes: r.notes,
+      }));
+
+      importSuppliers(formattedSuppliers);
+      navigateToContacts('suppliers');
+    }
+  };
+
+  const validRowsCount = parsedRows.filter((r) => r.isValid).length;
+  const selectedRowsCount = parsedRows.filter((r) => r.selected).length;
+  const invalidRowsCount = parsedRows.filter((r) => !r.isValid).length;
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto animate-fadeIn">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigateToContacts(contactType === 'customer' ? 'customers' : 'suppliers')}
+            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition"
+            title="Back to Contacts"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+              <span>Import Contacts (Bulk Upload)</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Bulk import customer accounts or wholesale suppliers from standardized Excel (.xlsx) or CSV (.csv) spreadsheets.
+            </p>
+          </div>
+        </div>
+
+        {/* Contact Type Switcher */}
+        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => {
+              setContactType('customer');
+              setParsedRows([]);
+              setFile(null);
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+              contactType === 'customer'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Customers</span>
+          </button>
+          <button
+            onClick={() => {
+              setContactType('supplier');
+              setParsedRows([]);
+              setFile(null);
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+              contactType === 'supplier'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>Suppliers</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Grid: Download Template & File Upload Box */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Step 1: Download Predesigned Templates */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm mb-1">
+              <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs">1</span>
+              <span>Download Standard Template</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Download the predesigned spreadsheet format with pre-formatted column headers and sample data rows. Fill in your contact list and re-upload.
+            </p>
+
+            <div className="mt-4 p-3.5 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-300">Selected Contact Category:</span>
+                <span className="font-bold text-indigo-400 uppercase tracking-wider text-[11px] bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                  {contactType === 'customer' ? 'Customers' : 'Suppliers'}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 leading-relaxed">
+                {contactType === 'customer' ? (
+                  <span>Includes headers: Name, Business Name, Customer Group, Email, Phone, Address, City, Tax Number, Opening Balance, Credit Limit, Pay Term.</span>
+                ) : (
+                  <span>Includes headers: Name, Business Name, Email, Phone, Address, City, State, Tax Number, Opening Balance, Pay Term.</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => handleDownloadTemplate(contactType, 'xlsx')}
+              className="w-full py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download {contactType === 'customer' ? 'Customer' : 'Supplier'} Excel (.xlsx)</span>
+            </button>
+            <button
+              onClick={() => handleDownloadTemplate(contactType, 'csv')}
+              className="w-full py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 flex items-center justify-center gap-2 transition"
+            >
+              <FileText className="w-4 h-4 text-emerald-400" />
+              <span>Download CSV Template (.csv)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Step 2: Upload File Box */}
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+            <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs">2</span>
+            <span>Upload Completed Spreadsheet</span>
+          </div>
+
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 ${
+              dragActive
+                ? 'border-indigo-500 bg-indigo-500/10 scale-[0.99]'
+                : file
+                ? 'border-emerald-500/60 bg-emerald-500/5'
+                : 'border-slate-700 hover:border-slate-500 bg-slate-950/50 hover:bg-slate-950'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv, .xlsx, .xls"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleFileUpload(e.target.files[0]);
+                }
+              }}
+            />
+
+            {file ? (
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <div className="text-sm font-bold text-white">{file.name}</div>
+                <div className="text-xs text-slate-400">
+                  {(file.size / 1024).toFixed(1)} KB &bull; Click or drag new file to replace
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center mx-auto border border-slate-700">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <div className="text-sm font-bold text-slate-200">
+                  Click to select file or drag & drop here
+                </div>
+                <div className="text-xs text-slate-400">
+                  Supports Excel (.xlsx, .xls) and CSV (.csv) spreadsheet formats
+                </div>
+              </div>
+            )}
+          </div>
+
+          {sheetNames.length > 1 && (
+            <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+              <span className="font-semibold text-slate-300">Select Worksheet:</span>
+              <select
+                value={selectedSheet}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                      const buffer = evt.target?.result;
+                      const wb = XLSX.read(buffer, { type: 'array' });
+                      processWorkbook(wb, name);
+                    };
+                    reader.readAsArrayBuffer(file);
+                  }
+                }}
+                className="bg-slate-900 text-slate-100 px-3 py-1.5 rounded-lg border border-slate-700 focus:border-indigo-500 focus:outline-none"
+              >
+                {sheetNames.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Step 3: Data Table Preview & Import Execution */}
+      {parsedRows.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+                <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs">3</span>
+                <span>Review Parsed Contact Records ({parsedRows.length})</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Review extracted records before finalizing the bulk import.
+              </p>
+            </div>
+
+            {/* Quick Stats & Import CTA */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+                <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {validRowsCount} Valid
+                </span>
+                {invalidRowsCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-400 font-bold pl-2 border-l border-slate-800">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {invalidRowsCount} Invalid
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={handleExecuteImport}
+                disabled={selectedRowsCount === 0}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition ${
+                  selectedRowsCount > 0
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Import {selectedRowsCount} {contactType === 'customer' ? 'Customers' : 'Suppliers'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-950 text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-800">
+                  <th className="p-3.5 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedRowsCount > 0 && selectedRowsCount === validRowsCount}
+                      onChange={(e) => handleSelectAllToggle(e.target.checked)}
+                      className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                  </th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Contact Name</th>
+                  <th className="p-3.5">Business Name</th>
+                  {contactType === 'customer' && <th className="p-3.5">Customer Group</th>}
+                  <th className="p-3.5">Phone</th>
+                  <th className="p-3.5">Email</th>
+                  <th className="p-3.5">Location / Address</th>
+                  <th className="p-3.5">Tax No. / GSTIN</th>
+                  <th className="p-3.5 text-right">Opening Bal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 text-xs text-slate-200">
+                {parsedRows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-slate-800/40 transition ${
+                      !row.isValid
+                        ? 'bg-amber-500/5'
+                        : row.selected
+                        ? 'bg-indigo-600/5'
+                        : 'opacity-60'
+                    }`}
+                  >
+                    <td className="p-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={row.selected}
+                        disabled={!row.isValid}
+                        onChange={() => handleSelectRowToggle(row.id)}
+                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-30"
+                      />
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      {row.isValid ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3" /> Ready
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <AlertTriangle className="w-3 h-3" /> {row.validationError || 'Invalid'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 font-bold text-white whitespace-nowrap">
+                      {row.name || <span className="text-slate-500 italic">Empty Name</span>}
+                    </td>
+                    <td className="p-3.5 text-slate-300 whitespace-nowrap">
+                      {row.businessName || <span className="text-slate-500">&mdash;</span>}
+                    </td>
+                    {contactType === 'customer' && (
+                      <td className="p-3.5 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold border border-slate-700 text-[11px]">
+                          {row.customerGroup || 'Retail Customer'}
+                        </span>
+                      </td>
+                    )}
+                    <td className="p-3.5 font-mono text-slate-300 whitespace-nowrap">
+                      {row.phone !== 'N/A' ? row.phone : <span className="text-slate-500">&mdash;</span>}
+                    </td>
+                    <td className="p-3.5 text-slate-300 whitespace-nowrap">
+                      {row.email !== 'N/A' ? row.email : <span className="text-slate-500">&mdash;</span>}
+                    </td>
+                    <td className="p-3.5 text-slate-400 max-w-[200px] truncate">
+                      {[row.address, row.city, row.state].filter((x) => x && x !== 'N/A').join(', ') || '&mdash;'}
+                    </td>
+                    <td className="p-3.5 font-mono text-slate-300 whitespace-nowrap">
+                      {row.taxNumber || <span className="text-slate-500">&mdash;</span>}
+                    </td>
+                    <td className="p-3.5 text-right font-mono font-bold text-indigo-400 whitespace-nowrap">
+                      ${(row.openingBalance || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

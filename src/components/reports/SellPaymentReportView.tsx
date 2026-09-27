@@ -1,0 +1,537 @@
+import React, { useState, useMemo } from 'react';
+import { useErp } from '../../context/ErpContext';
+import { ExportButtons } from '../common/ExportButtons';
+import { formatCurrency } from '../../utils/formatters';
+import {
+  Calendar,
+  Users,
+  Search,
+  Filter,
+  DollarSign,
+  ArrowDownUp,
+  Download,
+  CreditCard,
+  Banknote,
+  Landmark,
+  Wallet
+} from 'lucide-react';
+import { PaymentMethod } from '../../types/erp';
+
+export const SellPaymentReportView: React.FC = () => {
+  const { transactions, customers, locations, settings, paymentMethods } = useErp();
+
+  const isLight = settings?.themeMode === 'light';
+
+  // Date Filters
+  const [startDate, setStartDate] = useState(() => {
+    const now = new Date();
+    now.setMonth(now.getMonth() - 1);
+    return now.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  });
+  
+  const [datePreset, setDatePreset] = useState('Last 30 Days');
+
+  const handlePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    const today = new Date();
+    const format = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (preset === 'Today') {
+      setStartDate(format(today));
+      setEndDate(format(today));
+    } else if (preset === 'Yesterday') {
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      setStartDate(format(yesterday));
+      setEndDate(format(yesterday));
+    } else if (preset === 'Last 7 Days') {
+      const past = new Date();
+      past.setDate(today.getDate() - 7);
+      setStartDate(format(past));
+      setEndDate(format(today));
+    } else if (preset === 'Last 30 Days') {
+      const past = new Date();
+      past.setDate(today.getDate() - 30);
+      setStartDate(format(past));
+      setEndDate(format(today));
+    } else if (preset === 'This Month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      setStartDate(format(start));
+      setEndDate(format(today));
+    } else if (preset === 'Last Month') {
+      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const end = new Date(today.getFullYear(), today.getMonth(), 0);
+      setStartDate(format(start));
+      setEndDate(format(end));
+    } else if (preset === 'Current Financial Year') {
+      const currentYear = today.getFullYear();
+      const isPostApril = today.getMonth() >= 3;
+      const startYear = isPostApril ? currentYear : currentYear - 1;
+      setStartDate(`${startYear}-04-01`);
+      setEndDate(format(today));
+    } else if (preset === 'All Time') {
+      setStartDate('2020-01-01');
+      setEndDate(format(today));
+    }
+  };
+
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all');
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate, selectedCustomerId, selectedLocationId, selectedPaymentMethod, searchQuery]);
+
+  // Extract all payment entries from sales
+  const paymentEntries = useMemo(() => {
+    const entries: any[] = [];
+    
+    transactions.forEach(tx => {
+      if (tx.type === 'sale') {
+        if (tx.paymentEntries && tx.paymentEntries.length > 0) {
+          tx.paymentEntries.forEach(payment => {
+            entries.push({
+              ...payment,
+              transactionId: tx.id,
+              sellNo: tx.invoiceNo,
+              customerId: tx.customerId,
+              locationId: tx.locationId,
+              date: payment.date || tx.date,
+            });
+          });
+        } else if (tx.paidAmount && tx.paidAmount > 0) {
+          entries.push({
+            id: `pay_${tx.id}`,
+            method: tx.paymentMethod || 'cash',
+            amount: tx.paidAmount,
+            date: tx.date,
+            referenceNo: tx.invoiceNo + '-P1',
+            transactionId: tx.id,
+            sellNo: tx.invoiceNo,
+            customerId: tx.customerId,
+            locationId: tx.locationId,
+          });
+        }
+      }
+    });
+    
+    return entries;
+  }, [transactions]);
+
+  // Apply filters
+  const filteredPayments = useMemo(() => {
+    return paymentEntries.filter(entry => {
+      // Date filter - compare YYYY-MM-DD so timestamps like "2026-09-08 14:30" don't fail "> endDate"
+      const entryDate = entry.date ? entry.date.substring(0, 10) : '';
+      if (startDate && entryDate < startDate) {
+        return false;
+      }
+      if (endDate && entryDate > endDate) {
+        return false;
+      }
+      
+      // Customer filter
+      if (selectedCustomerId !== 'all' && entry.customerId !== selectedCustomerId) {
+        return false;
+      }
+
+      // Location filter
+      if (selectedLocationId !== 'all' && entry.locationId !== selectedLocationId) {
+        return false;
+      }
+      
+      // Payment Method filter
+      if (selectedPaymentMethod !== 'all' && entry.method !== selectedPaymentMethod) {
+        return false;
+      }
+
+      // Search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const refNoMatch = entry.referenceNo?.toLowerCase().includes(query) || false;
+        const sellNoMatch = entry.sellNo?.toLowerCase().includes(query) || false;
+        
+        const customer = customers.find(c => c.id === entry.customerId);
+        const customerMatch = customer?.name.toLowerCase().includes(query) || false;
+
+        if (!refNoMatch && !sellNoMatch && !customerMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [paymentEntries, startDate, endDate, selectedCustomerId, selectedLocationId, selectedPaymentMethod, searchQuery, customers]);
+
+  const totalPages = Math.ceil(filteredPayments.length / rowsPerPage) || 1;
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredPayments.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredPayments, currentPage, rowsPerPage]);
+
+  const totalAmount = useMemo(() => {
+    return filteredPayments.reduce((sum, entry) => sum + entry.amount, 0);
+  }, [filteredPayments]);
+
+  const getMethodIcon = (method: PaymentMethod) => {
+    switch (method) {
+      case 'cash': return <Banknote className="w-4 h-4 text-emerald-400" />;
+      case 'card': return <CreditCard className="w-4 h-4 text-blue-400" />;
+      case 'bank_transfer': return <Landmark className="w-4 h-4 text-indigo-400" />;
+      default: return <Wallet className="w-4 h-4 text-slate-400" />;
+    }
+  };
+
+  const getMethodLabel = (method: PaymentMethod) => {
+    return method.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  const processedPaymentsExportData = useMemo(() => {
+    return filteredPayments.map((entry) => {
+      const customer = customers.find(c => c.id === entry.customerId);
+      return {
+        ...entry,
+        customerName: customer?.name || 'Unknown',
+        paymentMethodLabel: getMethodLabel(entry.method),
+      };
+    });
+  }, [filteredPayments, customers]);
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6 w-full max-w-7xl mx-auto">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl border transition-colors ${
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+      }`}>
+        <div>
+          <h2 className={`text-2xl font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <DollarSign className="w-7 h-7 text-indigo-500" />
+            Sell Payment Report
+          </h2>
+          <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+            View and manage all payments received from customers for sales
+          </p>
+        </div>
+        
+        <ExportButtons
+          headers={['Reference No', 'Paid On', 'Amount', 'Customer', 'Payment Method', 'Invoice No']}
+          keys={['referenceNo', 'date', 'amount', 'customerName', 'paymentMethodLabel', 'sellNo']}
+          data={processedPaymentsExportData}
+          filename="sell_payment_report"
+          title="Sell Payment Report"
+          isLight={isLight}
+        />
+      </div>
+
+      <div className={`rounded-2xl border p-6 transition-colors ${
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+      }`}>
+        <div className="flex items-center gap-1.5 flex-wrap mb-6">
+          {['All Time', 'Today', 'Yesterday', 'This Month', 'Last Month', 'Last 30 Days', 'Last 7 Days', 'Current Financial Year'].map(
+            (preset) => (
+              <button
+                key={preset}
+                onClick={() => handlePresetChange(preset)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                  datePreset === preset
+                    ? isLight
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-indigo-600/20 text-indigo-300 border-indigo-500/50'
+                    : isLight
+                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                {preset}
+              </button>
+            )
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>From Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setDatePreset('Custom');
+              }}
+              className={`w-full text-xs font-semibold px-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+              }`}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>To Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setDatePreset('Custom');
+              }}
+              className={`w-full text-xs font-semibold px-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+              }`}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>Customer</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Users className="h-4 w-4 text-slate-400" />
+              </div>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                className={`w-full text-xs font-semibold pl-10 pr-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none appearance-none transition ${
+                  isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+                }`}
+              >
+                <option value="all">All Customers</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>Location</label>
+            <div className="relative">
+              <select
+                value={selectedLocationId}
+                onChange={(e) => setSelectedLocationId(e.target.value)}
+                className={`w-full text-xs font-semibold px-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none appearance-none transition ${
+                  isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+                }`}
+              >
+                <option value="all">All Locations</option>
+                {locations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>Payment Method</label>
+            <select
+              value={selectedPaymentMethod}
+              onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+              className={`w-full text-xs font-semibold px-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none appearance-none transition ${
+                isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+              }`}
+            >
+              <option value="all">All Methods</option>
+              {paymentMethods.filter(m => m.enabled).map(m => (
+                <option key={m.id} value={m.code}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="min-w-0">
+            <label className={`block text-xs font-medium mb-1.5 ${isLight ? 'text-slate-600 font-semibold' : 'text-slate-400'}`}>Search</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Ref No, Invoice No..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full text-xs font-semibold pl-10 pr-3 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950 text-white border-slate-800'
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`rounded-2xl border overflow-hidden transition-colors ${
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
+      }`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className={`border-b ${
+                isLight ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-slate-800 bg-slate-900/50 text-slate-400'
+              }`}>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                  Reference No
+                </th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                  Invoice No
+                </th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                  Payment Method
+                </th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((entry, index) => {
+                  const customer = customers.find(c => c.id === entry.customerId);
+                  
+                  return (
+                    <tr key={entry.id || index} className={`transition-colors ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/50'}`}>
+                      <td className={`py-4 px-6 text-sm ${isLight ? 'text-slate-700 font-medium' : 'text-slate-300'}`}>
+                        {new Date(entry.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`text-sm font-medium ${isLight ? 'text-emerald-600 font-bold' : 'text-emerald-400'}`}>
+                          {entry.referenceNo || '-'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`text-sm font-medium ${isLight ? 'text-indigo-600 font-bold' : 'text-indigo-400'}`}>
+                          {entry.sellNo}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div>
+                          <div className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                            {customer?.name || 'Unknown Customer'}
+                          </div>
+                          {customer?.email && (
+                            <div className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {customer.email}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          {getMethodIcon(entry.method as PaymentMethod)}
+                          <span className={`text-sm ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                            {getMethodLabel(entry.method as PaymentMethod)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                          {formatCurrency(entry.amount, settings)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <DollarSign className={`w-12 h-12 mb-3 ${isLight ? 'text-slate-300' : 'text-slate-700'}`} />
+                      <p className={`font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>No sell payments found</p>
+                      <p className={`text-sm mt-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Try adjusting your filters</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot className={`border-t ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/30 border-slate-800'}`}>
+              <tr>
+                <td colSpan={5} className={`py-4 px-6 text-right text-sm font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  Total Payments:
+                </td>
+                <td className={`py-4 px-6 text-right text-lg font-bold ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>
+                  {formatCurrency(totalAmount, settings)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 text-xs border-t transition-colors ${
+          isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-900/50 border-slate-800 text-slate-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className={`border rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 ${
+                isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-white'
+              }`}
+            >
+              {[5, 10, 25, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="ml-2">
+              Showing {filteredPayments.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to{' '}
+              {Math.min(currentPage * rowsPerPage, filteredPayments.length)} of {filteredPayments.length} entries
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 disabled:cursor-not-allowed transition ${
+                isLight ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100' : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1.5 rounded-lg border transition ${
+                  currentPage === page
+                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm font-bold'
+                    : isLight
+                      ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1.5 rounded-lg border disabled:opacity-40 disabled:cursor-not-allowed transition ${
+                isLight ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100' : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

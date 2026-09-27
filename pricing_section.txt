@@ -1,0 +1,201 @@
+1558:                Step 2 of 3
+1559-              </span>
+1560-            </div>
+1561-
+1562-            <div className="space-y-4 text-xs">
+1563-              {/* Cost & Selling Price Inputs - Professional Clean Box Styling without arrows */}
+1564-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+1565-                <div>
+1566-                  <label className="text-slate-300 font-semibold block mb-1.5">
+1567-                    Purchase Cost Price ({settings.currencySymbol}) *
+1568-                  </label>
+1569-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/50 transition group">
+1570-                    <div className="bg-slate-900 border-r border-slate-800 px-3 py-2.5 text-emerald-400 font-mono font-bold text-xs select-none shrink-0 flex items-center justify-center min-w-[36px]">
+1571-                      {settings.currencySymbol}
+1572-                    </div>
+1573-                    <input
+1574-                      id="prod-input-cost-price"
+1575-                      required
+1576-                      type="number"
+1577-                      step="0.01"
+1578-                      min="0"
+1579-                      value={costPrice}
+1580-                      onChange={(e) => setCostPrice(e.target.value)}
+1581-                      placeholder="0.00"
+1582-                      className="w-full bg-transparent text-emerald-400 font-mono font-bold text-sm px-3 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+1583-                    />
+1584-                  </div>
+1585-                </div>
+1586-
+1587-                <div>
+1588-                  <label className="text-slate-300 font-semibold block mb-1.5">
+1589-                    Retail Selling Price ({settings.currencySymbol}) *
+1590-                  </label>
+1591-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition group">
+1592-                    <div className="bg-slate-900 border-r border-slate-800 px-3 py-2.5 text-indigo-400 font-mono font-bold text-xs select-none shrink-0 flex items-center justify-center min-w-[36px]">
+1593-                      {settings.currencySymbol}
+1594-                    </div>
+1595-                    <input
+1596-                      id="prod-input-selling-price"
+1597-                      required
+1598-                      type="number"
+1599-                      step="0.01"
+1600-                      min="0"
+1601-                      value={sellingPrice}
+1602-                      onChange={(e) => setSellingPrice(e.target.value)}
+1603-                      placeholder="0.00"
+1604-                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+1605-                    />
+1606-                  </div>
+1607-                </div>
+1608-
+1609-                <div>
+1610-                  <label className="text-slate-300 font-semibold block mb-1.5">
+1611-                    Batch / Lot Number *
+1612-                  </label>
+1613-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition">
+1614-                    <div className="bg-slate-900 border-r border-slate-800 px-3 py-2.5 text-amber-400 shrink-0 flex items-center justify-center">
+1615-                      <Layers className="w-3.5 h-3.5" />
+1616-                    </div>
+1617-                    <input
+1618-                      id="prod-input-lot-number"
+1619-                      type="text"
+1620-                      value={lotNumber}
+1621-                      onChange={(e) => setLotNumber(e.target.value)}
+1622-                      placeholder="LOT-2024-001"
+1623-                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none"
+1624-                    />
+1625-                  </div>
+1626-                </div>
+1627-
+1628-                {isEditMode && (
+1629-                  <div>
+1630-                    <label className="text-slate-300 font-semibold block mb-1.5 italic text-xs">
+1631-                      Allocated Stock for this Batch (Lot)
+1632-                    </label>
+1633-                    <div className="flex items-center rounded-xl border border-indigo-500/30 bg-indigo-500/5 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
+1634-                      <div className="bg-indigo-500/10 border-r border-indigo-500/20 px-3 py-2.5 text-indigo-400 shrink-0 flex items-center justify-center">
+1635-                        <Boxes className="w-3.5 h-3.5" />
+1636-                      </div>
+1637-                      <input
+1638-                        id="prod-input-initial-lot-stock"
+1639-                        type="number"
+1640-                        min="0"
+1641-                        value={initialLotStock}
+1642-                        onChange={(e) => setInitialLotStock(e.target.value)}
+1643-                        placeholder="0"
+1644-                        className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none"
+1645-                      />
+1646-                    </div>
+1647-                    <p className="text-[10px] text-slate-500 mt-1 italic leading-tight">
+1648-                      * Enter stock specifically for this price batch.
+1649-                    </p>
+1650-                  </div>
+1651-                )}
+1652-
+1653-                <div>
+1654-                  <label className="text-slate-300 font-semibold block mb-1.5">Low Stock Alert Threshold</label>
+1655-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition">
+1656-                    <input
+1657-                      id="prod-input-alert-qty"
+1658-                      type="number"
+1659-                      min="1"
+1660-                      value={alertQuantity}
+1661-                      onChange={(e) => setAlertQuantity(e.target.value)}
+1662-                      placeholder="10"
+1663-                      className="w-full bg-transparent text-amber-300 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+1664-                    />
+1665-                    <div className="bg-slate-900 border-l border-slate-800 px-3 py-2.5 text-slate-400 font-semibold text-xs select-none shrink-0">
+1666-                      {unit}
+1667-                    </div>
+1668-                  </div>
+1669-                </div>
+1670-              </div>
+1671-
+1672-              {/* Profitability Live KPI Bar */}
+1673-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
+1674-                <div>
+1675-                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
+1676-                    <Percent className="w-3.5 h-3.5 text-indigo-400" />
+1677-                    <span>Gross Profit Margin</span>
+1678-                  </span>
+1679-                  <p
+1680-                    className={`text-xl font-black mt-0.5 ${
+1681-                      grossProfit > 0 ? 'text-emerald-400' : 'text-rose-400'
+1682-                    }`}
+1683-                  >
+1684-                    {marginPercentage}%
+1685-                  </p>
+1686-                </div>
+1687-
+1688-                <div>
+1689-                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
+1690-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+1691-                    <span>Gross Profit per Unit</span>
+1692-                  </span>
+1693-                  <p
+1694-                    className={`text-xl font-black mt-0.5 ${
+1695-                      grossProfit >= 0 ? 'text-white' : 'text-rose-400'
+1696-                    }`}
+1697-                  >
+1698-                    {settings.currencySymbol} {grossProfit.toFixed(2)}
+1699-                  </p>
+1700-                </div>
+1701-
+1702-                <div>
+1703-                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
+1704-                    <Scale className="w-3.5 h-3.5 text-amber-400" />
+1705-                    <span>Cost Markup</span>
+1706-                  </span>
+1707-                  <p className="text-xl font-black text-amber-400 mt-0.5">{markupPercentage}%</p>
+1708-                </div>
+1709-              </div>
+1710-
+1711-              {/* Tax Group & Tax Type Selection */}
+1712-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800">
+1713-                <div className="sm:col-span-2">
+1714-                  <label className="text-slate-300 font-semibold flex items-center justify-between">
+1715-                    <span>Applicable Tax Group (GST Slabs)</span>
+1716-                    <span className="text-[11px] text-indigo-400 font-mono font-bold">
+1717-                      Rate: {taxRate}%
+1718-                    </span>
+1719-                  </label>
+1720-                  <select
+1721-                    id="prod-select-tax-group"
+1722-                    value={taxGroupId}
+1723-                    onChange={(e) => {
+1724-                      const gid = e.target.value;
+1725-                      setTaxGroupId(gid);
+1726-                      const found = taxGroups.find((g) => g.id === gid);
+1727-                      if (found) {
+1728-                        setTaxRate(found.totalRate.toString());
+1729-                      }
+1730-                    }}
+1731-                    className="w-full bg-slate-950 text-white font-semibold px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
+1732-                  >
+1733-                    {(taxGroups || []).map((g) => (
+1734-                      <option key={g.id} value={g.id}>
+1735-                        {g.name} ({g.totalRate}%) {Array.isArray((g as any).rates) ? `[${(g as any).rates.map((r: any) => `${r.name} ${r.rate}%`).join(', ')}]` : ''}
+1736-                      </option>
+1737-                    ))}
+1738-                  </select>
+1739-                </div>
+1740-
+1741-                <div>
+1742-                  <label className="text-slate-300 font-semibold">Tax Treatment</label>
+1743-                  <select
+1744-                    id="prod-select-tax-type"
+1745-                    value={taxType}
+1746-                    onChange={(e) => setTaxType(e.target.value as any)}
+1747-                    className="w-full bg-slate-950 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1 font-medium capitalize"
+1748-                  >
+1749-                    <option value="exclusive">Exclusive (Added to price)</option>
+1750-                    <option value="inclusive">Inclusive (Included in price)</option>
+1751-                    <option value="exempt">Exempt (0% Nil-Rated)</option>
+1752-                  </select>
+1753-                </div>
+1754-              </div>
+1755-
+1756-              {/* Tax Summary Breakdown Card */}
+1757-              <div className="p-3 bg-indigo-950/30 border border-indigo-800/40 rounded-xl flex flex-col sm:flex-row items-center justify-between text-xs text-indigo-200 gap-2">
+1758-                <div className="flex items-center gap-2">

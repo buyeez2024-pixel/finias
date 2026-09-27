@@ -1,0 +1,6 @@
+{
+  "name": "Royal POS & Enterprise ERP",
+  "description": "Comprehensive ERP & POS application featuring Products & Inventory management with Brands and Warranties modules, sell-with-warranty automated lifecycle calculation from transaction dates, 6 configurable finias POS invoice layouts (Classic, Elegant, Detailed B2B, Columnized Taxes, Slim 80mm POS Thermal, and Slim 2 / Gift Receipt) with warranty display toggles, customizable invoice numbering schemes, store-wide currency configuration and symbol management, multi-tier tax rates and GST groups with HSN code tracking, role-based access control (RBAC) employee permissions matrix, offline-first sync queue, hardware laser barcode scanner integration, multi-location stock control, cashier POS terminal, and financial accounting reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

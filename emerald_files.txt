@@ -1,0 +1,685 @@
+src/components/settings/EmployeePermissionsTab.tsx:157:    badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/settings/EmployeePermissionsTab.tsx:563:                        ? 'bg-slate-800/80 text-emerald-400 border-slate-700 cursor-not-allowed'
+src/components/settings/EmployeePermissionsTab.tsx:565:                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+src/components/settings/EmployeePermissionsTab.tsx:582:              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+src/components/settings/EmployeePermissionsTab.tsx:593:              <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+src/components/settings/EmployeePermissionsTab.tsx:858:                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
+src/components/settings/EmployeePermissionsTab.tsx:889:                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+src/components/settings/TaxSettingsTab.tsx:324:              {saveSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+src/components/settings/TaxSettingsTab.tsx:358:                  <span className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
+src/components/settings/TaxSettingsTab.tsx:386:                  <span className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
+src/components/settings/TaxSettingsTab.tsx:414:                  <span className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
+src/components/settings/TaxSettingsTab.tsx:442:                  <span className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
+src/components/settings/TaxSettingsTab.tsx:498:                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/settings/TaxSettingsTab.tsx:737:                <Calculator className="w-5 h-5 text-emerald-400" />
+src/components/settings/TaxSettingsTab.tsx:740:              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/settings/TaxSettingsTab.tsx:819:                  <span className="text-emerald-400 text-base">
+src/components/settings/TaxSettingsTab.tsx:893:                  <span className="text-base font-black font-mono text-emerald-400">
+src/components/settings/TaxSettingsTab.tsx:999:                  <td className="py-3.5 font-mono font-bold text-emerald-400 text-sm">
+src/components/settings/TaxSettingsTab.tsx:1206:                        <span className="font-mono font-bold text-emerald-400">{rate.rate}%</span>
+src/components/settings/TaxSettingsTab.tsx:1216:                <span className="text-emerald-400 font-black text-sm">
+src/components/settings/ReceiptTaxTab.tsx:45:              {saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+src/components/settings/ReceiptTaxTab.tsx:101:              <Printer className="w-4 h-4 text-emerald-400" />
+src/components/settings/InvoiceLayoutsTab.tsx:60:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/settings/InvoiceLayoutsTab.tsx:456:          {savedAlert ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+src/components/settings/InvoiceLayoutsTab.tsx:533:                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+src/components/settings/InvoiceLayoutsTab.tsx:567:                              ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
+src/components/settings/InvoiceLayoutsTab.tsx:597:                  <Eye className="w-4 h-4 text-emerald-400" />
+src/components/settings/InvoiceLayoutsTab.tsx:886:                        <td className="py-3 font-mono font-bold text-emerald-400">{sample}</td>
+src/components/settings/InvoiceLayoutsTab.tsx:889:                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+src/components/settings/InvoiceLayoutsTab.tsx:1000:                    <span className="font-mono font-bold text-emerald-400 text-sm">
+src/components/settings/AccessDeniedGuard.tsx:116:                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+src/components/settings/PosSecurityTab.tsx:41:            {saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+src/components/settings/BusinessSettingsTab.tsx:456:        <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-950/40 animate-fadeIn">
+src/components/settings/BusinessSettingsTab.tsx:458:            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+src/components/settings/BusinessSettingsTab.tsx:461:              <p className="text-xs text-emerald-300/80">
+src/components/settings/BusinessSettingsTab.tsx:468:            className="text-xs text-emerald-400 hover:text-white px-2 py-1 rounded-lg bg-emerald-950/60"
+src/components/settings/BusinessSettingsTab.tsx:813:                      <span className="font-mono font-bold text-emerald-400">
+src/components/settings/BusinessSettingsTab.tsx:1787:                                      acc.type === 'Card' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' :
+src/components/settings/BusinessSettingsTab.tsx:2044:                      id: 'emerald',
+src/components/settings/BusinessSettingsTab.tsx:2047:                      color: 'text-emerald-400 border-emerald-500/20',
+src/components/settings/BusinessSettingsTab.tsx:2048:                      badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+src/components/settings/BusinessSettingsTab.tsx:2049:                      swatches: ['bg-emerald-400', 'bg-emerald-500', 'bg-emerald-600', 'bg-emerald-700'],
+src/components/settings/BusinessSettingsTab.tsx:2247:                    <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+src/components/settings/BusinessSettingsTab.tsx:2526:                              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.2 rounded-full">
+src/components/settings/LocationsTab.tsx:127:          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.enableMultiLocationInventory ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+src/components/settings/LocationsTab.tsx:175:                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+src/components/settings/LocationsTab.tsx:196:                  <span className="text-slate-400 text-[11px]">Branch Status: <strong className="text-emerald-400">Operational</strong></span>
+src/components/settings/LocationsTab.tsx:228:                  {editingLoc ? <Edit3 className="w-5 h-5 text-indigo-400" /> : <Plus className="w-5 h-5 text-emerald-400" />}
+src/components/settings/CurrencySettingsTab.tsx:190:        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-bold text-xs animate-bounce">
+src/components/settings/CurrencySettingsTab.tsx:191:          <CheckCircle2 className="w-5 h-5 text-emerald-100 shrink-0" />
+src/components/settings/CurrencySettingsTab.tsx:234:              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black uppercase tracking-wider">
+src/components/settings/CurrencySettingsTab.tsx:271:                <span className="text-2xl font-black text-emerald-400 font-mono">
+src/components/settings/CurrencySettingsTab.tsx:378:                    <Receipt className="w-3.5 h-3.5 text-emerald-400" />
+src/components/settings/CurrencySettingsTab.tsx:396:            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/settings/CurrencySettingsTab.tsx:443:                  <span className="mt-2 text-[9px] font-extrabold text-emerald-400 flex items-center gap-1 uppercase">
+src/components/settings/CurrencySettingsTab.tsx:536:                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider">
+src/components/settings/CurrencySettingsTab.tsx:558:                          <span className="text-[11px] font-bold text-emerald-400 px-2 py-1">In Use</span>
+src/components/pos/PosRegisterLockModal.tsx:163:              <div className="text-[10px] text-emerald-400">Cash Sales</div>
+src/components/pos/PosRegisterLockModal.tsx:164:              <div className="text-xs font-bold text-emerald-400 mt-0.5">
+src/components/pos/PosRegisterLockModal.tsx:178:            <span className="text-lg font-extrabold text-emerald-400 font-mono">
+src/components/pos/PosRegisterLockModal.tsx:219:                  <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+src/components/pos/PosRegisterLockModal.tsx:323:                <p className="text-xs text-emerald-400 font-semibold mt-1.5 flex items-center gap-1">
+src/components/pos/ReceiptModal.tsx:90:            <div className="flex items-center gap-2 text-emerald-400">
+src/components/pos/ReceiptModal.tsx:163:                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Store Default Layout" />
+src/components/pos/ReceiptModal.tsx:238:                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+src/components/pos/RegisterModal.tsx:93:                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+src/components/pos/RegisterModal.tsx:109:                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+src/components/pos/RegisterModal.tsx:160:                  <div className="text-[10px] text-emerald-400 font-medium">Cash Sales</div>
+src/components/pos/RegisterModal.tsx:161:                  <div className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
+src/components/pos/RegisterModal.tsx:188:                <div className="text-xl font-extrabold text-emerald-400 font-mono">
+src/components/pos/RegisterModal.tsx:207:                      <span className="text-emerald-400 text-[11px] font-bold flex items-center gap-1">
+src/components/pos/RegisterModal.tsx:282:                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 font-extrabold text-lg">
+src/components/pos/RegisterModal.tsx:293:                    className="w-full bg-slate-900 text-white font-black text-xl pl-10 pr-4 py-3 rounded-2xl border border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono shadow-inner"
+src/components/pos/RegisterModal.tsx:307:                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+src/components/pos/OfflineSyncManagerModal.tsx:109:                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+src/components/pos/OfflineSyncManagerModal.tsx:125:                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+src/components/pos/OfflineSyncManagerModal.tsx:246:                ? 'border-emerald-400 text-emerald-400'
+src/components/pos/OfflineSyncManagerModal.tsx:277:                  <div className="text-2xl font-black text-emerald-400 mt-1">
+src/components/pos/OfflineSyncManagerModal.tsx:293:                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/pos/OfflineSyncManagerModal.tsx:344:                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+src/components/pos/OfflineSyncManagerModal.tsx:429:                          <span className="text-[10px] text-emerald-400 font-semibold uppercase">
+src/components/pos/OfflineSyncManagerModal.tsx:476:                                ? 'bg-emerald-400'
+src/components/pos/OfflineSyncManagerModal.tsx:518:                      <span className="font-bold text-emerald-400">Available</span>
+src/components/pos/OfflineSyncManagerModal.tsx:530:                      <span className="font-bold text-emerald-400">Configured & Ready</span>
+src/components/pos/OfflineSyncManagerModal.tsx:536:                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+src/components/pos/OfflineSyncManagerModal.tsx:555:                      <span className="font-bold text-emerald-400">Enabled with Offline Badge</span>
+src/components/pos/OfflineSyncManagerModal.tsx:579:                isEffectiveOnline ? 'bg-emerald-400' : 'bg-amber-400'
+src/components/pos/PosTerminal.tsx:524:                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 font-black text-xl">
+src/components/pos/PosTerminal.tsx:535:                  className="w-full bg-slate-950 text-white font-black text-2xl pl-11 pr-4 py-3 rounded-2xl border border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono shadow-inner"
+src/components/pos/PosTerminal.tsx:549:                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+src/components/pos/PosTerminal.tsx:677:                          <div className={`text-lg font-black tracking-tight ${isLotOutOfStock ? 'text-slate-600' : 'text-emerald-400'}`}>
+src/components/pos/PosTerminal.tsx:712:              : 'bg-emerald-600 border-emerald-400'
+src/components/pos/PosTerminal.tsx:772:              <Barcode className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/pos/PosTerminal.tsx:792:                className="px-2 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold transition shrink-0"
+src/components/pos/PosTerminal.tsx:807:                    ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/60'
+src/components/pos/PosTerminal.tsx:814:                    cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+src/components/pos/PosTerminal.tsx:947:                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
+src/components/pos/PosTerminal.tsx:994:                      <span className="text-xs font-extrabold text-emerald-400">
+src/components/pos/PosTerminal.tsx:1089:                <Barcode className="w-3.5 h-3.5 text-emerald-400" />
+src/components/pos/PosTerminal.tsx:1116:                    <span className="text-xs sm:text-sm font-black text-emerald-400 font-mono">
+src/components/pos/PosTerminal.tsx:1247:            <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
+src/components/pos/PosTerminal.tsx:1462:                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/pos/PosTerminal.tsx:1661:              <div className="bg-gradient-to-br from-emerald-950 via-slate-950 to-teal-950 p-6 rounded-2xl border border-emerald-500/40 text-center space-y-1 shadow-2xl">
+src/components/pos/PosTerminal.tsx:1662:                <div className="text-xs font-bold uppercase tracking-widest text-emerald-400">Total Due</div>
+src/components/pos/PosTerminal.tsx:1663:                <div className="text-3xl sm:text-4xl font-black text-emerald-300 font-mono">
+src/components/pos/PaymentModal.tsx:205:              <CreditCard className="w-5 h-5 text-emerald-400" />
+src/components/pos/PaymentModal.tsx:224:            <div className="text-2xl font-extrabold text-emerald-400 font-mono">
+src/components/pos/PaymentModal.tsx:263:                  <div className="font-bold font-mono text-emerald-400 text-xs">
+src/components/pos/PaymentModal.tsx:287:                    <span className="text-emerald-400 font-mono font-bold">
+src/components/pos/PaymentModal.tsx:315:                    <span className="text-emerald-400 font-mono font-bold">
+src/components/pos/PaymentModal.tsx:404:              <span className="font-bold text-emerald-400 font-mono text-sm">
+src/components/purchases/PurchaseRequisitionsView.tsx:184:            <div className="text-xl font-extrabold text-emerald-400 font-mono mt-1">{stats.approved}</div>
+src/components/purchases/PurchaseRequisitionsView.tsx:186:          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+src/components/purchases/PurchaseRequisitionsView.tsx:287:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/purchases/PurchaseRequisitionsView.tsx:312:                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold flex items-center gap-1 transition"
+src/components/purchases/PurchaseRequisitionsView.tsx:508:                        <span className="font-mono font-bold text-emerald-400">
+src/components/purchases/PurchaseRequisitionsView.tsx:586:                  <span className="text-slate-500">Status:</span> <strong className="text-emerald-400 uppercase">{selectedReqDetails.status}</strong>
+src/components/purchases/PurchaseFormPage.tsx:272:            <span className="text-xl font-mono font-black text-emerald-400">{formatCurrency(grandTotal, settings)}</span>
+src/components/purchases/PurchaseFormPage.tsx:303:                  <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+src/components/purchases/PurchaseFormPage.tsx:459:                          <div className="text-xs font-mono font-bold text-emerald-400/70">{formatCurrency(item.unitPrice, settings)}</div>
+src/components/purchases/PurchaseFormPage.tsx:605:                    className={`w-full bg-slate-950 px-5 py-3.5 rounded-2xl border border-slate-800 text-sm font-bold outline-none ${status === 'received' ? 'text-emerald-400' : 'text-amber-400'}`}
+src/components/purchases/PurchasesView.tsx:96:          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+src/components/purchases/PurchasesView.tsx:186:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/purchases/PurchasesView.tsx:198:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/purchases/PurchasesView.tsx:244:                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-md shadow-emerald-950"
+src/components/purchases/ViewPurchaseDetailsModal.tsx:92:                  purchase.status === 'received' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+src/components/purchases/ViewPurchaseDetailsModal.tsx:100:                  paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/purchases/ViewPurchaseDetailsModal.tsx:116:                  <tr className="bg-emerald-600 text-white font-bold uppercase text-[10px] tracking-wider">
+src/components/purchases/ViewPurchaseDetailsModal.tsx:150:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">{formatCurrency(item.total, settings)}</td>
+src/components/purchases/ViewPurchaseDetailsModal.tsx:167:                    <tr className="bg-emerald-600 text-white font-bold uppercase text-[10px] tracking-wider">
+src/components/purchases/ViewPurchaseDetailsModal.tsx:183:                          <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">{formatCurrency(p.amount, settings)}</td>
+src/components/purchases/ViewPurchaseDetailsModal.tsx:221:              <div className="flex justify-between text-emerald-400 font-bold">
+src/components/purchases/ViewPurchaseDetailsModal.tsx:255:                  <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded text-[10px] font-bold uppercase">Added</span>
+src/components/purchases/ViewPurchaseDetailsModal.tsx:266:                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">{purchase.status || 'Received'}</span>
+src/components/purchases/ViewPurchaseDetailsModal.tsx:275:                    paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
+src/components/purchases/PurchaseReturnsView.tsx:182:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/purchases/PurchaseReturnsView.tsx:225:                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-md shadow-emerald-950"
+src/components/purchases/ViewPurchaseReturnDetailsModal.tsx:98:                  paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/purchases/ViewPurchaseReturnDetailsModal.tsx:210:              <div className="flex justify-between text-emerald-400 font-bold">
+src/components/purchases/PurchaseReturnFormPage.tsx:204:            <span className="text-xl font-mono font-black text-emerald-400">{formatCurrency(grandTotal, settings)}</span>
+src/components/purchases/PurchaseReturnFormPage.tsx:253:                  <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+src/components/purchases/PurchaseReturnFormPage.tsx:352:                          <div className="text-xs font-mono font-bold text-emerald-400/70">{formatCurrency(item.unitPrice, settings)}</div>
+src/components/purchases/PurchaseReturnFormPage.tsx:498:                    className={`w-full bg-slate-950 px-5 py-3.5 rounded-2xl border border-slate-800 text-sm font-bold outline-none ${status === 'received' ? 'text-emerald-400' : 'text-amber-400'}`}
+src/components/purchases/ViewPurchasePaymentsModal.tsx:177:            <div className="p-3 bg-emerald-950/60 border border-emerald-800 rounded-xl flex items-center gap-2 text-emerald-300 text-xs animate-in fade-in">
+src/components/purchases/ViewPurchasePaymentsModal.tsx:178:              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/purchases/ViewPurchasePaymentsModal.tsx:225:                  purchase.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/purchases/ViewPurchasePaymentsModal.tsx:247:              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
+src/components/purchases/ViewPurchasePaymentsModal.tsx:279:                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 text-sm">
+src/components/purchases/ViewPurchasePaymentsModal.tsx:284:                          {entry.method === 'cash' && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
+src/components/purchases/ViewPurchasePaymentsModal.tsx:379:                  <span className="font-mono text-emerald-400 font-bold">{formatCurrency(purchase.totalAmount, settings)}</span>
+src/components/contacts/ContactsView.tsx:227:              <Percent className="w-3.5 h-3.5 text-emerald-400" />
+src/components/contacts/ContactsView.tsx:257:              className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20"
+src/components/contacts/ContactsView.tsx:259:              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+src/components/contacts/ContactsView.tsx:278:            className="px-3.5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-xl text-xs font-bold border border-emerald-500/30 flex items-center gap-2 transition"
+src/components/contacts/ContactsView.tsx:281:            <Download className="w-4 h-4 text-emerald-400" />
+src/components/contacts/ContactsView.tsx:428:                          Adv: <span className="text-emerald-400">{formatCurrency(cust.advanceBalance || 0, settings)}</span>
+src/components/contacts/ContactsView.tsx:440:                          <span className="text-emerald-400">{formatCurrency(0, settings)}</span>
+src/components/contacts/ContactsView.tsx:512:                      <td className="py-3.5 px-4 font-mono font-semibold text-emerald-400 whitespace-nowrap">
+src/components/contacts/ContactsView.tsx:517:                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold text-xs uppercase">
+src/components/contacts/ContactsView.tsx:559:                          Adv: <span className="text-emerald-400">{formatCurrency(supp.advanceBalance || 0, settings)}</span>
+src/components/contacts/ContactsView.tsx:568:                          <span className="text-emerald-400">{formatCurrency(0, settings)}</span>
+src/components/contacts/ImportContactsPage.tsx:445:              <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+src/components/contacts/ImportContactsPage.tsx:522:              className="w-full py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20"
+src/components/contacts/ImportContactsPage.tsx:531:              <FileText className="w-4 h-4 text-emerald-400" />
+src/components/contacts/ImportContactsPage.tsx:554:                ? 'border-emerald-500/60 bg-emerald-500/5'
+src/components/contacts/ImportContactsPage.tsx:572:                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+src/components/contacts/ImportContactsPage.tsx:642:                <span className="flex items-center gap-1 text-emerald-400 font-bold">
+src/components/contacts/ImportContactsPage.tsx:716:                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/contacts/CustomerGroupsModal.tsx:132:              Note: Use negative sign (e.g. <strong className="text-emerald-300">-20</strong>) for 20% discount on selling price, or positive (e.g. <strong className="text-amber-300">20</strong>) for +20% price increase.
+src/components/contacts/CustomerGroupsModal.tsx:147:              <div className={`text-right font-bold ${numericPct < 0 ? 'text-emerald-400' : numericPct > 0 ? 'text-amber-400' : 'text-slate-300'}`}>
+src/components/contacts/ContactLedgerView.tsx:276:          badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:327:                badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:349:            badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:441:          badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:490:                badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:512:            badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+src/components/contacts/ContactLedgerView.tsx:1115:            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition transform active:scale-95"
+src/components/contacts/ContactLedgerView.tsx:1454:                  ? 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40 shadow-sm'
+src/components/contacts/ContactLedgerView.tsx:1466:                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/contacts/ContactLedgerView.tsx:1600:            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/contacts/ContactLedgerView.tsx:1604:          <div className="text-xl font-bold font-mono text-emerald-400 mt-2">
+src/components/contacts/ContactLedgerView.tsx:1661:                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/contacts/ContactLedgerView.tsx:1673:              summaryMetrics.netClosing > 0 ? 'text-rose-400' : 'text-emerald-400'
+src/components/contacts/ContactLedgerView.tsx:1820:                        <span className={row.type === 'ledger_discount' ? 'text-fuchsia-400 font-bold' : 'text-emerald-400'}>
+src/components/contacts/ContactLedgerView.tsx:1834:                            ? 'text-emerald-400'
+src/components/contacts/ContactLedgerView.tsx:1884:                            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-lg transition border border-emerald-500/30"
+src/components/contacts/ContactLedgerView.tsx:1933:                  <td className="py-3.5 px-4 text-right font-mono text-emerald-400 text-sm">
+src/components/contacts/ContactLedgerView.tsx:1939:                        summaryMetrics.netClosing > 0 ? 'text-rose-400' : 'text-emerald-400'
+src/components/contacts/ContactLedgerView.tsx:2026:                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+src/components/contacts/ContactLedgerView.tsx:2160:                          ? 'text-emerald-400'
+src/components/contacts/ContactLedgerView.tsx:2205:                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/contacts/ContactLedgerView.tsx:2336:                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/contacts/ContactLedgerView.tsx:2377:                    className="w-full bg-slate-950 text-white font-mono text-base pl-8 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/contacts/ContactLedgerView.tsx:2398:                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/contacts/ContactLedgerView.tsx:2415:                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/contacts/ContactLedgerView.tsx:2430:                  className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/contacts/ContactLedgerView.tsx:2444:                  className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/contacts/ContactLedgerView.tsx:2459:                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-2"
+src/components/contacts/ContactFormPage.tsx:427:            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+src/components/contacts/ContactFormPage.tsx:478:                <span className="text-[10px] text-emerald-400 font-bold">Prepaid</span>
+src/components/contacts/ContactFormPage.tsx:489:                <HelpCircle className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+src/components/contacts/ContactFormPage.tsx:542:                <span className="text-sm font-bold font-mono text-emerald-400">
+src/components/contacts/CustomerGroupsView.tsx:98:          <div className="text-emerald-400">Friend Group (-20%) = <span className="text-emerald-300 font-bold">$160.00</span></div>
+src/components/contacts/CustomerGroupsView.tsx:162:                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+src/components/dashboard/DashboardView.tsx:59:    emerald: '#10b981',
+src/components/dashboard/DashboardView.tsx:104:            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+src/components/dashboard/DashboardView.tsx:182:            <div className="flex items-center gap-1 text-[11px] text-emerald-400 mt-1 font-medium">
+src/components/dashboard/DashboardView.tsx:193:            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+src/components/dashboard/DashboardView.tsx:198:            <div className="text-2xl font-extrabold text-emerald-400 font-mono">
+src/components/dashboard/DashboardView.tsx:202:              Margin: <span className="text-emerald-300 font-bold">{financialSummary.grossProfitMargin.toFixed(1)}%</span> (COGS: {formatCurrency(financialSummary.cogs, settings)})
+src/components/dashboard/DashboardView.tsx:260:              <span className="flex items-center gap-1 text-emerald-400">
+src/components/dashboard/DashboardView.tsx:261:                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Profit
+src/components/dashboard/DashboardView.tsx:297:              <Layers className="w-4 h-4 text-emerald-400" />
+src/components/dashboard/DashboardView.tsx:381:                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+src/components/dashboard/DashboardView.tsx:403:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/layout/Sidebar.tsx:94:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:139:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:169:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:218:    badgeColor: 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30',
+src/components/layout/Sidebar.tsx:240:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:254:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:282:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:289:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:317:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:338:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:444:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+src/components/layout/Sidebar.tsx:1632:            <span className="text-emerald-400 font-mono font-medium capitalize">
+src/components/layout/Navbar.tsx:131:              <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+src/components/layout/Navbar.tsx:145:                  <ShoppingCart className="w-4 h-4 text-emerald-400" />
+src/components/layout/Navbar.tsx:215:                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
+src/components/layout/Navbar.tsx:221:                cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+src/components/layout/Navbar.tsx:320:                  <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
+src/components/users/UserMenuView.tsx:50:    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+src/components/users/SalesCommissionAgentsView.tsx:200:                      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-sm font-bold">
+src/components/users/SalesCommissionAgentsView.tsx:329:                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-10 py-2.5 text-sm font-mono text-emerald-400 focus:border-indigo-500 focus:outline-none transition-colors"
+src/components/sales/SaleReturnFormPage.tsx:203:            <span className="text-xl font-mono font-black text-emerald-400">{settings.currencySymbol}{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+src/components/sales/SaleReturnFormPage.tsx:252:                  <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+src/components/sales/SaleReturnFormPage.tsx:352:                          <div className="text-xs font-mono font-bold text-emerald-400/70">{settings.currencySymbol}{item.unitPrice.toFixed(2)}</div>
+src/components/sales/SaleFormPage.tsx:732:                <span className={currentCustomer.totalDue > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+src/components/sales/SaleFormPage.tsx:860:                    <div className="text-xs font-bold font-mono text-emerald-400">
+src/components/sales/SaleFormPage.tsx:889:                      <span className="text-emerald-400 font-mono font-bold">
+src/components/sales/SaleFormPage.tsx:919:                      <span className="text-emerald-400 font-mono font-bold">
+src/components/sales/SaleFormPage.tsx:939:              <Boxes className="w-4 h-4 text-emerald-400" />
+src/components/sales/SaleFormPage.tsx:1027:                          <div className="text-xs font-mono font-bold text-emerald-400">
+src/components/sales/SaleFormPage.tsx:1206:                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/sales/SaleFormPage.tsx:1371:            <CreditCard className="w-4 h-4 text-emerald-400" />
+src/components/sales/SaleFormPage.tsx:1376:            <span className="text-emerald-400 font-extrabold text-sm">
+src/components/sales/SaleFormPage.tsx:1392:              className="w-full bg-slate-950 font-mono font-bold text-emerald-400 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none"
+src/components/sales/SaleFormPage.tsx:1450:            <span className="font-bold text-emerald-400">
+src/components/sales/SaleFormPage.tsx:1500:            <span className="text-emerald-400 font-extrabold text-base">
+src/components/sales/SaleReturnsView.tsx:236:                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/sales/SaleReturnsView.tsx:247:                        {paymentMethodStr.toLowerCase().includes('cash') && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
+src/components/sales/SaleReturnsView.tsx:256:                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/sales/ViewSaleDetailsModal.tsx:93:                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-950 text-emerald-300 border border-emerald-800">
+src/components/sales/ViewSaleDetailsModal.tsx:100:                  sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/sales/ViewSaleDetailsModal.tsx:129:                  <tr className="bg-emerald-600 text-white font-bold uppercase text-[10px] tracking-wider">
+src/components/sales/ViewSaleDetailsModal.tsx:163:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/sales/ViewSaleDetailsModal.tsx:182:                    <tr className="bg-emerald-600 text-white font-bold uppercase text-[10px] tracking-wider">
+src/components/sales/ViewSaleDetailsModal.tsx:197:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/sales/ViewSaleDetailsModal.tsx:238:              <div className="flex justify-between text-emerald-400 font-bold">
+src/components/sales/ViewSaleDetailsModal.tsx:277:                    <td className="py-3 px-4 font-bold text-emerald-400 uppercase text-[10px]">Added</td>
+src/components/sales/ViewSaleDetailsModal.tsx:281:                        <span className="px-1.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded font-bold uppercase">Status: Final</span>
+src/components/sales/ViewSaleDetailsModal.tsx:284:                          sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/sales/ViewSaleDetailsModal.tsx:302:              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition"
+src/components/sales/ViewSaleReturnDetailsModal.tsx:90:                  sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/sales/ViewSaleReturnDetailsModal.tsx:219:              <div className="flex justify-between text-emerald-400 font-bold">
+src/components/sales/ViewPaymentsModal.tsx:177:            <div className="p-3 bg-emerald-950/60 border border-emerald-800 rounded-xl flex items-center gap-2 text-emerald-300 text-xs animate-in fade-in">
+src/components/sales/ViewPaymentsModal.tsx:178:              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/sales/ViewPaymentsModal.tsx:225:                  sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+src/components/sales/ViewPaymentsModal.tsx:247:              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
+src/components/sales/ViewPaymentsModal.tsx:279:                      <td className="py-3.5 px-4 font-mono font-bold text-emerald-400 text-sm">
+src/components/sales/ViewPaymentsModal.tsx:284:                          {entry.method === 'cash' && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
+src/components/sales/ViewPaymentsModal.tsx:379:                  <span className="font-mono text-emerald-400 font-bold">{formatCurrency(sale.totalAmount, settings)}</span>
+src/components/sales/SalesView.tsx:125:              <Receipt className={`w-5 h-5 ${isPosOnly ? 'text-emerald-400' : 'text-indigo-400'}`} />
+src/components/sales/SalesView.tsx:178:          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+src/components/sales/SalesView.tsx:321:                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/sales/SalesView.tsx:333:                            {paymentMethodStr.toLowerCase().includes('cash') && <Banknote className="w-3.5 h-3.5 text-emerald-400" />}
+src/components/sales/SalesView.tsx:344:                                <span className="text-[10px] text-emerald-400 font-mono">
+src/components/sales/SalesView.tsx:356:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/sales/SalesView.tsx:391:                            className="p-1.5 bg-slate-800 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-lg transition"
+src/components/inventory/WarrantiesView.tsx:56:  { label: 'Emerald', value: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-400' },
+src/components/inventory/WarrantiesView.tsx:468:              <ArrowLeft className="w-4 h-4 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:477:                <span className="text-emerald-400 font-semibold">{editingWarranty ? 'Edit Warranty Plan' : 'Add New Warranty Plan'}</span>
+src/components/inventory/WarrantiesView.tsx:480:                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:497:              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5 active:scale-95"
+src/components/inventory/WarrantiesView.tsx:511:                <FileText className="w-4 h-4 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:562:                  formErrors.name ? 'border-rose-500' : 'border-slate-700 focus:border-emerald-500'
+src/components/inventory/WarrantiesView.tsx:588:                    formErrors.duration ? 'border-rose-500' : 'border-slate-700 focus:border-emerald-500'
+src/components/inventory/WarrantiesView.tsx:609:                  className="w-full bg-slate-950 text-white text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/inventory/WarrantiesView.tsx:629:                className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/inventory/WarrantiesView.tsx:647:                className="w-full bg-slate-950 text-white text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 resize-none"
+src/components/inventory/WarrantiesView.tsx:667:                        ? 'bg-slate-800 text-white border-emerald-500 shadow-sm'
+src/components/inventory/WarrantiesView.tsx:689:                      ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500 shadow-sm'
+src/components/inventory/WarrantiesView.tsx:694:                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:721:                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:730:                <div className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+src/components/inventory/WarrantiesView.tsx:752:              ? 'bg-emerald-950/95 text-emerald-200 border-emerald-800'
+src/components/inventory/WarrantiesView.tsx:759:            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+src/components/inventory/WarrantiesView.tsx:781:            <span className="text-emerald-400 font-bold">Warranties</span>
+src/components/inventory/WarrantiesView.tsx:784:            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:786:            <span className="text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+src/components/inventory/WarrantiesView.tsx:822:            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 transition flex items-center gap-2"
+src/components/inventory/WarrantiesView.tsx:837:            <p className="text-[10px] text-emerald-400 font-medium mt-1 flex items-center gap-1">
+src/components/inventory/WarrantiesView.tsx:842:          <div className="p-3 bg-emerald-600/10 border border-emerald-500/20 rounded-xl text-emerald-400">
+src/components/inventory/WarrantiesView.tsx:883:                <span className="text-emerald-400 flex items-center gap-1">
+src/components/inventory/WarrantiesView.tsx:910:      <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/70 p-4 sm:p-5 rounded-2xl border border-emerald-800/40 shadow-sm relative overflow-hidden">
+src/components/inventory/WarrantiesView.tsx:913:            <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-400 shrink-0 mt-0.5">
+src/components/inventory/WarrantiesView.tsx:919:                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.2 rounded-full">
+src/components/inventory/WarrantiesView.tsx:924:                When a cashier adds any product with an assigned warranty to the POS cart and completes the checkout, the system automatically uses the <span className="font-semibold text-emerald-300">Transaction Date</span> as the warranty start date, calculates the exact expiry date, and preserves it permanently on the customer invoice.
+src/components/inventory/WarrantiesView.tsx:953:            className="w-full bg-slate-950 text-white text-xs pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 transition"
+src/components/inventory/WarrantiesView.tsx:985:                  ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 shadow-sm'
+src/components/inventory/WarrantiesView.tsx:1009:            className="bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 font-medium"
+src/components/inventory/WarrantiesView.tsx:1059:              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+src/components/inventory/WarrantiesView.tsx:1097:                            <p className="font-bold text-white text-sm group-hover:text-emerald-400 transition">
+src/components/inventory/WarrantiesView.tsx:1112:                          <Clock className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:1156:                              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
+src/components/inventory/WarrantiesView.tsx:1163:                              war.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+src/components/inventory/WarrantiesView.tsx:1177:                            className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center gap-1"
+src/components/inventory/WarrantiesView.tsx:1229:                      <h3 className="font-bold text-white text-base group-hover:text-emerald-400 transition">
+src/components/inventory/WarrantiesView.tsx:1236:                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+src/components/inventory/WarrantiesView.tsx:1252:                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:1269:                        <FileText className="w-3 h-3 text-emerald-400" />
+src/components/inventory/WarrantiesView.tsx:1282:                    className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-xl text-xs font-bold border border-emerald-500/30 transition flex items-center gap-1.5"
+src/components/inventory/WarrantiesView.tsx:1329:                    <span className="text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+src/components/inventory/WarrantiesView.tsx:1356:                  className="w-full bg-slate-900 text-white pl-9 pr-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/inventory/WarrantiesView.tsx:1364:                  className="bg-slate-900 text-white px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+src/components/inventory/WarrantiesView.tsx:1404:                          ? 'bg-emerald-950/30 border border-emerald-800/60'
+src/components/inventory/WarrantiesView.tsx:1413:                          className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700 focus:ring-emerald-500 focus:ring-offset-slate-900"
+src/components/inventory/WarrantiesView.tsx:1430:                          <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+src/components/inventory/WarrantiesView.tsx:1467:                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5"
+src/components/inventory/WarrantiesView.tsx:1561:                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+src/components/inventory/ProductModal.tsx:335:                    <Barcode className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/ProductModal.tsx:360:                  <div className="flex items-center rounded-lg border border-slate-700 bg-slate-900 overflow-hidden focus-within:border-emerald-500 transition">
+src/components/inventory/ProductModal.tsx:361:                    <div className="px-2.5 py-1.5 text-emerald-400 font-mono font-bold text-xs select-none border-r border-slate-800 bg-slate-950">
+src/components/inventory/ProductModal.tsx:369:                      className="w-full bg-transparent text-emerald-400 font-mono font-bold text-xs px-2.5 py-1.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+src/components/inventory/UnitsView.tsx:568:              ? 'bg-emerald-950/80 border border-emerald-800/80 text-emerald-200'
+src/components/inventory/UnitsView.tsx:574:              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/inventory/UnitsView.tsx:603:            <Layers className="w-4 h-4 text-emerald-400" />
+src/components/inventory/UnitsView.tsx:605:          <p className="text-2xl font-black text-emerald-400 mt-1">
+src/components/inventory/UnitsView.tsx:746:                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+src/components/inventory/BarcodeStudioView.tsx:297:          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-indigo-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-inner shrink-0">
+src/components/inventory/BarcodeStudioView.tsx:305:              <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm">
+src/components/inventory/BarcodeStudioView.tsx:331:            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
+src/components/inventory/BarcodeStudioView.tsx:400:                  <span className="font-mono text-emerald-400 font-bold">
+src/components/inventory/BarcodeStudioView.tsx:477:                    className="text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-2.5 py-1 rounded-lg border border-emerald-500/30 font-bold transition"
+src/components/inventory/BarcodeStudioView.tsx:711:                <span className="font-semibold text-emerald-400">Selling Price (MRP)</span>
+src/components/inventory/BarcodeStudioView.tsx:925:                  className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition"
+src/components/inventory/VariationsView.tsx:219:              <Tag className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/VariationsView.tsx:222:            <div className="text-xl font-black text-emerald-400 mt-0.5">{attributesList.length}</div>
+src/components/inventory/VariationsView.tsx:270:                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/inventory/VariationsView.tsx:356:                          <div className="text-sm font-extrabold text-emerald-400">
+src/components/inventory/VariationsView.tsx:447:                                  <td className="py-2.5 px-3 text-right font-mono text-emerald-400 font-bold">
+src/components/inventory/VariationsView.tsx:551:                            <div className="text-[10px] text-emerald-400 font-semibold">
+src/components/inventory/VariationsView.tsx:630:                                  <td className="py-2.5 px-3 text-right font-mono text-emerald-400 font-bold">
+src/components/inventory/VariationsView.tsx:660:              className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+src/components/inventory/VariationsView.tsx:673:              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+src/components/inventory/VariationsView.tsx:685:                    className="w-full bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 mt-1 focus:outline-none focus:border-emerald-500"
+src/components/inventory/VariationsView.tsx:698:                    className="w-full bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 mt-1 focus:outline-none focus:border-emerald-500"
+src/components/inventory/VariationsView.tsx:712:                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-xs font-bold"
+src/components/inventory/VariationsView.tsx:729:                    <Tag className="w-4 h-4 text-emerald-400" />
+src/components/inventory/BarcodePrintModal.tsx:276:              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+src/components/inventory/BarcodePrintModal.tsx:413:                    className="text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-2 py-1 rounded-lg border border-emerald-500/30 font-bold"
+src/components/inventory/BarcodePrintModal.tsx:620:                <span className="font-semibold text-emerald-400">Selling Price</span>
+src/components/inventory/BatchManagementGuide.tsx:44:              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/inventory/BatchManagementGuide.tsx:82:          <div className="absolute -left-[13px] top-0 w-6 h-6 rounded-full bg-emerald-500 border-4 border-slate-950 flex items-center justify-center">
+src/components/inventory/BatchManagementGuide.tsx:86:            <Clock className="w-5 h-5 text-emerald-400" />
+src/components/inventory/BatchManagementGuide.tsx:115:            <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white">ERP</div>
+src/components/inventory/InventoryView.tsx:588:                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+src/components/inventory/InventoryView.tsx:728:                            {i.productName}: <span className="text-emerald-400 font-bold">{i.quantity} pcs</span>
+src/components/inventory/InventoryView.tsx:736:                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+src/components/inventory/RacksView.tsx:65:  { label: 'Emerald', value: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-400' },
+src/components/inventory/RacksView.tsx:782:                      ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500 shadow-sm'
+src/components/inventory/RacksView.tsx:787:                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/inventory/RacksView.tsx:844:              ? 'bg-emerald-950/95 border-emerald-800 text-emerald-300'
+src/components/inventory/RacksView.tsx:849:            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+src/components/inventory/RacksView.tsx:898:            className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+src/components/inventory/RacksView.tsx:924:            <p className="text-[10px] text-emerald-400 font-semibold">{activeRacksCount} Active Bays</p>
+src/components/inventory/RacksView.tsx:940:          <div className="p-2.5 bg-emerald-600/20 border border-emerald-500/30 rounded-xl text-emerald-400">
+src/components/inventory/RacksView.tsx:948:            <p className="text-[10px] text-emerald-400 font-semibold">{locationCoveragePercent}% Assigned</p>
+src/components/inventory/RacksView.tsx:1084:                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+src/components/inventory/RacksView.tsx:1100:                        <Navigation className="w-3 h-3 text-emerald-400 shrink-0" />
+src/components/inventory/RacksView.tsx:1128:                      <span className="font-bold text-emerald-400">
+src/components/inventory/RacksView.tsx:1150:                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 transition"
+src/components/inventory/RacksView.tsx:1220:                  <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+src/components/inventory/RacksView.tsx:1244:                    className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1"
+src/components/inventory/RacksView.tsx:1332:                                          {p.sku} • Stock: <strong className="text-emerald-400">{p.currentStock ?? 0}</strong>
+src/components/inventory/RacksView.tsx:1348:                                <span className="text-emerald-400/80">
+src/components/inventory/RacksView.tsx:1484:                        <td className="py-3 px-3 text-center font-mono font-bold text-emerald-400">
+src/components/inventory/RacksView.tsx:1512:                <div className="p-2 bg-emerald-600/20 border border-emerald-500/30 rounded-xl text-emerald-400">
+src/components/inventory/RacksView.tsx:1688:                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/30"
+src/components/inventory/ImportProductsPage.tsx:347:              <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+src/components/inventory/ImportProductsPage.tsx:504:                <span className="flex items-center gap-1 text-emerald-400 font-bold">
+src/components/inventory/ImportProductsPage.tsx:577:                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/inventory/ImportProductsPage.tsx:600:                    <td className="p-3.5 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">
+src/components/inventory/BrandsView.tsx:54:  { label: 'Emerald', value: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-400' },
+src/components/inventory/BrandsView.tsx:588:                      ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500 shadow-sm'
+src/components/inventory/BrandsView.tsx:593:                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/inventory/BrandsView.tsx:709:              ? 'bg-emerald-950/70 border-emerald-800 text-emerald-300'
+src/components/inventory/BrandsView.tsx:715:              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/inventory/BrandsView.tsx:1011:                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+src/components/inventory/BrandsView.tsx:1017:                              brand.status === 'active' ? 'bg-emerald-400' : 'bg-rose-400'
+src/components/inventory/BrandsView.tsx:1117:                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/inventory/ProductFormPage.tsx:2031:                  <span className={`text-base font-black ${grossProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/inventory/CategoriesView.tsx:63:  { label: 'Emerald', value: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-400' },
+src/components/inventory/CategoriesView.tsx:607:                      ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500 shadow-sm'
+src/components/inventory/CategoriesView.tsx:612:                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+src/components/inventory/CategoriesView.tsx:687:              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
+src/components/inventory/CategoriesView.tsx:693:              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+src/components/inventory/CategoriesView.tsx:952:                              ? 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30'
+src/components/inventory/ProductImportModal.tsx:209:              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
+src/components/inventory/ProductImportModal.tsx:210:                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+src/components/laravel/LaravelArchView.tsx:415:            <Terminal className="w-4 h-4 text-emerald-400" />
+src/components/laravel/LaravelArchView.tsx:438:            {copiedKey === activeTab ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+src/components/reports/ProductSellReportView.tsx:718:            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+src/components/reports/ProductSellReportView.tsx:724:                <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+src/components/reports/ProductSellReportView.tsx:738:            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition active:scale-95"
+src/components/reports/ProductSellReportView.tsx:750:            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+src/components/reports/ProductSellReportView.tsx:778:            <Receipt className="w-3.5 h-3.5 text-emerald-400" />
+src/components/reports/ProductSellReportView.tsx:781:          <div className="absolute right-4 bottom-4 p-2.5 bg-slate-950 text-emerald-400 rounded-xl border border-slate-800/80">
+src/components/reports/ProductSellReportView.tsx:815:        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 relative overflow-hidden ring-1 ring-emerald-500/20 group hover:border-emerald-500/40 transition">
+src/components/reports/ProductSellReportView.tsx:816:          <div className="text-xs font-semibold text-emerald-300 flex items-center justify-between">
+src/components/reports/ProductSellReportView.tsx:818:            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded">
+src/components/reports/ProductSellReportView.tsx:822:          <div className="text-2xl font-extrabold text-emerald-400 font-mono mt-2">
+src/components/reports/ProductSellReportView.tsx:829:          <div className="absolute right-4 bottom-4 p-2.5 bg-emerald-950/30 text-emerald-400 rounded-xl border border-emerald-800/40">
+src/components/reports/ProductSellReportView.tsx:858:            <Filter className="w-4 h-4 text-emerald-400" />
+src/components/reports/ProductSellReportView.tsx:861:              <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+src/components/reports/ProductSellReportView.tsx:877:                        ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/50'
+src/components/reports/ProductSellReportView.tsx:920:                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:942:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:961:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:980:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:999:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:1018:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:1037:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:1053:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:1074:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition font-mono"
+src/components/reports/ProductSellReportView.tsx:1090:                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition font-mono"
+src/components/reports/ProductSellReportView.tsx:1109:                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/reports/ProductSellReportView.tsx:1140:                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/reports/ProductSellReportView.tsx:1156:                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/reports/ProductSellReportView.tsx:1171:                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/reports/ProductSellReportView.tsx:1186:                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+src/components/reports/ProductSellReportView.tsx:1205:                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition"
+src/components/reports/ProductSellReportView.tsx:1238:                          className="rounded border-slate-700 text-emerald-600 focus:ring-0"
+src/components/reports/ProductSellReportView.tsx:1379:                            className="p-1.5 bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white rounded-lg transition"
+src/components/reports/ProductSellReportView.tsx:1401:                              <div className="font-bold text-white group-hover:text-emerald-400 transition">
+src/components/reports/ProductSellReportView.tsx:1423:                                <Check className="w-3 h-3 text-emerald-400" />
+src/components/reports/ProductSellReportView.tsx:1442:                            <span className="font-semibold text-emerald-400">{item.invoiceNo}</span>
+src/components/reports/ProductSellReportView.tsx:1489:                        <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1498:                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+src/components/reports/ProductSellReportView.tsx:1530:                    {colVisibility.product && <td className="py-3 px-3 font-bold text-emerald-400">Filtered Total</td>}
+src/components/reports/ProductSellReportView.tsx:1550:                      <td className="py-3 px-3 text-right font-mono text-emerald-400 text-sm">
+src/components/reports/ProductSellReportView.tsx:1626:                      <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1633:                              ? 'text-emerald-400 bg-emerald-500/10'
+src/components/reports/ProductSellReportView.tsx:1664:                    <td className="py-3 px-3 text-right font-mono text-emerald-400 text-sm">
+src/components/reports/ProductSellReportView.tsx:1693:                  <th className="py-3 px-3 text-right text-emerald-400">Gross Profit</th>
+src/components/reports/ProductSellReportView.tsx:1723:                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1748:                  <th className="py-3 px-3 text-right text-emerald-400">Gross Profit</th>
+src/components/reports/ProductSellReportView.tsx:1762:                    <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1765:                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-300">
+src/components/reports/ProductSellReportView.tsx:1775:                            className="bg-emerald-500 h-full rounded-full"
+src/components/reports/ProductSellReportView.tsx:1802:                  <th className="py-3 px-3 text-right text-emerald-400">Gross Profit</th>
+src/components/reports/ProductSellReportView.tsx:1816:                    <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1819:                    <td className="py-3 px-3 text-right font-mono font-bold text-emerald-300">
+src/components/reports/ProductSellReportView.tsx:1857:                  <th className="py-3 px-3 text-right text-emerald-400">Gross Profit Generated</th>
+src/components/reports/ProductSellReportView.tsx:1871:                    <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:1898:                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-white font-mono focus:outline-none focus:border-emerald-500"
+src/components/reports/ProductSellReportView.tsx:1918:                <div className="px-3 py-1 font-mono font-bold text-white bg-emerald-600/20 border border-emerald-500/40 rounded-lg">
+src/components/reports/ProductSellReportView.tsx:1942:                  <span className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+src/components/reports/ProductSellReportView.tsx:1971:                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+src/components/reports/ProductSellReportView.tsx:1987:                <div className="font-bold text-emerald-400 font-mono mt-0.5">
+src/components/reports/ProductSellReportView.tsx:2023:                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:2065:                <span className="font-mono text-emerald-400">
+src/components/reports/ProductSellReportView.tsx:2071:                <span className="font-mono text-emerald-300 font-semibold">
+src/components/reports/ProductSellReportView.tsx:2095:                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/30"
+src/components/reports/ReportsView.tsx:858:            taxReportData.netTaxPayable >= 0 ? 'border-rose-900/40 ring-1 ring-rose-500/10' : 'border-emerald-900/40 ring-1 ring-emerald-500/10'
+src/components/reports/ReportsView.tsx:862:                taxReportData.netTaxPayable >= 0 ? 'text-rose-400' : 'text-emerald-400'
+src/components/reports/ReportsView.tsx:870:                taxReportData.netTaxPayable >= 0 ? 'text-rose-400' : 'text-emerald-400'
+src/components/reports/ReportsView.tsx:879:              taxReportData.netTaxPayable >= 0 ? 'bg-rose-950/40 text-rose-400' : 'bg-emerald-950/40 text-emerald-400'
+src/components/reports/ReportsView.tsx:1020:                            : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+src/components/reports/ReportsView.tsx:1287:                        <td className="py-3 px-3 text-right font-mono text-emerald-400 font-semibold">
+src/components/reports/ReportsView.tsx:1295:                            <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+src/components/reports/ReportsView.tsx:1540:                        <td className="py-3 px-3 text-right font-mono text-emerald-400 font-semibold">
+src/components/reports/ReportsView.tsx:1548:                            <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+src/components/reports/ReportsView.tsx:1725:            <div className="bg-emerald-500/10 px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+src/components/reports/ReportsView.tsx:1726:              <h3 className="font-extrabold text-emerald-400 text-sm tracking-wide uppercase flex items-center gap-2">
+src/components/reports/ReportsView.tsx:1727:                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+src/components/reports/ReportsView.tsx:1730:              <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
+src/components/reports/ReportsView.tsx:1746:                <span className="font-bold text-emerald-400">+{formatCurrency(dynamicFinancialSummary.totalSalesExcTax, settings)}</span>
+src/components/reports/ReportsView.tsx:1750:                <span className="font-bold text-emerald-400/90">+{formatCurrency(dynamicFinancialSummary.totalPurchaseReturnExcTax, settings)}</span>
+src/components/reports/ReportsView.tsx:1758:                <span className="font-bold text-emerald-400">+{formatCurrency(dynamicFinancialSummary.totalStockRecovery, settings)}</span>
+src/components/reports/ReportsView.tsx:1765:            <span className="text-sm font-extrabold text-emerald-400">
+src/components/reports/ReportsView.tsx:1785:            <span className="block text-2xl font-extrabold text-emerald-400 font-mono">
+src/components/reports/ReportsView.tsx:1788:            <span className="block text-[11px] text-emerald-300">
+src/components/reports/ReportsView.tsx:1792:          <div className="p-3.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
+src/components/reports/ReportsView.tsx:1878:                        <td className={`py-3 px-4 text-right font-mono font-bold ${c.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:1883:                            c.profit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:1926:                        <td className={`py-3 px-4 text-right font-mono font-bold ${b.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:1931:                            b.profit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:1974:                        <td className={`py-3 px-4 text-right font-mono font-bold ${d.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:1979:                            d.profit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:2034:                        <td className={`py-3 px-4 text-right font-mono font-bold ${inv.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:2039:                            inv.profit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:2075:                      <td className={`py-3 px-4 text-right font-mono font-bold ${d.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:2080:                          d.profit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:2139:                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/ReportsView.tsx:2178:                        <th className="py-2.5 px-3 text-right text-emerald-400">Profit</th>
+src/components/reports/ReportsView.tsx:2207:                            <td className={`py-2.5 px-3 text-right font-bold ${itemProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/ReportsView.tsx:2212:                                itemProfit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+src/components/reports/ReportsView.tsx:2244:                    <span className="font-mono text-emerald-400/80">
+src/components/reports/ReportsView.tsx:2279:                        <span className="block text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Estimated Invoice Profit ({invoiceMargin}%)</span>
+src/components/reports/ReportsView.tsx:2280:                        <span className={`text-sm font-black font-mono ${invoiceProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/SellPaymentReportView.tsx:157:      case 'cash': return <Banknote className="w-4 h-4 text-emerald-400" />;
+src/components/reports/SellPaymentReportView.tsx:244:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/SellPaymentReportView.tsx:254:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/SellPaymentReportView.tsx:268:                className="w-full bg-slate-950 text-white text-sm pl-10 pr-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/SellPaymentReportView.tsx:284:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/SellPaymentReportView.tsx:299:              className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/SellPaymentReportView.tsx:321:                className="w-full bg-slate-950 text-white text-sm pl-10 pr-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/SellPaymentReportView.tsx:364:                        <span className="text-sm font-medium text-emerald-400">
+src/components/reports/SellPaymentReportView.tsx:423:                <td className="py-4 px-6 text-right text-lg font-bold text-emerald-400">
+src/components/reports/PurchasePaymentReportView.tsx:157:      case 'cash': return <Banknote className="w-4 h-4 text-emerald-400" />;
+src/components/reports/PurchasePaymentReportView.tsx:197:            <DollarSign className="w-7 h-7 text-emerald-400" />
+src/components/reports/PurchasePaymentReportView.tsx:223:                    ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/50'
+src/components/reports/PurchasePaymentReportView.tsx:244:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/PurchasePaymentReportView.tsx:254:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/PurchasePaymentReportView.tsx:268:                className="w-full bg-slate-950 text-white text-sm pl-10 pr-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/PurchasePaymentReportView.tsx:284:                className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/PurchasePaymentReportView.tsx:299:              className="w-full bg-slate-950 text-white text-sm px-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none appearance-none"
+src/components/reports/PurchasePaymentReportView.tsx:321:                className="w-full bg-slate-950 text-white text-sm pl-10 pr-3 py-2.5 rounded-xl border border-slate-800 focus:border-emerald-500 focus:outline-none"
+src/components/reports/PurchasePaymentReportView.tsx:364:                        <span className="text-sm font-medium text-emerald-400">
+src/components/reports/PurchasePaymentReportView.tsx:423:                <td className="py-4 px-6 text-right text-lg font-bold text-emerald-400">
+src/components/reports/StockReportView.tsx:669:            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30 transition-all shadow-sm"
+src/components/reports/StockReportView.tsx:671:            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+src/components/reports/StockReportView.tsx:726:          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
+src/components/reports/StockReportView.tsx:729:              <Store className="w-4 h-4 text-emerald-400" />
+src/components/reports/StockReportView.tsx:732:            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+src/components/reports/StockReportView.tsx:736:          <div className="text-2xl lg:text-3xl font-extrabold text-emerald-400 font-mono">
+src/components/reports/StockReportView.tsx:762:            <span className="font-semibold text-emerald-400 font-mono">
+src/components/reports/StockReportView.tsx:787:              <span className="w-2 h-2 rounded-full bg-emerald-400" /> {summaryMetrics.inStockCount} Ok
+src/components/reports/StockReportView.tsx:865:                <Tag className="w-3.5 h-3.5 text-emerald-400" />
+src/components/reports/StockReportView.tsx:1413:                                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+src/components/reports/StockReportView.tsx:1431:                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-400 whitespace-nowrap">
+src/components/reports/StockReportView.tsx:1497:                    <td className="py-3 px-3 text-right text-emerald-400 font-extrabold whitespace-nowrap">
+src/components/reports/StockReportView.tsx:1507:                    <td className="py-3 px-3 text-right text-emerald-400 font-extrabold whitespace-nowrap">
+src/components/reports/StockReportView.tsx:1624:                <span className="text-sm font-bold text-emerald-400 font-mono">
+src/components/reports/StockReportView.tsx:1689:                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+src/components/reports/StockReportView.tsx:1706:                              isPositive ? 'text-emerald-400' : 'text-rose-400'
+src/components/reports/CustomerSupplierReportView.tsx:444:            <Download className="w-4 h-4 text-emerald-400" />
+src/components/reports/CustomerSupplierReportView.tsx:640:            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+src/components/reports/CustomerSupplierReportView.tsx:645:            <span className="text-2xl font-black font-mono text-emerald-400 block tracking-tight">
+src/components/reports/CustomerSupplierReportView.tsx:706:            <div className={`p-2 rounded-xl ${summaryMetrics.netDuePosition >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+src/components/reports/CustomerSupplierReportView.tsx:711:            <span className={`text-2xl font-black font-mono block tracking-tight ${summaryMetrics.netDuePosition >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+src/components/reports/CustomerSupplierReportView.tsx:715:              <span className={`inline-block w-2 h-2 rounded-full ${summaryMetrics.netDuePosition >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+src/components/reports/CustomerSupplierReportView.tsx:826:                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/CustomerSupplierReportView.tsx:870:                          <span className="font-semibold text-emerald-300">
+src/components/reports/CustomerSupplierReportView.tsx:921:                          <span className="text-emerald-400/80 font-normal">
+src/components/reports/CustomerSupplierReportView.tsx:945:                            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-emerald-600 rounded-lg transition"
+src/components/reports/CustomerSupplierReportView.tsx:969:                  <td className="py-3.5 px-3 text-right text-emerald-400">
+src/components/reports/CustomerSupplierReportView.tsx:1001:                <div className={`p-2.5 rounded-xl ${selectedContact.type === 'customer' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-purple-500/10 text-purple-400'}`}>
+src/components/reports/CustomerSupplierReportView.tsx:1011:                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/CustomerSupplierReportView.tsx:1067:                  <span className="text-sm font-mono font-bold text-emerald-400 block">
+src/components/reports/CustomerSupplierReportView.tsx:1079:                  <span className={`text-sm font-mono font-black block ${selectedContact.dueAmount > 0.01 ? 'text-amber-400' : 'text-emerald-400'}`}>
+src/components/reports/CustomerSupplierReportView.tsx:1187:                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/CustomerSupplierReportView.tsx:1198:                              <td className="py-2.5 px-3 text-right text-emerald-400">
+src/components/reports/CustomerSupplierReportView.tsx:1247:                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/CustomerSupplierReportView.tsx:1258:                              <td className="py-2.5 px-3 text-right text-emerald-400">
+src/components/reports/CustomerSupplierReportView.tsx:1339:                              <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
+src/components/reports/StockAdjustmentReportView.tsx:430:            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+src/components/reports/StockAdjustmentReportView.tsx:528:            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+src/components/reports/StockAdjustmentReportView.tsx:533:            <div className="text-2xl font-bold text-emerald-400">
+src/components/reports/StockAdjustmentReportView.tsx:883:                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+src/components/reports/StockAdjustmentReportView.tsx:931:                            <span className="font-semibold text-emerald-400">
+src/components/reports/StockAdjustmentReportView.tsx:994:                      <td className="py-3.5 px-4 text-right text-emerald-400">
+src/components/reports/StockAdjustmentReportView.tsx:1197:                <span className="font-bold text-emerald-400">
+src/components/reports/StockAdjustmentReportView.tsx:1281:                  <span className="font-bold text-emerald-400">
+src/components/reports/PurchaseSaleProductReportView.tsx:833:            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors"
+src/components/reports/PurchaseSaleProductReportView.tsx:843:            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+src/components/reports/PurchaseSaleProductReportView.tsx:889:            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+src/components/reports/PurchaseSaleProductReportView.tsx:919:            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+src/components/reports/PurchaseSaleProductReportView.tsx:924:            <div className="text-xl font-bold text-emerald-600">{formatMoney(overallMetrics.totalGrossProfit)}</div>
+src/components/reports/PurchaseSaleProductReportView.tsx:925:            <div className="text-xs text-emerald-700 font-medium mt-0.5">{overallMetrics.overallMarginPercent.toFixed(1)}% Margin</div>
+src/components/reports/PurchaseSaleProductReportView.tsx:1218:            <TrendingUp className="w-4 h-4 text-emerald-600" />
+src/components/reports/PurchaseSaleProductReportView.tsx:1411:                    <th onClick={() => handleSort('totalSoldQty')} className="py-3 px-4 text-right cursor-pointer hover:bg-slate-100 bg-emerald-50/50">
+src/components/reports/PurchaseSaleProductReportView.tsx:1412:                      <div className="flex items-center justify-end gap-1 text-emerald-800">
+src/components/reports/PurchaseSaleProductReportView.tsx:1420:                    <th onClick={() => handleSort('totalSaleAmount')} className="py-3 px-4 text-right cursor-pointer hover:bg-slate-100 bg-emerald-50/50">
+src/components/reports/PurchaseSaleProductReportView.tsx:1421:                      <div className="flex items-center justify-end gap-1 text-emerald-800">
+src/components/reports/PurchaseSaleProductReportView.tsx:1438:                    <th onClick={() => handleSort('grossProfit')} className="py-3 px-4 text-right cursor-pointer hover:bg-slate-100 bg-emerald-50/40">
+src/components/reports/PurchaseSaleProductReportView.tsx:1439:                      <div className="flex items-center justify-end gap-1 text-emerald-800">
+src/components/reports/PurchaseSaleProductReportView.tsx:1522:                                {copiedSku === row.sku ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+src/components/reports/PurchaseSaleProductReportView.tsx:1552:                                <span className="text-[10px] text-emerald-600">Available</span>
+src/components/reports/PurchaseSaleProductReportView.tsx:1575:                          <td className="py-3.5 px-4 text-right font-bold text-emerald-900 bg-emerald-50/20">
+src/components/reports/PurchaseSaleProductReportView.tsx:1582:                          <td className="py-3.5 px-4 text-right bg-emerald-50/20">
+src/components/reports/PurchaseSaleProductReportView.tsx:1583:                            <div className="font-bold text-emerald-700">{formatMoney(row.totalSaleAmount)}</div>
+src/components/reports/PurchaseSaleProductReportView.tsx:1603:                          <td className="py-3.5 px-4 text-right font-bold text-emerald-600 bg-emerald-50/10">
+src/components/reports/PurchaseSaleProductReportView.tsx:1613:                                ? 'bg-emerald-100 text-emerald-800'
+src/components/reports/PurchaseSaleProductReportView.tsx:1674:                      <td className="py-3.5 px-4 text-right text-emerald-900 bg-emerald-100/50">
+src/components/reports/PurchaseSaleProductReportView.tsx:1680:                      <td className="py-3.5 px-4 text-right text-emerald-900 bg-emerald-100/50">
+src/components/reports/PurchaseSaleProductReportView.tsx:1692:                      <td className="py-3.5 px-4 text-right text-emerald-700 bg-emerald-100/50">
+src/components/reports/PurchaseSaleProductReportView.tsx:1760:                            ? 'bg-emerald-100 text-emerald-800'
+src/components/reports/PurchaseSaleProductReportView.tsx:1807:                      <td className="py-3 px-4 font-mono font-bold text-emerald-600">{item.referenceNo}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1812:                      <td className="py-3 px-4 text-right font-bold text-emerald-700">{item.quantity}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1815:                      <td className="py-3 px-4 text-right font-bold text-emerald-600">{formatMoney(item.profitOrCost || 0)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1819:                            ? 'bg-emerald-100 text-emerald-800'
+src/components/reports/PurchaseSaleProductReportView.tsx:1867:                    <td className="py-3 px-4 text-right font-bold text-emerald-600">{formatMoney(row.potentialProfit)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1901:                    <td className="py-3.5 px-4 text-right text-emerald-700 font-bold">{cat.soldQty}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1902:                    <td className="py-3.5 px-4 text-right font-bold text-emerald-800">{formatMoney(cat.saleAmount)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1903:                    <td className="py-3.5 px-4 text-right font-bold text-emerald-600">{formatMoney(cat.grossProfit)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1938:                    <td className="py-3.5 px-4 text-right text-emerald-700 font-bold">{b.soldQty}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1939:                    <td className="py-3.5 px-4 text-right font-bold text-emerald-800">{formatMoney(b.saleAmount)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:1940:                    <td className="py-3.5 px-4 text-right font-bold text-emerald-600">{formatMoney(b.grossProfit)}</td>
+src/components/reports/PurchaseSaleProductReportView.tsx:2023:                <div className="text-base font-bold text-emerald-700 mt-1">{inspectingProduct.totalSoldQty} {inspectingProduct.unit}</div>
+src/components/reports/PurchaseSaleProductReportView.tsx:2029:                <div className="text-base font-bold text-emerald-600 mt-1">{formatMoney(inspectingProduct.grossProfit)}</div>
+src/components/reports/PurchaseSaleProductReportView.tsx:2030:                <div className="text-[11px] text-emerald-700 font-medium">{inspectingProduct.profitMarginPercent.toFixed(1)}% Margin</div>
+src/components/reports/SalesRepresentativeReportView.tsx:314:              <h3 className="text-2xl font-black text-emerald-400 font-mono mt-1">{formatCurrency(totalCommissionAmount, settings)}</h3>
+src/components/reports/SalesRepresentativeReportView.tsx:316:            <div className="w-12 h-12 rounded-xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+src/components/reports/SalesRepresentativeReportView.tsx:446:                            tx.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+src/components/reports/SalesRepresentativeReportView.tsx:454:                        <td className="py-3.5 px-4 text-right font-mono text-emerald-400">{formatCurrency(tx.paidAmount, settings)}</td>
+src/components/reports/SalesRepresentativeReportView.tsx:497:                        <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
+src/components/reports/SalesRepresentativeReportView.tsx:577:                      <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">{formatCurrency(entry.amount, settings)}</td>
+src/components/reports/ProductPurchaseReportView.tsx:630:            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition active:scale-95"
+src/components/reports/ProductPurchaseReportView.tsx:642:            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+src/components/reports/ProductPurchaseReportView.tsx:707:        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 relative overflow-hidden ring-1 ring-emerald-500/20 group hover:border-emerald-500/40 transition">
+src/components/reports/ProductPurchaseReportView.tsx:708:          <div className="text-xs font-semibold text-emerald-300 flex items-center justify-between">
+src/components/reports/ProductPurchaseReportView.tsx:710:            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded">
+src/components/reports/ProductPurchaseReportView.tsx:714:          <div className="text-2xl font-extrabold text-emerald-400 font-mono mt-2">
+src/components/reports/ProductPurchaseReportView.tsx:721:          <div className="absolute right-4 bottom-4 p-2.5 bg-emerald-950/30 text-emerald-400 rounded-xl border border-emerald-800/40">
+src/components/reports/ProductPurchaseReportView.tsx:1223:                              <Check className="w-3 h-3 text-emerald-400" />
+src/components/reports/ProductPurchaseReportView.tsx:1276:                            <span className="text-emerald-400">
+src/components/reports/ProductPurchaseReportView.tsx:1299:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/reports/ProductPurchaseReportView.tsx:1308:                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/ProductPurchaseReportView.tsx:1323:                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/ProductPurchaseReportView.tsx:1365:                      <td className="py-3.5 px-3 text-right font-mono text-emerald-400 text-sm">
+src/components/reports/ProductPurchaseReportView.tsx:1437:                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400 text-sm">
+src/components/reports/ProductPurchaseReportView.tsx:1444:                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/ProductPurchaseReportView.tsx:1518:                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400 text-sm">
+src/components/reports/ProductPurchaseReportView.tsx:1606:                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+src/components/reports/ProductPurchaseReportView.tsx:1652:                  <div className="font-bold text-emerald-400 text-sm mt-0.5 uppercase">
+src/components/reports/ProductPurchaseReportView.tsx:1692:                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+src/components/reports/ProductPurchaseReportView.tsx:1718:                    <span className="text-emerald-400">
+src/components/reports/ProductPurchaseReportView.tsx:1736:                    <span className="text-emerald-400">
+src/components/common/NetworkSyncStatusBadge.tsx:82:      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition cursor-pointer group ${className}`}
+src/components/common/NetworkSyncStatusBadge.tsx:86:        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+src/components/common/NetworkSyncStatusBadge.tsx:88:      <Wifi className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+src/components/common/FlashNotification.tsx:24:              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+src/components/expenses/ExpensesView.tsx:504:                          <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
+src/components/expenses/ExpensesView.tsx:512:                            <label className="text-emerald-400 font-bold block mb-1">Refund Amount ({settings.currencySymbol || '$'}) *</label>
+src/components/expenses/ExpensesView.tsx:520:                              className="w-full bg-slate-950 text-emerald-400 font-bold px-3 py-2 rounded-lg border border-emerald-950 focus:border-emerald-500 focus:outline-none transition text-xs"
+src/components/expenses/ExpensesView.tsx:531:                              className="w-full bg-slate-950 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 focus:border-emerald-500 focus:outline-none transition text-xs"
+src/components/expenses/ExpensesView.tsx:784:                                  <Repeat className="w-3.5 h-3.5 text-emerald-400" title="Recurring Expense" />
+src/components/expenses/ExpensesView.tsx:788:                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded text-[9px] font-bold border border-emerald-500/20 w-fit leading-none mt-0.5">
+src/components/expenses/ExpensesView.tsx:832:                                  <div className="flex items-center gap-1 text-[11px] text-emerald-300">
+src/components/expenses/ExpensesView.tsx:833:                                    <Users className="w-3 h-3 text-emerald-400" />
+src/components/expenses/ExpensesView.tsx:848:                                <div className="text-[10px] text-emerald-400 font-bold font-mono">
+src/components/expenses/ExpensesView.tsx:867:                              <div className="text-[10px] text-emerald-300 font-medium mt-1 bg-emerald-950/20 border border-emerald-900/30 px-2 py-0.5 rounded-md w-fit">
+src/components/expenses/ExpensesView.tsx:868:                                <span className="font-bold text-emerald-400">Refund:</span> {exp.refundPaymentDetails}
+src/components/auth/AuthPage.tsx:83:      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+src/components/auth/AuthPage.tsx:234:                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 mt-0.5">
+src/components/auth/AuthPage.tsx:262:                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+src/components/auth/AuthPage.tsx:310:                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+src/components/auth/AuthPage.tsx:324:                <div className="mt-4 p-3.5 bg-emerald-950/50 border border-emerald-800/80 rounded-xl text-emerald-300 text-xs flex items-center gap-2.5 animate-fadeIn">
+src/components/auth/AuthPage.tsx:325:                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+src/components/auth/AuthPage.tsx:749:                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+src/components/auth/AuthPage.tsx:757:                  <span className="text-emerald-400 font-bold">Demo Quick Pass: </span>
+src/components/invoice/InvoiceRenderer.tsx:316:                  <span className="text-emerald-700 uppercase font-mono">{transaction.paymentStatus}</span>
+src/components/invoice/InvoiceRenderer.tsx:384:                          <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">
+src/components/invoice/InvoiceRenderer.tsx:385:                            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+src/components/invoice/InvoiceRenderer.tsx:498:                  <div className="flex justify-between text-xs text-emerald-800 font-bold pt-1">
+src/components/invoice/InvoiceRenderer.tsx:679:                    <span className="font-mono text-lg text-emerald-400">{formatCur(transaction.totalAmount)}</span>
+src/components/invoice/InvoiceRenderer.tsx:775:                            <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-50/80 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">
+src/components/invoice/InvoiceRenderer.tsx:776:                              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+src/components/invoice/InvoiceRenderer.tsx:864:                  <div className="flex justify-between font-bold text-emerald-800 pt-1">
+src/components/invoice/InvoiceRenderer.tsx:960:                            <div className="mt-0.5 flex items-center gap-1 text-[9px] text-emerald-700 font-semibold">
+src/components/invoice/InvoiceRenderer.tsx:961:                              <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+src/components/invoice/InvoiceRenderer.tsx:1085:                    <div className="text-[9px] text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
+src/components/invoice/InvoiceRenderer.tsx:1086:                      <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+src/components/invoice/InvoiceRenderer.tsx:1185:                      <div className="text-[9px] text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
+src/components/invoice/InvoiceRenderer.tsx:1186:                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+src/components/ai/AiIntelligenceView.tsx:246:                        <span className="text-xs font-bold text-emerald-400">
+src/components/ai/AiIntelligenceView.tsx:309:                <FileCheck className="w-4 h-4 text-emerald-400" />
+src/components/ai/AiIntelligenceView.tsx:334:                  <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-1">
+src/components/ai/AiIntelligenceView.tsx:349:                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+src/components/ai/AiIntelligenceView.tsx:356:                        <span className="text-emerald-400">•</span> {s}
+src/components/ai/AiIntelligenceView.tsx:395:              <FileCheck className="w-10 h-10 text-emerald-400 mx-auto" />
+src/components/ai/AiIntelligenceView.tsx:414:                <div className="text-[10px] text-emerald-400">Live Context Connected</div>
