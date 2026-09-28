@@ -4,6 +4,7 @@ export interface SystemStatusResponse {
   installedAt?: string | null;
   businessName?: string | null;
   adminEmail?: string | null;
+  adminUsername?: string | null;
   settings?: any;
   adminUser?: any;
   logoUrl?: string | null;
@@ -40,6 +41,7 @@ export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> =
               installedAt: data.installedAt || null,
               businessName: data.businessName || null,
               adminEmail: data.adminEmail || null,
+              adminUsername: data.adminUsername || null,
               settings: data.settings || null,
               adminUser: data.adminUser || null,
               logoUrl: logo,

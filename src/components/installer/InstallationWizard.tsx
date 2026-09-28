@@ -915,6 +915,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 
     // Ensure supreme admin account is stored and active
     upsertSuperAdminUser(supremeAdminData);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ultimate_erp_pos_database_v1_admin_user', JSON.stringify(supremeAdminData));
+      localStorage.setItem('ultimate_erp_pos_database_v1_users', JSON.stringify([supremeAdminData]));
+    }
 
     // Report installation completion to server storage to lock the installer permanently
     await completeServerInstallation({
@@ -927,7 +931,7 @@ SET FOREIGN_KEY_CHECKS = 1;
       isDemoInstallation,
     });
 
-    // If MySQL was selected, save DB configuration to enable live universal syncing
+    // If MySQL was selected, save DB configuration and push initial seed state for live universal syncing
     if (dbEngine === 'mysql' || dbEngine === 'mariadb') {
       try {
         await fetch('/api/sync.php?action=save_config', {
@@ -943,6 +947,18 @@ SET FOREIGN_KEY_CHECKS = 1;
             dbCharset,
           }),
         });
+
+        // Push initial admin user and settings to MySQL sync store
+        await fetch('/api/sync.php?action=push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            updates: {
+              settings: finalSettings,
+              users: [supremeAdminData],
+            },
+          }),
+        }).catch(() => {});
       } catch {}
     }
 

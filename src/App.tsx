@@ -243,6 +243,14 @@ const MainAppContent: React.FC = () => {
               localStorage.setItem('ultimate_erp_pos_database_v1_settings', JSON.stringify(res.settings));
             }
           }
+
+          if (res.adminUser && typeof res.adminUser === 'object') {
+            localStorage.setItem('ultimate_erp_pos_database_v1_admin_user', JSON.stringify(res.adminUser));
+            const existingUsers = localStorage.getItem('ultimate_erp_pos_database_v1_users');
+            if (!existingUsers || existingUsers === '[]' || existingUsers === '{}' || existingUsers === 'null') {
+              localStorage.setItem('ultimate_erp_pos_database_v1_users', JSON.stringify([res.adminUser]));
+            }
+          }
         }
       }
       setIsVerifyingSystem(false);

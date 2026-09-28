@@ -1164,8 +1164,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (rawList.length === 0) {
         const authUser = safeJsonParse(`${STORAGE_KEY}_auth_user`, null);
-        if (authUser && authUser.email) {
+        const adminUser = safeJsonParse(`${STORAGE_KEY}_admin_user`, null);
+        if (authUser && (authUser.email || authUser.username)) {
           rawList = [authUser];
+        } else if (adminUser && (adminUser.email || adminUser.username)) {
+          rawList = [adminUser];
         }
       }
       loadedUsers = rawList;
@@ -1733,6 +1736,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     let active = true;
     const syncFromRemote = async () => {
+      // 1. Pull from sync.php (MySQL sync store)
       try {
         const res = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
           headers: { Accept: 'application/json' },
@@ -1750,8 +1754,42 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
               if (Array.isArray(d.brands) && d.brands.length > 0) setBrands(d.brands);
               if (Array.isArray(d.expenses) && d.expenses.length > 0) setExpenses(d.expenses);
-              if (Array.isArray(d.users) && d.users.length > 0) setUsers(d.users);
+              if (Array.isArray(d.users) && d.users.length > 0) {
+                setUsers(d.users);
+                try {
+                  localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(d.users));
+                } catch {}
+              }
             }
+          }
+        }
+      } catch {}
+
+      // 2. Also ensure server adminUser from system.php is present if users list is empty
+      try {
+        const sysRes = await fetch('/api/system.php?action=status&t=' + Date.now(), {
+          headers: { Accept: 'application/json' },
+        });
+        if (sysRes.ok) {
+          const sysData = await sysRes.json();
+          if (sysData.success && sysData.adminUser && active) {
+            setUsers((prev) => {
+              const hasAdmin = prev.some(
+                (u) =>
+                  u.id === sysData.adminUser.id ||
+                  (u.email && u.email.toLowerCase() === sysData.adminUser.email?.toLowerCase()) ||
+                  (u.username && u.username.toLowerCase() === sysData.adminUser.username?.toLowerCase())
+              );
+              if (!hasAdmin) {
+                const updated = [sysData.adminUser, ...prev];
+                try {
+                  localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(updated));
+                  localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(sysData.adminUser));
+                } catch {}
+                return updated;
+              }
+              return prev;
+            });
           }
         }
       } catch {}
@@ -6388,9 +6426,86 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (u) =>
         (u.email && u.email.toLowerCase() === cleanQuery) ||
         (u.username && u.username.toLowerCase() === cleanQuery) ||
-        (u.phone && u.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
-        (u.name && u.name.toLowerCase().includes(cleanQuery))
+        (u.phone && cleanQuery.length >= 4 && u.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
+        (u.name && u.name.toLowerCase().trim() === cleanQuery)
     );
+
+    // If not found in local state, fetch in real-time from server database and system status
+    if (!matchedUser) {
+      // 1. Query sync.php (Live MySQL sync store across devices)
+      try {
+        const syncRes = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
+          headers: { Accept: 'application/json' },
+        });
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          if (syncData.success && syncData.data && Array.isArray(syncData.data.users) && syncData.data.users.length > 0) {
+            setUsers(syncData.data.users);
+            try {
+              localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(syncData.data.users));
+            } catch {}
+            matchedUser = syncData.data.users.find(
+              (u: any) =>
+                (u.email && u.email.toLowerCase() === cleanQuery) ||
+                (u.username && u.username.toLowerCase() === cleanQuery) ||
+                (u.phone && cleanQuery.length >= 4 && u.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
+                (u.name && u.name.toLowerCase().trim() === cleanQuery)
+            );
+          }
+        }
+      } catch {}
+
+      // 2. Query system status endpoint for admin user account
+      if (!matchedUser) {
+        try {
+          const statusRes = await fetch('/api/system.php?action=status&t=' + Date.now(), {
+            headers: { Accept: 'application/json' },
+          });
+          if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            if (statusData.adminUser) {
+              const au = statusData.adminUser;
+              if (
+                (au.email && au.email.toLowerCase() === cleanQuery) ||
+                (au.username && au.username.toLowerCase() === cleanQuery) ||
+                (au.phone && cleanQuery.length >= 4 && au.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
+                (au.name && au.name.toLowerCase().trim() === cleanQuery) ||
+                cleanQuery === 'admin' ||
+                cleanQuery === 'supreme_admin'
+              ) {
+                matchedUser = au;
+                setUsers((prev) => {
+                  const filtered = prev.filter((u) => u.id !== au.id && u.email !== au.email);
+                  const next = [au, ...filtered];
+                  try {
+                    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(next));
+                    localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(au));
+                  } catch {}
+                  return next;
+                });
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // 3. Check localStorage stored admin user
+      if (!matchedUser) {
+        const localAdmin = safeJsonParse(`${STORAGE_KEY}_admin_user`, null);
+        if (
+          localAdmin &&
+          ((localAdmin.email && localAdmin.email.toLowerCase() === cleanQuery) ||
+            (localAdmin.username && localAdmin.username.toLowerCase() === cleanQuery) ||
+            (localAdmin.phone && cleanQuery.length >= 4 && localAdmin.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
+            (localAdmin.name && localAdmin.name.toLowerCase().trim() === cleanQuery) ||
+            cleanQuery === 'admin' ||
+            cleanQuery === 'supreme_admin')
+        ) {
+          matchedUser = localAdmin;
+          setUsers((prev) => [localAdmin, ...prev]);
+        }
+      }
+    }
 
     // If not found in current users, check against initial users ONLY when NOT fresh installed or real store
     const isInstalledOrFresh = typeof window !== 'undefined' && (
@@ -6514,11 +6629,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Verify password
+    // Verify password and PIN
     const expectedPassword = matchedUser.password || 'password123';
-    const providedPassword = password || '';
+    const expectedPin = matchedUser.pin || '';
+    const providedPassword = (password || '').trim();
 
-    if (providedPassword !== expectedPassword) {
+    const isPasswordValid =
+      providedPassword === expectedPassword ||
+      (Boolean(expectedPin) && providedPassword === expectedPin) ||
+      (Boolean(expectedPassword) && providedPassword.toLowerCase() === expectedPassword.toLowerCase());
+
+    if (!isPasswordValid) {
       // Do not increment failed login lockout on admin to prevent administrative lockouts
       const currentFailed = isAdmin ? 0 : (matchedUser.failedLogins || 0) + 1;
       const isLocked = !isAdmin && currentFailed >= maxFailed;

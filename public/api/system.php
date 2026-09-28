@@ -115,6 +115,7 @@ if ($foundLock) {
         'installedAt' => $foundLock['installedAt'] ?? null,
         'businessName' => $foundLock['businessName'] ?? null,
         'adminEmail' => $foundLock['adminEmail'] ?? null,
+        'adminUsername' => $foundLock['adminUsername'] ?? ($foundLock['adminUser']['username'] ?? null),
         'settings' => $foundLock['settings'] ?? null,
         'adminUser' => $foundLock['adminUser'] ?? null,
         'logoUrl' => $logo
@@ -129,6 +130,7 @@ echo json_encode([
     'installedAt' => null,
     'businessName' => null,
     'adminEmail' => null,
+    'adminUsername' => null,
     'settings' => null,
     'adminUser' => null
 ]);
