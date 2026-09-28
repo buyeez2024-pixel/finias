@@ -46,6 +46,8 @@ export const DatabaseSetupTab: React.FC = () => {
       suppliers: number;
       transactions: number;
       users: number;
+      salesAgents: number;
+      units: number;
     };
   }>({
     tested: false,
@@ -74,6 +76,8 @@ export const DatabaseSetupTab: React.FC = () => {
               suppliers: Array.isArray(d.suppliers) ? d.suppliers.length : 0,
               transactions: Array.isArray(d.transactions) ? d.transactions.length : 0,
               users: Array.isArray(d.users) ? d.users.length : 0,
+              salesAgents: Array.isArray(d.sales_commission_agents) ? d.sales_commission_agents.length : 0,
+              units: Array.isArray(d.units) ? d.units.length : 0,
             },
           });
         } else {
@@ -253,6 +257,13 @@ export const DatabaseSetupTab: React.FC = () => {
               <div>
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Users</p>
                 <p className="text-sm font-black text-white">{dbStatus.tableCounts.users} Accounts</p>
+              </div>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-2xl flex items-center gap-3">
+              <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Sales Reps</p>
+                <p className="text-sm font-black text-white">{dbStatus.tableCounts.salesAgents} Agents</p>
               </div>
             </div>
           </div>

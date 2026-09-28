@@ -1738,6 +1738,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               cashRegister,
               users,
               locations,
+              sales_commission_agents: salesCommissionAgents,
             },
           }),
         }).catch(() => {});
@@ -1745,7 +1746,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations]);
+  }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations, salesCommissionAgents]);
 
   // Universal Live MySQL Sync: Pull latest database records on startup, tab focus, and every 15s
   useEffect(() => {
@@ -1769,6 +1770,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
               if (Array.isArray(d.brands) && d.brands.length > 0) setBrands(d.brands);
               if (Array.isArray(d.expenses) && d.expenses.length > 0) setExpenses(d.expenses);
+              if (Array.isArray(d.units) && d.units.length > 0) setUnits(d.units);
+              if (Array.isArray(d.sales_commission_agents) && d.sales_commission_agents.length > 0) {
+                setSalesCommissionAgents(d.sales_commission_agents);
+              }
               if (Array.isArray(d.users) && d.users.length > 0) {
                 setUsers(d.users);
                 try {
@@ -3141,28 +3146,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: unitData.description?.trim() || '',
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setUnits((prev) => [...prev, newUnit]);
+    const updated = [...units, newUnit];
+    setUnits(updated);
+    triggerImmediateSyncPush({ units: updated });
     return newUnit;
   };
 
   const updateUnit = (id: string, unitData: Partial<Unit>) => {
-    setUnits((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u;
-        const updated: Unit = {
-          ...u,
-          ...unitData,
-          name: unitData.name !== undefined ? unitData.name.trim() : u.name,
-          shortName: unitData.shortName !== undefined ? unitData.shortName.trim() : u.shortName,
-          allowDecimal: unitData.allowDecimal !== undefined ? unitData.allowDecimal : u.allowDecimal,
-          isBaseUnit: unitData.isBaseUnit !== undefined ? unitData.isBaseUnit : u.isBaseUnit,
-          baseUnitId: unitData.baseUnitId !== undefined ? (unitData.baseUnitId || undefined) : u.baseUnitId,
-          baseUnitMultiplier: unitData.baseUnitMultiplier !== undefined ? (unitData.baseUnitMultiplier || undefined) : u.baseUnitMultiplier,
-          description: unitData.description !== undefined ? unitData.description.trim() : u.description,
-        };
-        return updated;
-      })
-    );
+    const updated = units.map((u) => {
+      if (u.id !== id) return u;
+      return {
+        ...u,
+        ...unitData,
+        name: unitData.name !== undefined ? unitData.name.trim() : u.name,
+        shortName: unitData.shortName !== undefined ? unitData.shortName.trim() : u.shortName,
+        allowDecimal: unitData.allowDecimal !== undefined ? unitData.allowDecimal : u.allowDecimal,
+        isBaseUnit: unitData.isBaseUnit !== undefined ? unitData.isBaseUnit : u.isBaseUnit,
+        baseUnitId: unitData.baseUnitId !== undefined ? (unitData.baseUnitId || undefined) : u.baseUnitId,
+        baseUnitMultiplier: unitData.baseUnitMultiplier !== undefined ? (unitData.baseUnitMultiplier || undefined) : u.baseUnitMultiplier,
+        description: unitData.description !== undefined ? unitData.description.trim() : u.description,
+      };
+    });
+    setUnits(updated);
+    triggerImmediateSyncPush({ units: updated });
   };
 
   const deleteUnit = (id: string): { success: boolean; message?: string } => {
@@ -3194,7 +3200,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    setUnits((prev) => prev.filter((u) => u.id !== id));
+    const updated = units.filter((u) => u.id !== id);
+    setUnits(updated);
+    triggerImmediateSyncPush({ units: updated });
     return {
       success: true,
       message: `Unit "${unitToDelete.name} (${unitToDelete.shortName})" deleted successfully.`,
@@ -7606,16 +7614,22 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...agent,
       id: `sca_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
     };
-    setSalesCommissionAgents((prev) => [...prev, newAgent]);
+    const updated = [...salesCommissionAgents, newAgent];
+    setSalesCommissionAgents(updated);
+    triggerImmediateSyncPush({ sales_commission_agents: updated });
     return newAgent;
   };
 
   const updateSalesCommissionAgent = (id: string, agent: Partial<SalesCommissionAgent>) => {
-    setSalesCommissionAgents((prev) => prev.map((a) => (a.id === id ? { ...a, ...agent } : a)));
+    const updated = salesCommissionAgents.map((a) => (a.id === id ? { ...a, ...agent } : a));
+    setSalesCommissionAgents(updated);
+    triggerImmediateSyncPush({ sales_commission_agents: updated });
   };
 
   const deleteSalesCommissionAgent = (id: string) => {
-    setSalesCommissionAgents((prev) => prev.filter((a) => a.id !== id));
+    const updated = salesCommissionAgents.filter((a) => a.id !== id);
+    setSalesCommissionAgents(updated);
+    triggerImmediateSyncPush({ sales_commission_agents: updated });
   };
 
   const toggleUserStatus = (id: string) => {

@@ -160,6 +160,31 @@ function ensureAllSchemaTables($pdo, $prefix) {
             `data_json` LONGTEXT DEFAULT NULL,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 10. Sales Commission Agents / Sales Representatives Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}sales_commission_agents` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `email` VARCHAR(191) DEFAULT NULL,
+            `phone` VARCHAR(50) DEFAULT NULL,
+            `address` TEXT DEFAULT NULL,
+            `commission_percentage` DECIMAL(5,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 11. Units of Measurement Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}units` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `short_name` VARCHAR(100) DEFAULT NULL,
+            `allow_decimal` TINYINT(1) DEFAULT 0,
+            `is_base_unit` TINYINT(1) DEFAULT 1,
+            `base_unit_id` VARCHAR(191) DEFAULT NULL,
+            `base_unit_multiplier` DECIMAL(15,4) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     } catch (Exception $e) {
         // Ignore table setup warnings if already created
     }
@@ -268,6 +293,8 @@ if ($action === 'pull' || $method === 'GET') {
             'categories' => "{$prefix}categories",
             'brands' => "{$prefix}brands",
             'expenses' => "{$prefix}expenses",
+            'sales_commission_agents' => "{$prefix}sales_commission_agents",
+            'units' => "{$prefix}units",
         ];
 
         foreach ($entityTables as $key => $tableName) {
@@ -449,6 +476,49 @@ if ($action === 'push' || $method === 'POST') {
                     ':email' => $u['email'] ?? null,
                     ':role' => $u['role'] ?? 'staff',
                     ':st' => $u['status'] ?? 'active',
+                    ':json' => json_encode($u),
+                ]);
+            }
+        }
+
+        if (isset($updates['sales_commission_agents']) && is_array($updates['sales_commission_agents'])) {
+            $agentStmt = $pdo->prepare("INSERT INTO `{$prefix}sales_commission_agents` 
+                (`id`, `name`, `email`, `phone`, `address`, `commission_percentage`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :email, :phone, :addr, :pct, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `email` = VALUES(`email`), `phone` = VALUES(`phone`), `address` = VALUES(`address`), `commission_percentage` = VALUES(`commission_percentage`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['sales_commission_agents'] as $a) {
+                if (!is_array($a) || empty($a['id'])) continue;
+                $agentStmt->execute([
+                    ':id' => (string)$a['id'],
+                    ':name' => $a['name'] ?? 'Sales Agent',
+                    ':email' => $a['email'] ?? null,
+                    ':phone' => $a['phone'] ?? null,
+                    ':addr' => $a['address'] ?? null,
+                    ':pct' => (float)($a['commissionPercentage'] ?? 0),
+                    ':json' => json_encode($a),
+                ]);
+            }
+        }
+
+        if (isset($updates['units']) && is_array($updates['units'])) {
+            $unitStmt = $pdo->prepare("INSERT INTO `{$prefix}units` 
+                (`id`, `name`, `short_name`, `allow_decimal`, `is_base_unit`, `base_unit_id`, `base_unit_multiplier`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :sname, :dec, :bunit, :buid, :mult, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `short_name` = VALUES(`short_name`), `allow_decimal` = VALUES(`allow_decimal`), `is_base_unit` = VALUES(`is_base_unit`), `base_unit_id` = VALUES(`base_unit_id`), `base_unit_multiplier` = VALUES(`base_unit_multiplier`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['units'] as $u) {
+                if (!is_array($u) || empty($u['id'])) continue;
+                $unitStmt->execute([
+                    ':id' => (string)$u['id'],
+                    ':name' => $u['name'] ?? 'Unit',
+                    ':sname' => $u['shortName'] ?? null,
+                    ':dec' => !empty($u['allowDecimal']) ? 1 : 0,
+                    ':bunit' => !empty($u['isBaseUnit']) ? 1 : 0,
+                    ':buid' => $u['baseUnitId'] ?? null,
+                    ':mult' => isset($u['baseUnitMultiplier']) ? (float)$u['baseUnitMultiplier'] : null,
                     ':json' => json_encode($u),
                 ]);
             }
