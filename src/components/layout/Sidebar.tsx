@@ -523,7 +523,7 @@ export const Sidebar: React.FC = () => {
     },
     {
       id: 'sales_commission_agents',
-      label: 'Sale Representative',
+      label: 'Sales Representative',
       badge: 'Comms',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
       icon: Award,

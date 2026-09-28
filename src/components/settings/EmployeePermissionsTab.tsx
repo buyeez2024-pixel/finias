@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Sparkles,
   Search,
+  Save,
   Building,
   Edit2,
   Trash2,
@@ -1519,36 +1520,36 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       {/* Modal: Add New Staff Member (finias POS Replicated users/create) */}
       {showAddUserModal && (
         <div 
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn overflow-y-auto"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 animate-fadeIn overflow-y-auto overscroll-contain"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               handleCloseAddUserModal();
             }
           }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-3xl w-full shadow-2xl space-y-5 my-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-3xl w-full shadow-2xl space-y-4 sm:space-y-5 my-auto max-h-[92vh] flex flex-col overflow-hidden min-w-0">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  <UserPlus className="w-5 h-5" />
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-white">Add New User</h3>
-                  <p className="text-xs text-slate-400">Replicated from finias POS User Creation Form</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-black text-white truncate">Add New User</h3>
+                  <p className="text-[11px] sm:text-xs text-slate-400 truncate">finias POS User Creation Form</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleCloseAddUserModal}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white shrink-0 active:scale-95 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Section Tab Bar */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-800">
+            {/* Section Tab Bar - Smooth Touch Momentum Scrollable */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800 shrink-0 custom-scrollbar touch-pan-x overscroll-x-contain min-w-0 w-full">
               {[
                 { id: 'basic', label: '1. User Details & Login' },
                 { id: 'roles', label: '2. Roles & Locations' },
@@ -1560,7 +1561,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                   key={tab.id}
                   type="button"
                   onClick={() => setAddUserTab(tab.id as any)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition whitespace-nowrap border ${
+                  className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-extrabold transition whitespace-nowrap border shrink-0 active:scale-95 ${
                     addUserTab === tab.id
                       ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
                       : 'bg-slate-950/60 hover:bg-slate-800 text-slate-400 border-slate-800'
@@ -1571,7 +1572,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
               ))}
             </div>
 
-            <form onSubmit={handleSaveNewUser} className="space-y-5 text-xs">
+            <form onSubmit={handleSaveNewUser} className="space-y-4 text-xs flex-1 overflow-y-auto pr-1 custom-scrollbar touch-pan-y overscroll-y-contain min-w-0 w-full">
               {/* TAB 1: User Details & Login */}
               {addUserTab === 'basic' && (
                 <div className="space-y-4">
@@ -2089,8 +2090,8 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
               )}
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+              <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0 min-w-0 w-full">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   {addUserTab !== 'basic' && (
                     <button
                       type="button"
@@ -2099,7 +2100,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         const idx = tabs.indexOf(addUserTab);
                         if (idx > 0) setAddUserTab(tabs[idx - 1] as any);
                       }}
-                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-center active:scale-95 transition"
                     >
                       Back
                     </button>
@@ -2112,26 +2113,27 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         const idx = tabs.indexOf(addUserTab);
                         if (idx < tabs.length - 1) setAddUserTab(tabs[idx + 1] as any);
                       }}
-                      className="px-4 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold"
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold text-center active:scale-95 transition"
                     >
                       Next Section
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                   <button
                     type="button"
                     onClick={handleCloseAddUserModal}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-center active:scale-95 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-600/30"
+                    className="flex-1 sm:flex-initial px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
                   >
-                    Save
+                    <Save className="w-4 h-4" />
+                    <span>Save User</span>
                   </button>
                 </div>
               </div>

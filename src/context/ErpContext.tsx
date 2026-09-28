@@ -1036,8 +1036,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_customers`);
-    const list: Customer[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCustomers);
-    return (Array.isArray(list) ? list : []).map((c, idx) => ({
+    let list: Customer[] = saved ? JSON.parse(saved) : initialCustomers;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialCustomers;
+    }
+    return list.map((c, idx) => ({
       ...c,
       contactId: c.contactId || `CUST-${String(idx + 1).padStart(4, '0')}`,
       totalDue: Number(c.totalDue || 0),
@@ -1053,9 +1056,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_suppliers`);
-    const list: Supplier[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialSuppliers);
+    let list: Supplier[] = saved ? JSON.parse(saved) : initialSuppliers;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialSuppliers;
+    }
     const seenIds = new Set<string>();
-    return (Array.isArray(list) ? list : []).map((s, idx) => {
+    return list.map((s, idx) => {
       let uniqueId = s.id;
       if (!uniqueId || seenIds.has(uniqueId)) {
         const slug = (s.name || `supp_${idx}`).toLowerCase().replace(/[^a-z0-9]/g, '_');

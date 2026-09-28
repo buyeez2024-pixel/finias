@@ -158,40 +158,35 @@ export const SalesCommissionAgentsView: React.FC = () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Percent className="w-6 h-6 text-indigo-400" />
-            Sales Commission Agents
-          </h2>
-          <p className="text-slate-400 text-sm mt-1">
-            Manage agents and their commission percentages.
-          </p>
-        </div>
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition-all font-medium text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Agent
-        </button>
-      </div>
+  React.useEffect(() => {
+    const handleOpenAddAgent = () => {
+      handleOpenAdd();
+    };
+    window.addEventListener('open-add-agent', handleOpenAddAgent);
+    return () => window.removeEventListener('open-add-agent', handleOpenAddAgent);
+  }, []);
 
-      {/* Search Bar */}
-      <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center">
-        <div className="relative flex-1">
-          <Search className="w-5 h-5 text-slate-500 absolute left-3 top-2.5" />
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Search Bar & Quick Actions */}
+      <div className="bg-slate-900/80 p-3 sm:p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search agents by name, email, or contact no..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none transition-colors"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-white focus:border-indigo-500 focus:outline-none transition-colors"
           />
         </div>
+        <button
+          onClick={handleOpenAdd}
+          className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 transition active:scale-95 shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Agent</span>
+        </button>
       </div>
 
       {/* Agent List */}

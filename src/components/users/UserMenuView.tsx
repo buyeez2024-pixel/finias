@@ -17,6 +17,7 @@ export const UserMenuView: React.FC = () => {
   const {
     currentUser,
     hasModuleAccess,
+    activeTab,
     userMenuSubTab,
     users,
     setActiveTab,
@@ -45,11 +46,22 @@ export const UserMenuView: React.FC = () => {
     return true;
   }).length;
 
-  const currentTab = userMenuSubTab || 'users';
+  const currentTab = (activeTab === 'sales_commission_agents' || userMenuSubTab === 'sales_commission_agents')
+    ? 'sales_commission_agents'
+    : (userMenuSubTab || 'users');
+  const isSalesAgents = currentTab === 'sales_commission_agents';
 
   if (currentTab === 'add_user') {
     return <AddUserPage />;
   }
+
+  const handlePrimaryAction = () => {
+    if (isSalesAgents) {
+      window.dispatchEvent(new CustomEvent('open-add-agent'));
+    } else {
+      setActiveTab('add_user');
+    }
+  };
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 pb-20 lg:pb-12 animate-fadeIn max-w-7xl mx-auto w-full scroll-smooth overscroll-y-contain">
@@ -58,36 +70,49 @@ export const UserMenuView: React.FC = () => {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-indigo-400" />
-              <span>User menu</span>
+              {isSalesAgents ? <Award className="w-3.5 h-3.5 text-indigo-400" /> : <Users className="w-3.5 h-3.5 text-indigo-400" />}
+              <span>{isSalesAgents ? 'Sales Representative' : 'User menu'}</span>
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
             <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
-              <Users className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Employee Directory & Role Assignments</span>
+              {isSalesAgents ? <Award className="w-3.5 h-3.5 text-indigo-400" /> : <Users className="w-3.5 h-3.5 text-indigo-400" />}
+              <span>{isSalesAgents ? 'Sales Commission Agents & Reps' : 'Employee Directory & Role Assignments'}</span>
             </span>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700">
-              {businessUsersCount} Active Accounts
-            </span>
+            {!isSalesAgents && (
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700">
+                {businessUsersCount} Active Accounts
+              </span>
+            )}
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5 pt-1">
-            <span>User Management</span>
+            <span>{isSalesAgents ? 'Sales Representative' : 'User Management'}</span>
           </h1>
 
           <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-            Manage employee accounts, credentials, sales representatives, and per-user role access assignments.
+            {isSalesAgents
+              ? 'Manage sales commission agents, representative profiles, contact numbers, and commission percentages.'
+              : 'Manage employee accounts, credentials, sales representatives, and per-user role access assignments.'}
           </p>
         </div>
 
-        {/* Add User Button */}
+        {/* Primary Header Button: Add Agent or Add User */}
         <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
           <button
-            onClick={() => setActiveTab('add_user')}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all"
+            onClick={handlePrimaryAction}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all active:scale-95"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Add User</span>
+            {isSalesAgents ? (
+              <>
+                <Award className="w-4 h-4" />
+                <span>Add Agent</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Add User</span>
+              </>
+            )}
           </button>
         </div>
       </div>
