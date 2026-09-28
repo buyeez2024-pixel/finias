@@ -2873,7 +2873,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lots: lots,
       } as Product;
     });
-    setProducts((prev) => [...newProducts, ...prev]);
+    setProducts((prev) => {
+      const updated = [...newProducts, ...prev];
+      triggerImmediateSyncPush({ products: updated });
+      return updated;
+    });
   };
 
   const addProduct = (productData: Omit<Product, 'id' | 'currentStock'>) => {
@@ -2909,16 +2913,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentStock: totalStock as number,
       lots: lots,
     } as Product;
-    setProducts((prev) => [newProduct, ...prev]);
+    setProducts((prev) => {
+      const updated = [newProduct, ...prev];
+      triggerImmediateSyncPush({ products: updated });
+      return updated;
+    });
   };
 
   const updateProduct = (id: string, updateData: Partial<Product>) => {
     let priceLotAdded = false;
     let addedLotNumber = '';
-    let errorMessage = '';
 
-    setProducts((prev) =>
-      prev.map((p) => {
+    setProducts((prev) => {
+      const updated = prev.map((p) => {
         if (p.id !== id) return p;
         
         // Check if price or cost changed to trigger lot creation
@@ -2989,8 +2996,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         return merged;
-      })
-    );
+      });
+      triggerImmediateSyncPush({ products: updated });
+      return updated;
+    });
 
     if (priceLotAdded) {
       showFlashNotification(`New price batch ${addedLotNumber} created with ${updateData.initialLotStock || 0} stock.`, 'success');
@@ -3003,7 +3012,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showFlashNotification(`Cannot delete ${product.name}. Stock must be zero. Current stock: ${product.currentStock}`, 'error');
       return;
     }
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      triggerImmediateSyncPush({ products: updated });
+      return updated;
+    });
     showFlashNotification(`Product ${product?.name || ''} deleted successfully.`, 'success');
   };
 
@@ -3803,6 +3816,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `${prefix}${String(nextNum).padStart(4, '0')}`;
   };
 
+  const triggerImmediateSyncPush = (customUpdates?: Record<string, any>) => {
+    try {
+      fetch('/api/sync.php?action=push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: customUpdates || {
+            customers,
+            suppliers,
+            products,
+            transactions,
+            users,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
+  };
+
   const addCustomer = (customerData: Omit<Customer, 'id' | 'totalDue' | 'totalSales' | 'loyaltyPoints' | 'createdDate'> & { id?: string; contactId?: string }) => {
     if (customerData.phone && customerData.phone !== 'N/A') {
       const phoneVal = validatePhoneNumber(customerData.phone);
@@ -3829,7 +3860,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loyaltyPoints: 0,
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setCustomers((prev) => [newCust, ...prev]);
+    setCustomers((prev) => {
+      const updated = [newCust, ...prev];
+      triggerImmediateSyncPush({ customers: updated });
+      return updated;
+    });
     
     // Auto-send welcome notification
     sendOneClickNotifications({
@@ -3892,11 +3927,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCustomer = (id: string, data: Partial<Customer>) => {
-    setCustomers((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
+    setCustomers((prev) => {
+      const updated = prev.map((c) => (c.id === id ? { ...c, ...data } : c));
+      triggerImmediateSyncPush({ customers: updated });
+      return updated;
+    });
   };
 
   const deleteCustomer = (id: string) => {
-    setCustomers((prev) => prev.filter((c) => c.id !== id));
+    setCustomers((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      triggerImmediateSyncPush({ customers: updated });
+      return updated;
+    });
   };
 
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'totalPayable' | 'totalPurchases' | 'createdDate'> & { id?: string; contactId?: string }) => {
@@ -3924,16 +3967,28 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalPurchases: 0,
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setSuppliers((prev) => [newSup, ...prev]);
+    setSuppliers((prev) => {
+      const updated = [newSup, ...prev];
+      triggerImmediateSyncPush({ suppliers: updated });
+      return updated;
+    });
     return newSup;
   };
 
   const updateSupplier = (id: string, data: Partial<Supplier>) => {
-    setSuppliers((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
+    setSuppliers((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...data } : s));
+      triggerImmediateSyncPush({ suppliers: updated });
+      return updated;
+    });
   };
 
   const deleteSupplier = (id: string) => {
-    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+    setSuppliers((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      triggerImmediateSyncPush({ suppliers: updated });
+      return updated;
+    });
   };
 
   const recordCustomerPayment = (
@@ -5064,7 +5119,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    setTransactions((prev) => [newSale, ...prev]);
+    setTransactions((prev) => {
+      const updated = [newSale, ...prev];
+      triggerImmediateSyncPush({ transactions: updated, products, customers });
+      return updated;
+    });
     setLastCompletedSale(newSale);
     if (newSale.type !== 'sell_return') {
       clearCart();
@@ -5086,9 +5145,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSale = (id: string, saleData: any) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...saleData } : t))
-    );
+    setTransactions((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, ...saleData } : t));
+      triggerImmediateSyncPush({ transactions: updated });
+      return updated;
+    });
     showFlashNotification(`Sale invoice ${saleData.invoiceNo || ''} updated successfully.`, 'success');
   };
 
@@ -5098,8 +5159,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // If it was final, restore product stock
     if (txn.status === 'final') {
-      setProducts((prev) =>
-        prev.map((p) => {
+      setProducts((prev) => {
+        const updatedProds = prev.map((p) => {
           const item = txn.items.find((i) => i.productId === p.id);
           if (!item) return p;
 
@@ -5117,13 +5178,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             locationStocks: newLocationStocks,
             currentStock: total,
           };
-        })
-      );
+        });
+        triggerImmediateSyncPush({ products: updatedProds });
+        return updatedProds;
+      });
 
       // Reverse Customer due / sales
       if (txn.customerId) {
-        setCustomers((prev) =>
-          prev.map((c) => {
+        setCustomers((prev) => {
+          const updatedCusts = prev.map((c) => {
             if (c.id !== txn.customerId) return c;
             const dueDelta = Math.max(0, txn.totalAmount - txn.paidAmount);
             return {
@@ -5131,12 +5194,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               totalSales: Math.max(0, c.totalSales - txn.totalAmount),
               totalDue: Math.max(0, c.totalDue - dueDelta),
             };
-          })
-        );
+          });
+          triggerImmediateSyncPush({ customers: updatedCusts });
+          return updatedCusts;
+        });
       }
     }
 
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setTransactions((prev) => {
+      const updatedTxns = prev.filter((t) => t.id !== id);
+      triggerImmediateSyncPush({ transactions: updatedTxns });
+      return updatedTxns;
+    });
     showFlashNotification(`Sale invoice ${txn.invoiceNo} deleted successfully.`, 'info');
   };
 
@@ -5456,6 +5525,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
       }
+      triggerImmediateSyncPush({ transactions: updated, products, suppliers });
       return updated;
     });
 
@@ -5584,9 +5654,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...purchaseData, status: effectiveStatus } : t))
-    );
+    setTransactions((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, ...purchaseData, status: effectiveStatus } : t));
+      triggerImmediateSyncPush({ transactions: updated, products, suppliers });
+      return updated;
+    });
 
     showFlashNotification(`Purchase ${purchaseData.invoiceNo || existingTxn?.invoiceNo || ''} updated successfully.`, 'success');
   };
@@ -5777,6 +5849,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
       }
+      triggerImmediateSyncPush({ transactions: remaining, products, suppliers });
       return remaining;
     });
 
