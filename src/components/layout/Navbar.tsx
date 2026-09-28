@@ -151,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Action Icons & Controls */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Quick Calculator Tool - Enabled when POS is active on tablets/desktops */}
           {(() => {
             const isPosActive = activeTab === 'pos';
@@ -181,35 +181,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             );
           })()}
 
-          {/* Quick-Access Theme Mode Switcher */}
-          <button
-            id="quick-theme-mode-toggle"
-            type="button"
-            onClick={() => {
-              const nextMode = settings?.themeMode === 'light' ? 'dark' : 'light';
-              updateSettings({ themeMode: nextMode });
-            }}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 text-slate-300 border border-slate-700 flex items-center justify-center transition group cursor-pointer shrink-0 shadow-2xs"
-            title={settings?.themeMode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-            aria-label="Toggle Theme Mode"
-          >
-            {settings?.themeMode === 'light' ? (
-              <Moon className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-            )}
-          </button>
-
           {/* Network & Offline Sync Status Indicator */}
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             <NetworkSyncStatusBadge onClick={() => setShowOfflineManager(true)} />
           </div>
 
-          {/* Register Shift Status Indicator */}
+          {/* Register Shift Status Indicator - visible on md and up to prevent mobile bar overflow */}
           <button
             id="register-shift-status-btn"
             onClick={onOpenRegisterModal}
-            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs font-semibold rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 ${
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 ${
               cashRegister.status === 'open'
                 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
                 : 'bg-rose-950/60 text-rose-300 border-rose-700/50 hover:bg-rose-900/60'
@@ -221,7 +202,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
-            <span className="hidden sm:inline text-xs">
+            <span className="text-xs">
               {cashRegister.status === 'open' ? 'Shift Active' : 'Closed'}
             </span>
           </button>
@@ -230,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="launch-pos-nav-btn"
             onClick={() => setActiveTab('pos')}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl shadow-sm transition active:scale-95 active:opacity-80 shrink-0 ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl shadow-sm transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer ${
               activeTab === 'pos'
                 ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-indigo-600/30'
                 : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white'
