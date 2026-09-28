@@ -2913,11 +2913,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentStock: totalStock as number,
       lots: lots,
     } as Product;
-    setProducts((prev) => {
-      const updated = [newProduct, ...prev];
-      triggerImmediateSyncPush({ products: updated });
-      return updated;
-    });
+    const updatedProducts = [newProduct, ...products];
+    setProducts(updatedProducts);
+    triggerImmediateSyncPush({ products: updatedProducts });
   };
 
   const updateProduct = (id: string, updateData: Partial<Product>) => {
@@ -3860,11 +3858,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loyaltyPoints: 0,
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setCustomers((prev) => {
-      const updated = [newCust, ...prev];
-      triggerImmediateSyncPush({ customers: updated });
-      return updated;
-    });
+    const updatedCustomers = [newCust, ...customers];
+    setCustomers(updatedCustomers);
+    triggerImmediateSyncPush({ customers: updatedCustomers });
     
     // Auto-send welcome notification
     sendOneClickNotifications({
