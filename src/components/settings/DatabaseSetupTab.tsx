@@ -48,6 +48,13 @@ export const DatabaseSetupTab: React.FC = () => {
       users: number;
       salesAgents: number;
       units: number;
+      customerGroups: number;
+      warranties: number;
+      racks: number;
+      taxRates: number;
+      currencies: number;
+      accounts: number;
+      paymentMethods: number;
     };
   }>({
     tested: false,
@@ -78,6 +85,13 @@ export const DatabaseSetupTab: React.FC = () => {
               users: Array.isArray(d.users) ? d.users.length : 0,
               salesAgents: Array.isArray(d.sales_commission_agents) ? d.sales_commission_agents.length : 0,
               units: Array.isArray(d.units) ? d.units.length : 0,
+              customerGroups: Array.isArray(d.customer_groups) ? d.customer_groups.length : 0,
+              warranties: Array.isArray(d.warranties) ? d.warranties.length : 0,
+              racks: Array.isArray(d.racks) ? d.racks.length : 0,
+              taxRates: Array.isArray(d.tax_rates) ? d.tax_rates.length : 0,
+              currencies: Array.isArray(d.currencies) ? d.currencies.length : 0,
+              accounts: Array.isArray(d.accounts) ? d.accounts.length : 0,
+              paymentMethods: Array.isArray(d.payment_methods) ? d.payment_methods.length : 0,
             },
           });
         } else {

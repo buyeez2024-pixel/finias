@@ -103,6 +103,7 @@ function ensureAllSchemaTables($pdo, $prefix) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}transactions` (
             `id` VARCHAR(191) NOT NULL PRIMARY KEY,
             `type` VARCHAR(50) NOT NULL,
+            `sale_channel` VARCHAR(50) DEFAULT 'standard',
             `invoice_no` VARCHAR(100) DEFAULT NULL,
             `date` VARCHAR(50) DEFAULT NULL,
             `customer_id` VARCHAR(191) DEFAULT NULL,
@@ -182,6 +183,175 @@ function ensureAllSchemaTables($pdo, $prefix) {
             `is_base_unit` TINYINT(1) DEFAULT 1,
             `base_unit_id` VARCHAR(191) DEFAULT NULL,
             `base_unit_multiplier` DECIMAL(15,4) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 12. Customer Groups Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}customer_groups` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `amount` DECIMAL(15,2) DEFAULT 0.00,
+            `percentage` DECIMAL(5,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 13. Warranties Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}warranties` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `duration` INT DEFAULT 0,
+            `duration_type` VARCHAR(50) DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 14. Racks Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}racks` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `location_id` VARCHAR(191) DEFAULT NULL,
+            `row` VARCHAR(100) DEFAULT NULL,
+            `position` VARCHAR(100) DEFAULT NULL,
+            `description` TEXT DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 15. Tax Rates Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}tax_rates` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `amount` DECIMAL(5,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 16. Tax Groups Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}tax_groups` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `amount` DECIMAL(5,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 17. Currencies Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}currencies` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `country` VARCHAR(100) DEFAULT NULL,
+            `currency` VARCHAR(100) DEFAULT NULL,
+            `code` VARCHAR(50) DEFAULT NULL,
+            `symbol` VARCHAR(50) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 18. Accounts Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}accounts` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `account_number` VARCHAR(100) DEFAULT NULL,
+            `account_type` VARCHAR(100) DEFAULT NULL,
+            `opening_balance` DECIMAL(15,2) DEFAULT 0.00,
+            `balance` DECIMAL(15,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 19. Payment Methods Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}payment_methods` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `is_default` TINYINT(1) DEFAULT 0,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 20. Locations / Branch Outlets Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}locations` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `code` VARCHAR(50) DEFAULT NULL,
+            `city` VARCHAR(100) DEFAULT NULL,
+            `state` VARCHAR(100) DEFAULT NULL,
+            `country` VARCHAR(100) DEFAULT NULL,
+            `zip_code` VARCHAR(20) DEFAULT NULL,
+            `mobile` VARCHAR(50) DEFAULT NULL,
+            `email` VARCHAR(191) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 21. POS Registers & Shift Security Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}registers` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `status` VARCHAR(50) DEFAULT 'closed',
+            `location_id` VARCHAR(191) DEFAULT NULL,
+            `cashier_name` VARCHAR(255) DEFAULT NULL,
+            `opening_cash` DECIMAL(15,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 22. Variations & Combo Types Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}variations` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `product_id` VARCHAR(191) DEFAULT NULL,
+            `sub_sku` VARCHAR(100) DEFAULT NULL,
+            `type` VARCHAR(50) DEFAULT 'variable',
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 23. Stock Adjustments Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}stock_adjustments` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `reference_no` VARCHAR(100) DEFAULT NULL,
+            `location_id` VARCHAR(191) DEFAULT NULL,
+            `total_amount` DECIMAL(15,2) DEFAULT 0.00,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 24. Branch Transfers Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}stock_transfers` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `reference_no` VARCHAR(100) DEFAULT NULL,
+            `source_location_id` VARCHAR(191) DEFAULT NULL,
+            `target_location_id` VARCHAR(191) DEFAULT NULL,
+            `status` VARCHAR(50) DEFAULT 'completed',
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 25. Product History Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}product_history` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `product_id` VARCHAR(191) DEFAULT NULL,
+            `action` VARCHAR(100) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 26. Purchase Requisitions Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}purchase_requisitions` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `reference_no` VARCHAR(100) DEFAULT NULL,
+            `status` VARCHAR(50) DEFAULT 'pending',
+            `location_id` VARCHAR(191) DEFAULT NULL,
+            `data_json` LONGTEXT DEFAULT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 27. Notification Templates Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}notification_templates` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `template_type` VARCHAR(100) DEFAULT NULL,
+            `subject` VARCHAR(255) DEFAULT NULL,
             `data_json` LONGTEXT DEFAULT NULL,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -295,6 +465,22 @@ if ($action === 'pull' || $method === 'GET') {
             'expenses' => "{$prefix}expenses",
             'sales_commission_agents' => "{$prefix}sales_commission_agents",
             'units' => "{$prefix}units",
+            'customer_groups' => "{$prefix}customer_groups",
+            'warranties' => "{$prefix}warranties",
+            'racks' => "{$prefix}racks",
+            'tax_rates' => "{$prefix}tax_rates",
+            'tax_groups' => "{$prefix}tax_groups",
+            'currencies' => "{$prefix}currencies",
+            'accounts' => "{$prefix}accounts",
+            'payment_methods' => "{$prefix}payment_methods",
+            'locations' => "{$prefix}locations",
+            'registers' => "{$prefix}registers",
+            'variations' => "{$prefix}variations",
+            'stock_adjustments' => "{$prefix}stock_adjustments",
+            'stock_transfers' => "{$prefix}stock_transfers",
+            'product_history' => "{$prefix}product_history",
+            'purchase_requisitions' => "{$prefix}purchase_requisitions",
+            'notification_templates' => "{$prefix}notification_templates",
         ];
 
         foreach ($entityTables as $key => $tableName) {
@@ -434,16 +620,19 @@ if ($action === 'push' || $method === 'POST') {
 
         if (isset($updates['transactions']) && is_array($updates['transactions'])) {
             $txnStmt = $pdo->prepare("INSERT INTO `{$prefix}transactions` 
-                (`id`, `type`, `invoice_no`, `date`, `customer_id`, `customer_name`, `supplier_id`, `supplier_name`, `total_amount`, `paid_amount`, `due_amount`, `status`, `payment_status`, `data_json`, `updated_at`)
-                VALUES (:id, :type, :inv, :date, :cid, :cname, :sid, :sname, :tot, :paid, :due, :st, :pst, :json, CURRENT_TIMESTAMP)
+                (`id`, `type`, `sale_channel`, `invoice_no`, `date`, `customer_id`, `customer_name`, `supplier_id`, `supplier_name`, `total_amount`, `paid_amount`, `due_amount`, `status`, `payment_status`, `data_json`, `updated_at`)
+                VALUES (:id, :type, :sch, :inv, :date, :cid, :cname, :sid, :sname, :tot, :paid, :due, :st, :pst, :json, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE 
-                `type` = VALUES(`type`), `invoice_no` = VALUES(`invoice_no`), `total_amount` = VALUES(`total_amount`), `paid_amount` = VALUES(`paid_amount`), `due_amount` = VALUES(`due_amount`), `status` = VALUES(`status`), `payment_status` = VALUES(`payment_status`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+                `type` = VALUES(`type`), `sale_channel` = VALUES(`sale_channel`), `invoice_no` = VALUES(`invoice_no`), `total_amount` = VALUES(`total_amount`), `paid_amount` = VALUES(`paid_amount`), `due_amount` = VALUES(`due_amount`), `status` = VALUES(`status`), `payment_status` = VALUES(`payment_status`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
             foreach ($updates['transactions'] as $t) {
                 if (!is_array($t) || empty($t['id'])) continue;
+                $isPos = !empty($t['isPos']) || ($t['saleChannel'] ?? '') === 'pos' || (isset($t['invoiceNo']) && stripos($t['invoiceNo'], 'POS') === 0);
+                $sch = $t['saleChannel'] ?? ($isPos ? 'pos' : 'standard');
                 $txnStmt->execute([
                     ':id' => (string)$t['id'],
                     ':type' => $t['type'] ?? 'sale',
+                    ':sch' => $sch,
                     ':inv' => $t['invoiceNo'] ?? null,
                     ':date' => $t['date'] ?? date('Y-m-d'),
                     ':cid' => $t['customerId'] ?? null,
@@ -502,24 +691,316 @@ if ($action === 'push' || $method === 'POST') {
             }
         }
 
-        if (isset($updates['units']) && is_array($updates['units'])) {
-            $unitStmt = $pdo->prepare("INSERT INTO `{$prefix}units` 
-                (`id`, `name`, `short_name`, `allow_decimal`, `is_base_unit`, `base_unit_id`, `base_unit_multiplier`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :sname, :dec, :bunit, :buid, :mult, :json, CURRENT_TIMESTAMP)
+        if (isset($updates['customer_groups']) && is_array($updates['customer_groups'])) {
+            $cgStmt = $pdo->prepare("INSERT INTO `{$prefix}customer_groups` 
+                (`id`, `name`, `amount`, `percentage`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :amt, :pct, :json, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `short_name` = VALUES(`short_name`), `allow_decimal` = VALUES(`allow_decimal`), `is_base_unit` = VALUES(`is_base_unit`), `base_unit_id` = VALUES(`base_unit_id`), `base_unit_multiplier` = VALUES(`base_unit_multiplier`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `percentage` = VALUES(`percentage`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['units'] as $u) {
-                if (!is_array($u) || empty($u['id'])) continue;
-                $unitStmt->execute([
-                    ':id' => (string)$u['id'],
-                    ':name' => $u['name'] ?? 'Unit',
-                    ':sname' => $u['shortName'] ?? null,
-                    ':dec' => !empty($u['allowDecimal']) ? 1 : 0,
-                    ':bunit' => !empty($u['isBaseUnit']) ? 1 : 0,
-                    ':buid' => $u['baseUnitId'] ?? null,
-                    ':mult' => isset($u['baseUnitMultiplier']) ? (float)$u['baseUnitMultiplier'] : null,
-                    ':json' => json_encode($u),
+            foreach ($updates['customer_groups'] as $cg) {
+                if (!is_array($cg) || empty($cg['id'])) continue;
+                $cgStmt->execute([
+                    ':id' => (string)$cg['id'],
+                    ':name' => $cg['name'] ?? 'Group',
+                    ':amt' => (float)($cg['amount'] ?? 0),
+                    ':pct' => (float)($cg['percentage'] ?? 0),
+                    ':json' => json_encode($cg),
+                ]);
+            }
+        }
+
+        if (isset($updates['warranties']) && is_array($updates['warranties'])) {
+            $wStmt = $pdo->prepare("INSERT INTO `{$prefix}warranties` 
+                (`id`, `name`, `duration`, `duration_type`, `description`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :dur, :dtype, :desc, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `duration` = VALUES(`duration`), `duration_type` = VALUES(`duration_type`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['warranties'] as $w) {
+                if (!is_array($w) || empty($w['id'])) continue;
+                $wStmt->execute([
+                    ':id' => (string)$w['id'],
+                    ':name' => $w['name'] ?? 'Warranty',
+                    ':dur' => (int)($w['duration'] ?? 0),
+                    ':dtype' => $w['durationType'] ?? 'months',
+                    ':desc' => $w['description'] ?? null,
+                    ':json' => json_encode($w),
+                ]);
+            }
+        }
+
+        if (isset($updates['racks']) && is_array($updates['racks'])) {
+            $rStmt = $pdo->prepare("INSERT INTO `{$prefix}racks` 
+                (`id`, `name`, `location_id`, `row`, `position`, `description`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :lid, :row, :pos, :desc, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `location_id` = VALUES(`location_id`), `row` = VALUES(`row`), `position` = VALUES(`position`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['racks'] as $r) {
+                if (!is_array($r) || empty($r['id'])) continue;
+                $rStmt->execute([
+                    ':id' => (string)$r['id'],
+                    ':name' => $r['name'] ?? 'Rack',
+                    ':lid' => $r['locationId'] ?? null,
+                    ':row' => $r['row'] ?? null,
+                    ':pos' => $r['position'] ?? null,
+                    ':desc' => $r['description'] ?? null,
+                    ':json' => json_encode($r),
+                ]);
+            }
+        }
+
+        if (isset($updates['tax_rates']) && is_array($updates['tax_rates'])) {
+            $trStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_rates` 
+                (`id`, `name`, `amount`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['tax_rates'] as $tr) {
+                if (!is_array($tr) || empty($tr['id'])) continue;
+                $trStmt->execute([
+                    ':id' => (string)$tr['id'],
+                    ':name' => $tr['name'] ?? 'Tax',
+                    ':amt' => (float)($tr['amount'] ?? 0),
+                    ':json' => json_encode($tr),
+                ]);
+            }
+        }
+
+        if (isset($updates['tax_groups']) && is_array($updates['tax_groups'])) {
+            $tgStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_groups` 
+                (`id`, `name`, `amount`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['tax_groups'] as $tg) {
+                if (!is_array($tg) || empty($tg['id'])) continue;
+                $tgStmt->execute([
+                    ':id' => (string)$tg['id'],
+                    ':name' => $tg['name'] ?? 'Tax Group',
+                    ':amt' => (float)($tg['amount'] ?? 0),
+                    ':json' => json_encode($tg),
+                ]);
+            }
+        }
+
+        if (isset($updates['currencies']) && is_array($updates['currencies'])) {
+            $curStmt = $pdo->prepare("INSERT INTO `{$prefix}currencies` 
+                (`id`, `country`, `currency`, `code`, `symbol`, `data_json`, `updated_at`)
+                VALUES (:id, :country, :curr, :code, :sym, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `country` = VALUES(`country`), `currency` = VALUES(`currency`), `code` = VALUES(`code`), `symbol` = VALUES(`symbol`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['currencies'] as $cur) {
+                if (!is_array($cur) || empty($cur['id'])) continue;
+                $curStmt->execute([
+                    ':id' => (string)$cur['id'],
+                    ':country' => $cur['country'] ?? null,
+                    ':curr' => $cur['currency'] ?? null,
+                    ':code' => $cur['code'] ?? null,
+                    ':sym' => $cur['symbol'] ?? null,
+                    ':json' => json_encode($cur),
+                ]);
+            }
+        }
+
+        if (isset($updates['accounts']) && is_array($updates['accounts'])) {
+            $accStmt = $pdo->prepare("INSERT INTO `{$prefix}accounts` 
+                (`id`, `name`, `account_number`, `account_type`, `opening_balance`, `balance`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :accnum, :acctype, :opbal, :bal, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `account_number` = VALUES(`account_number`), `account_type` = VALUES(`account_type`), `opening_balance` = VALUES(`opening_balance`), `balance` = VALUES(`balance`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['accounts'] as $acc) {
+                if (!is_array($acc) || empty($acc['id'])) continue;
+                $accStmt->execute([
+                    ':id' => (string)$acc['id'],
+                    ':name' => $acc['name'] ?? 'Account',
+                    ':accnum' => $acc['accountNumber'] ?? null,
+                    ':acctype' => $acc['accountType'] ?? null,
+                    ':opbal' => (float)($acc['openingBalance'] ?? 0),
+                    ':bal' => (float)($acc['balance'] ?? 0),
+                    ':json' => json_encode($acc),
+                ]);
+            }
+        }
+
+        if (isset($updates['payment_methods']) && is_array($updates['payment_methods'])) {
+            $pmStmt = $pdo->prepare("INSERT INTO `{$prefix}payment_methods` 
+                (`id`, `name`, `is_default`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :isdef, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `is_default` = VALUES(`is_default`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['payment_methods'] as $pm) {
+                if (!is_array($pm) || empty($pm['id'])) continue;
+                $pmStmt->execute([
+                    ':id' => (string)$pm['id'],
+                    ':name' => $pm['name'] ?? 'Method',
+                    ':isdef' => !empty($pm['isDefault']) ? 1 : 0,
+                    ':json' => json_encode($pm),
+                ]);
+            }
+        }
+
+        if (isset($updates['locations']) && is_array($updates['locations'])) {
+            $locStmt = $pdo->prepare("INSERT INTO `{$prefix}locations` 
+                (`id`, `name`, `code`, `city`, `state`, `country`, `zip_code`, `mobile`, `email`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :code, :city, :state, :country, :zip, :mobile, :email, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `code` = VALUES(`code`), `city` = VALUES(`city`), `state` = VALUES(`state`), `country` = VALUES(`country`), `zip_code` = VALUES(`zip_code`), `mobile` = VALUES(`mobile`), `email` = VALUES(`email`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['locations'] as $loc) {
+                if (!is_array($loc) || empty($loc['id'])) continue;
+                $locStmt->execute([
+                    ':id' => (string)$loc['id'],
+                    ':name' => $loc['name'] ?? 'Branch',
+                    ':code' => $loc['code'] ?? null,
+                    ':city' => $loc['city'] ?? null,
+                    ':state' => $loc['state'] ?? null,
+                    ':country' => $loc['country'] ?? null,
+                    ':zip' => $loc['zipCode'] ?? null,
+                    ':mobile' => $loc['mobile'] ?? null,
+                    ':email' => $loc['email'] ?? null,
+                    ':json' => json_encode($loc),
+                ]);
+            }
+        }
+
+        if (isset($updates['registers']) && is_array($updates['registers'])) {
+            $regStmt = $pdo->prepare("INSERT INTO `{$prefix}registers` 
+                (`id`, `status`, `location_id`, `cashier_name`, `opening_cash`, `data_json`, `updated_at`)
+                VALUES (:id, :status, :lid, :cname, :opcash, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `status` = VALUES(`status`), `location_id` = VALUES(`location_id`), `cashier_name` = VALUES(`cashier_name`), `opening_cash` = VALUES(`opening_cash`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            $regs = isset($updates['registers'][0]) ? $updates['registers'] : [$updates['registers']];
+            foreach ($regs as $reg) {
+                if (!is_array($reg) || empty($reg['id'])) continue;
+                $regStmt->execute([
+                    ':id' => (string)$reg['id'],
+                    ':status' => $reg['status'] ?? 'closed',
+                    ':lid' => $reg['locationId'] ?? null,
+                    ':cname' => $reg['cashierName'] ?? null,
+                    ':opcash' => (float)($reg['openingCash'] ?? 0),
+                    ':json' => json_encode($reg),
+                ]);
+            }
+        }
+
+        if (isset($updates['variations']) && is_array($updates['variations'])) {
+            $varStmt = $pdo->prepare("INSERT INTO `{$prefix}variations` 
+                (`id`, `name`, `product_id`, `sub_sku`, `type`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :pid, :sku, :type, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `product_id` = VALUES(`product_id`), `sub_sku` = VALUES(`sub_sku`), `type` = VALUES(`type`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['variations'] as $v) {
+                if (!is_array($v) || empty($v['id'])) continue;
+                $varStmt->execute([
+                    ':id' => (string)$v['id'],
+                    ':name' => $v['name'] ?? 'Variation',
+                    ':pid' => $v['productId'] ?? null,
+                    ':sku' => $v['subSku'] ?? null,
+                    ':type' => $v['type'] ?? 'variable',
+                    ':json' => json_encode($v),
+                ]);
+            }
+        }
+
+        if (isset($updates['stock_adjustments']) && is_array($updates['stock_adjustments'])) {
+            $saStmt = $pdo->prepare("INSERT INTO `{$prefix}stock_adjustments` 
+                (`id`, `reference_no`, `location_id`, `total_amount`, `data_json`, `updated_at`)
+                VALUES (:id, :ref, :lid, :tot, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `reference_no` = VALUES(`reference_no`), `location_id` = VALUES(`location_id`), `total_amount` = VALUES(`total_amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['stock_adjustments'] as $sa) {
+                if (!is_array($sa) || empty($sa['id'])) continue;
+                $saStmt->execute([
+                    ':id' => (string)$sa['id'],
+                    ':ref' => $sa['referenceNo'] ?? null,
+                    ':lid' => $sa['locationId'] ?? null,
+                    ':tot' => (float)($sa['totalAmount'] ?? 0),
+                    ':json' => json_encode($sa),
+                ]);
+            }
+        }
+
+        if (isset($updates['stock_transfers']) && is_array($updates['stock_transfers'])) {
+            $stStmt = $pdo->prepare("INSERT INTO `{$prefix}stock_transfers` 
+                (`id`, `reference_no`, `source_location_id`, `target_location_id`, `status`, `data_json`, `updated_at`)
+                VALUES (:id, :ref, :slid, :tlid, :st, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `reference_no` = VALUES(`reference_no`), `source_location_id` = VALUES(`source_location_id`), `target_location_id` = VALUES(`target_location_id`), `status` = VALUES(`status`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['stock_transfers'] as $st) {
+                if (!is_array($st) || empty($st['id'])) continue;
+                $stStmt->execute([
+                    ':id' => (string)$st['id'],
+                    ':ref' => $st['referenceNo'] ?? null,
+                    ':slid' => $st['sourceLocationId'] ?? null,
+                    ':tlid' => $st['targetLocationId'] ?? null,
+                    ':st' => $st['status'] ?? 'completed',
+                    ':json' => json_encode($st),
+                ]);
+            }
+        }
+
+        if (isset($updates['product_history']) && is_array($updates['product_history'])) {
+            $phStmt = $pdo->prepare("INSERT INTO `{$prefix}product_history` 
+                (`id`, `product_id`, `action`, `data_json`, `updated_at`)
+                VALUES (:id, :pid, :act, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `product_id` = VALUES(`product_id`), `action` = VALUES(`action`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['product_history'] as $ph) {
+                if (!is_array($ph) || empty($ph['id'])) continue;
+                $phStmt->execute([
+                    ':id' => (string)$ph['id'],
+                    ':pid' => $ph['productId'] ?? null,
+                    ':act' => $ph['action'] ?? null,
+                    ':json' => json_encode($ph),
+                ]);
+            }
+        }
+
+        if (isset($updates['purchase_requisitions']) && is_array($updates['purchase_requisitions'])) {
+            $prStmt = $pdo->prepare("INSERT INTO `{$prefix}purchase_requisitions` 
+                (`id`, `reference_no`, `status`, `location_id`, `data_json`, `updated_at`)
+                VALUES (:id, :ref, :st, :lid, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `reference_no` = VALUES(`reference_no`), `status` = VALUES(`status`), `location_id` = VALUES(`location_id`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['purchase_requisitions'] as $pr) {
+                if (!is_array($pr) || empty($pr['id'])) continue;
+                $prStmt->execute([
+                    ':id' => (string)$pr['id'],
+                    ':ref' => $pr['referenceNo'] ?? null,
+                    ':st' => $pr['status'] ?? 'pending',
+                    ':lid' => $pr['locationId'] ?? null,
+                    ':json' => json_encode($pr),
+                ]);
+            }
+        }
+
+        if (isset($updates['notification_templates']) && is_array($updates['notification_templates'])) {
+            $ntStmt = $pdo->prepare("INSERT INTO `{$prefix}notification_templates` 
+                (`id`, `template_type`, `subject`, `data_json`, `updated_at`)
+                VALUES (:id, :ttype, :subj, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `template_type` = VALUES(`template_type`), `subject` = VALUES(`subject`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['notification_templates'] as $nt) {
+                if (!is_array($nt) || empty($nt['id'])) continue;
+                $ntStmt->execute([
+                    ':id' => (string)$nt['id'],
+                    ':ttype' => $nt['templateType'] ?? null,
+                    ':subj' => $nt['subject'] ?? null,
+                    ':json' => json_encode($nt),
                 ]);
             }
         }

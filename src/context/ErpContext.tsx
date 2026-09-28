@@ -1766,11 +1766,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
               if (Array.isArray(d.transactions) && d.transactions.length > 0) setTransactions(d.transactions);
               if (Array.isArray(d.customers) && d.customers.length > 0) setCustomers(d.customers);
+              if (Array.isArray(d.customer_groups) && d.customer_groups.length > 0) setCustomerGroups(d.customer_groups);
               if (Array.isArray(d.suppliers) && d.suppliers.length > 0) setSuppliers(d.suppliers);
               if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
               if (Array.isArray(d.brands) && d.brands.length > 0) setBrands(d.brands);
               if (Array.isArray(d.expenses) && d.expenses.length > 0) setExpenses(d.expenses);
               if (Array.isArray(d.units) && d.units.length > 0) setUnits(d.units);
+              if (Array.isArray(d.warranties) && d.warranties.length > 0) setWarranties(d.warranties);
+              if (Array.isArray(d.racks) && d.racks.length > 0) setRacks(d.racks);
+              if (Array.isArray(d.tax_rates) && d.tax_rates.length > 0) setTaxRates(d.tax_rates);
+              if (Array.isArray(d.tax_groups) && d.tax_groups.length > 0) setTaxGroups(d.tax_groups);
+              if (Array.isArray(d.currencies) && d.currencies.length > 0) setCurrencies(d.currencies);
+              if (Array.isArray(d.accounts) && d.accounts.length > 0) setAccounts(d.accounts);
+              if (Array.isArray(d.payment_methods) && d.payment_methods.length > 0) setPaymentMethods(d.payment_methods);
               if (Array.isArray(d.sales_commission_agents) && d.sales_commission_agents.length > 0) {
                 setSalesCommissionAgents(d.sales_commission_agents);
               }
