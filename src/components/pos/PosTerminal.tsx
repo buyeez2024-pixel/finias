@@ -985,7 +985,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                     className={`relative bg-slate-900 border rounded-xl p-2.5 flex flex-col justify-between transition-all select-none ${
                       !canAdd
                         ? 'opacity-50 border-slate-800 cursor-not-allowed'
-                        : 'border-slate-800 hover:border-indigo-500 hover:bg-slate-850 hover:shadow-lg cursor-pointer group'
+                        : 'border-slate-800 hover:border-indigo-500 hover:bg-slate-850 hover:shadow-lg active:scale-95 active:opacity-80 cursor-pointer group'
                     }`}
                   >
                     {/* Stock badge */}
@@ -1361,7 +1361,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                 id="pos-hold-sale-btn"
                 disabled={cart.length === 0}
                 onClick={() => holdCart()}
-                className="py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-95 active:opacity-80 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Hold / Suspend sale (F9)"
               >
                 <PauseCircle className="w-3.5 h-3.5 text-indigo-400" />
@@ -1373,7 +1373,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               id="pos-quotation-btn"
               disabled={cart.length === 0}
               onClick={handleSaveQuotation}
-              className={`py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-95 active:opacity-80 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 settings.disableDraft ? 'col-span-1.5' : ''
               }`}
               title="Save as Quotation Estimate"
@@ -1385,7 +1385,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             <button
               id="pos-sale-return-cart-action-btn"
               onClick={() => setShowSaleReturnModal(true)}
-              className="py-2 px-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95"
+              className="py-2 px-1.5 bg-rose-500/15 hover:bg-rose-500/25 active:scale-95 active:opacity-80 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition"
               title="Immediate Sale Return (F7)"
             >
               <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
@@ -1398,7 +1398,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               onClick={() => {
                 if (window.confirm('Clear all items from current cart?')) clearCart();
               }}
-              className={`py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`py-2 px-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-95 active:opacity-80 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 settings.disableDraft ? 'col-span-1.5' : ''
               }`}
               title="Clear Cart"
@@ -1415,7 +1415,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                 id="pos-express-cash-btn"
                 disabled={cart.length === 0}
                 onClick={handleExpressCashCheckout}
-                className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Complete cash sale immediately with exact total"
               >
                 <Banknote className="w-4 h-4" />
@@ -1427,7 +1427,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               id="pos-checkout-btn"
               disabled={cart.length === 0}
               onClick={onOpenPaymentModal}
-              className={`py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 !settings.disableExpressCheckout ? 'flex-[1.5]' : 'w-full'
               }`}
             >

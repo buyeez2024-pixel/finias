@@ -587,7 +587,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     key={amt}
                     type="button"
                     onClick={() => handleQuickCash(amt)}
-                    className="px-2 py-0.5 bg-slate-900 hover:bg-indigo-600/30 hover:border-indigo-500 text-slate-300 border border-slate-800 rounded-md text-[10px] font-semibold transition font-mono"
+                    className="px-2 py-1 bg-slate-900 hover:bg-indigo-600/30 hover:border-indigo-500 active:scale-95 active:opacity-80 text-slate-300 border border-slate-800 rounded-md text-[10px] font-semibold transition font-mono cursor-pointer"
                   >
                     {settings.currencySymbol || '$'}{amt % 1 === 0 ? amt : amt.toFixed(2)}
                   </button>
@@ -643,7 +643,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             id="finalize-payment-btn"
             onClick={handleCompleteSale}
-            className={`w-full py-3 text-white rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition ${
+            className={`w-full py-3.5 text-white rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer ${
               !isEffectiveOnline
                 ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-950/40'
                 : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 shadow-indigo-950/40'

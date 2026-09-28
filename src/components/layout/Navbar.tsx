@@ -102,46 +102,44 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 z-30 shadow-xs transition-colors duration-300">
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 max-w-full">
         {/* Left Branding & Mobile Drawer Toggle & Location Switcher */}
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Mobile Navigation Drawer Toggle */}
-          {activeTab !== 'pos' && (
-            <button
-              id="mobile-nav-toggle-btn"
-              type="button"
-              onClick={toggleMobileSidebar}
-              className="lg:hidden p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center transition cursor-pointer"
-              title="Open Navigation Menu"
-              aria-label="Toggle navigation menu"
-            >
-              <Menu className="w-5 h-5 text-indigo-400" />
-            </button>
-          )}
+          <button
+            id="mobile-nav-toggle-btn"
+            type="button"
+            onClick={toggleMobileSidebar}
+            className="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 text-slate-200 border border-slate-700 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
+            title="Open Navigation Menu"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
+          </button>
 
           <div
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
-            className="cursor-pointer transition-opacity hover:opacity-90 flex items-center shrink-0 min-w-fit"
+            className="cursor-pointer transition-opacity hover:opacity-90 active:scale-95 active:opacity-80 flex items-center shrink-0 min-w-fit"
             title="Dashboard"
           >
             <RoyalLogo
-              size="md"
+              size="sm"
               showText={false}
             />
           </div>
 
-          <div className="h-6 w-px bg-slate-800 hidden md:block" />
+          <div className="h-5 w-px bg-slate-800 hidden md:block" />
 
           {/* Location / Warehouse Selector */}
-          <div className="relative hidden md:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/70">
-            <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
+          <div className="relative hidden md:flex items-center gap-2 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/70">
+            <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
             <span className="text-xs text-slate-400 font-medium">Branch:</span>
             <select
               id="branch-location-select"
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 max-w-[200px] truncate"
+              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 max-w-[160px] lg:max-w-[200px] truncate"
             >
               {(locations || []).map((loc) => (
                 <option key={loc.id} value={loc.id} className="bg-slate-900 text-white">
@@ -153,8 +151,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Action Icons & Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Quick Calculator Tool - Only enabled when POS screen/terminal is active */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Quick Calculator Tool - Enabled when POS is active on tablets/desktops */}
           {(() => {
             const isPosActive = activeTab === 'pos';
             return (
@@ -167,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setShowCalculator(true);
                   }
                 }}
-                className={`hidden sm:flex p-1.5 rounded-lg border items-center justify-center transition group ${
+                className={`hidden md:flex p-2 rounded-xl border items-center justify-center transition active:scale-95 active:opacity-80 group ${
                   isPosActive
                     ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-300 border-slate-700 cursor-pointer'
                     : 'bg-slate-800/40 text-slate-600 border-slate-800/60 cursor-not-allowed opacity-40'
@@ -191,8 +189,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               const nextMode = settings?.themeMode === 'light' ? 'dark' : 'light';
               updateSettings({ themeMode: nextMode });
             }}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center transition group cursor-pointer shrink-0"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 text-slate-300 border border-slate-700 flex items-center justify-center transition group cursor-pointer shrink-0 shadow-2xs"
             title={settings?.themeMode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            aria-label="Toggle Theme Mode"
           >
             {settings?.themeMode === 'light' ? (
               <Moon className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
@@ -202,27 +201,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Network & Offline Sync Status Indicator */}
-          <div className="hidden xs:block sm:block">
+          <div className="hidden sm:block">
             <NetworkSyncStatusBadge onClick={() => setShowOfflineManager(true)} />
           </div>
 
-          {/* Register Status Indicator */}
+          {/* Register Shift Status Indicator */}
           <button
             id="register-shift-status-btn"
             onClick={onOpenRegisterModal}
-            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg border transition shrink-0 ${
+            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs font-semibold rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 ${
               cashRegister.status === 'open'
                 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
                 : 'bg-rose-950/60 text-rose-300 border-rose-700/50 hover:bg-rose-900/60'
             }`}
+            title={cashRegister.status === 'open' ? 'Cash Register: Active Shift' : 'Cash Register: Closed'}
           >
             <div
               className={`w-2 h-2 rounded-full shrink-0 ${
                 cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
-            <span className="hidden sm:inline">
-              {cashRegister.status === 'open' ? 'Shift Active' : 'Register Closed'}
+            <span className="hidden sm:inline text-xs">
+              {cashRegister.status === 'open' ? 'Shift Active' : 'Closed'}
             </span>
           </button>
 
@@ -230,21 +230,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="launch-pos-nav-btn"
             onClick={() => setActiveTab('pos')}
-            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 text-xs font-bold rounded-lg shadow-sm transition shrink-0 ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl shadow-sm transition active:scale-95 active:opacity-80 shrink-0 ${
               activeTab === 'pos'
-                ? 'bg-indigo-600 text-white ring-2 ring-indigo-400'
+                ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-indigo-600/30'
                 : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white'
             }`}
           >
-            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">POS Screen</span>
-            <span className="sm:hidden text-xs">POS</span>
+            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="text-xs font-bold">POS</span>
             {cart.length > 0 && (
               <span 
                 id="nav-pos-cart-badge"
-                className="h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full ml-0.5 sm:ml-1.5 shadow-md border leading-none bg-white border-slate-200"
+                className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full ml-0.5 shadow-md border leading-none bg-white border-slate-200"
               >
-                <span className="text-[10px] sm:text-[11px] font-black leading-none text-slate-950">
+                <span className="text-[10px] font-black leading-none text-slate-950">
                   {cart.reduce((a, b) => a + (Number(b.quantity) || 0), 0)}
                 </span>
               </span>
@@ -252,19 +251,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Admin Security & Lockout Notifications Bell */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               id="admin-security-bell-btn"
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 setShowProfileMenu(false);
               }}
-              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition"
+              className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 border border-slate-700 text-slate-200 transition shadow-2xs flex items-center justify-center"
               title={
                 lockedUsers.length > 0
                   ? `${lockedUsers.length} account(s) locked. ${unlockRequestedUsers.length} unlock request mail(s) received.`
                   : 'Security Notifications'
               }
+              aria-label="Security Notifications"
             >
               <Bell className="w-4 h-4" />
               {lockedUsers.length > 0 && (
@@ -372,7 +372,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="user-profile-btn"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition"
+              className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 border border-slate-700 text-slate-200 transition cursor-pointer"
             >
               {currentUser?.avatar ? (
                 <img

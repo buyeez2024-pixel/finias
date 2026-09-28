@@ -7,6 +7,7 @@ import { AddUserPage } from './components/users/AddUserPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { PosTerminal } from './components/pos/PosTerminal';
 import { PaymentModal } from './components/pos/PaymentModal';
 import { ReceiptModal } from './components/pos/ReceiptModal';
@@ -381,7 +382,7 @@ const MainAppContent: React.FC = () => {
         {activeTab !== 'pos' && <Sidebar />}
 
         {/* Tab View Container */}
-        <main className={`flex-1 ${activeTab === 'pos' ? 'overflow-hidden p-0' : 'overflow-x-hidden overflow-y-auto pb-2'} ${isLight ? 'bg-slate-50' : 'bg-slate-950/60'} flex flex-col min-h-0 min-w-0 transition-colors duration-300`}>
+        <main className={`flex-1 ${activeTab === 'pos' ? 'overflow-hidden p-0' : 'overflow-x-hidden overflow-y-auto pb-16 lg:pb-2'} ${isLight ? 'bg-slate-50' : 'bg-slate-950/60'} flex flex-col min-h-0 min-w-0 transition-colors duration-300`}>
           {!hasModuleAccess(activeTab) ? (
             <AccessDeniedGuard
               moduleName={activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
@@ -818,6 +819,7 @@ const MainAppContent: React.FC = () => {
       )}
       <SessionWarningModal />
       <FlashNotification />
+      <MobileBottomNav />
     </div>
   );
 };

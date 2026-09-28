@@ -964,9 +964,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           {/* Right Authentication Form Card (7 cols on lg) */}
           <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
             <div>
-              {/* Tab Navigation Switcher */}
-              <div className={`flex items-center justify-between pb-6 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                <div className={`flex gap-2 ${isLight ? 'bg-transparent border-0 p-0' : 'p-1 rounded-xl bg-slate-950 border border-slate-800'}`}>
+              {/* Responsive Tab Navigation & Theme Mode Switcher */}
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                {/* Tabs (Sign In / Register) */}
+                <div className={`grid grid-cols-2 gap-1 p-1 rounded-xl w-full sm:w-auto ${isLight ? 'bg-slate-100 border border-slate-200' : 'bg-slate-950 border border-slate-800'}`}>
                   <button
                     id="auth-tab-login"
                     type="button"
@@ -974,15 +975,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                       setMode('login');
                       setErrorMessage(null);
                     }}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                      isLight
-                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30'
-                        : mode === 'login'
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mode === 'login'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
+                        : isLight
+                        ? 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                     }`}
                   >
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
                     <span>Sign In</span>
                   </button>
                   <button
@@ -992,57 +993,57 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                       setMode('register');
                       setErrorMessage(null);
                     }}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-                      isLight
-                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30'
-                        : mode === 'register'
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                    className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mode === 'register'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
+                        : isLight
+                        ? 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                     }`}
                   >
-                    <Building className="w-3.5 h-3.5" />
-                    <span>Register Business</span>
+                    <Building className="w-3.5 h-3.5 shrink-0" />
+                    <span>Register</span>
+                    <span className="hidden md:inline">Business</span>
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2.5">
-                  <div className={`hidden sm:flex items-center gap-1.5 text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>256-Bit SSL</span>
+                {/* Theme Switcher and Security Badge */}
+                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+                  <div className={`flex items-center gap-1.5 text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-mono">256-Bit SSL</span>
                   </div>
 
-                  {/* Explicit Dual Mode Switcher for Auth Page */}
-                  <div className={`inline-flex items-center gap-2 ${
-                    isLight ? 'bg-transparent border-0 p-0' : 'p-1 rounded-xl border bg-slate-950 border-slate-800'
+                  {/* Dual Mode Switcher */}
+                  <div className={`inline-flex items-center gap-1 p-1 rounded-xl border ${
+                    isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border border-slate-800'
                   }`}>
                     <button
                       id="auth-theme-light-btn"
                       type="button"
                       onClick={() => updateSettings({ themeMode: 'light' })}
-                      className={`px-3 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 font-bold ${
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 font-bold ${
                         isLight
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-white text-amber-600 shadow-xs border border-slate-200/80 font-bold'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                       }`}
                       title="Activate Light Mode"
                     >
-                      <Sun className="w-3.5 h-3.5" />
+                      <Sun className={`w-3.5 h-3.5 ${isLight ? 'text-amber-500' : 'text-slate-400'}`} />
                       <span>Light</span>
                     </button>
                     <button
                       id="auth-theme-dark-btn"
                       type="button"
                       onClick={() => updateSettings({ themeMode: 'dark' })}
-                      className={`px-3 py-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 font-bold ${
-                        isLight
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                          : !isLight
-                          ? 'bg-slate-800 text-white shadow-xs font-bold border border-slate-700'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 font-bold ${
+                        !isLight
+                          ? 'bg-slate-800 text-indigo-300 shadow-xs border border-slate-700 font-bold'
+                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
                       }`}
                       title="Activate Dark Mode"
                     >
-                      <Moon className={`w-3.5 h-3.5 ${isLight ? 'text-white' : !isLight ? 'text-indigo-400' : 'text-slate-500'}`} />
+                      <Moon className={`w-3.5 h-3.5 ${!isLight ? 'text-indigo-400' : 'text-slate-500'}`} />
                       <span>Dark</span>
                     </button>
                   </div>
