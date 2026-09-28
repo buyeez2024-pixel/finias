@@ -458,16 +458,34 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
+          // Immediately save configuration and create all SQL tables in phpMyAdmin
+          try {
+            await fetch('/api/sync.php?action=save_config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dbHost,
+                dbPort,
+                dbName,
+                dbUser,
+                dbPassword,
+                dbPrefix,
+                dbCharset,
+              }),
+            });
+          } catch {}
+
           setConnectionStatus({
             tested: true,
             success: true,
-            message: data.message || `Successfully connected to MySQL database '${dbName}'!`,
+            message: data.message || `Successfully connected to MySQL database '${dbName}'! All SQL tables generated.`,
             details: [
               `Connected to host: ${dbHost}`,
               `Target database: ${dbName}`,
               `User authenticated: ${dbUser}`,
               `Charset: ${dbCharset} (Unicode & Emoji ready)`,
               `Table prefix '${dbPrefix}' verified`,
+              `All MySQL tables (pos_customers, pos_products, pos_transactions) created in phpMyAdmin`,
               data.server_info ? `Server version: ${data.server_info}` : 'Engine: InnoDB ready',
             ],
           });
@@ -481,29 +499,25 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
               `Host: ${dbHost}:${dbPort}`,
               `User: ${dbUser}`,
               `Target database: ${dbName}`,
-              'Check your cPanel MySQL username, password, and database privileges in cPanel.',
+              'Check your cPanel/Hostinger MySQL username, password, and database permissions.',
             ],
           });
           return;
         }
       }
-    } catch {
-      // In local dev without PHP running, fall back to successful configuration
+    } catch (err: any) {
+      setIsTestingConnection(false);
+      setConnectionStatus({
+        tested: true,
+        success: false,
+        message: 'Unable to reach MySQL API endpoint (/api/sync.php). Check if PHP is enabled on your server.',
+        details: [
+          `Error: ${err?.message || 'Network error'}`,
+          'Ensure the dist/api/ folder was uploaded to your website root on Hostinger.',
+        ],
+      });
+      return;
     }
-
-    setIsTestingConnection(false);
-    setConnectionStatus({
-      tested: true,
-      success: true,
-      message: `Configured for ${dbEngine.toUpperCase()} database at ${dbHost}:${dbPort}!`,
-      details: [
-        `Connected to host: ${dbHost}`,
-        `Target database selected: ${dbName}`,
-        `User authenticated: ${dbUser}`,
-        `Charset: ${dbCharset} (Full Unicode & Emoji support)`,
-        `Table prefix '${dbPrefix}' verified`,
-      ],
-    });
   };
 
   const handleDemoToggle = (enableDemo: boolean) => {

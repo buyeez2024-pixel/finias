@@ -62,10 +62,13 @@ import {
   Trash2,
   Upload,
   Image,
+  Database,
 } from 'lucide-react';
+import { DatabaseSetupTab } from './DatabaseSetupTab';
 
 type SettingsSectionId =
   | 'business'
+  | 'database'
   | 'tax'
   | 'product'
   | 'contact'
@@ -96,6 +99,14 @@ const SECTIONS: SectionMeta[] = [
     shortLabel: 'Business',
     icon: Building2,
     description: 'Core company profile, HQ contact details, trading entity, start date, default profit margin, currency, financial year & timezone.',
+  },
+  {
+    id: 'database',
+    label: 'Hostinger MySQL Database & Live Sync',
+    shortLabel: 'Database Setup',
+    icon: Database,
+    description: 'Configure central Hostinger MySQL credentials, check live phpMyAdmin table counts, and run 1-Click Fresh Installation.',
+    badge: 'cPanel Live DB',
   },
   {
     id: 'product',
@@ -1018,6 +1029,13 @@ export const BusinessSettingsTab: React.FC = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* DATABASE SETUP & HEALTH TAB */}
+            {/* ========================================================================= */}
+            {activeSection === 'database' && (
+              <DatabaseSetupTab />
             )}
 
             {/* ========================================================================= */}

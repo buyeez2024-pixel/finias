@@ -14,6 +14,7 @@ import { PaymentAccountsTab } from './PaymentAccountsTab';
 import { PaymentMethodsTab } from './PaymentMethodsTab';
 import { NotificationTemplatesView } from '../notifications/NotificationTemplatesView';
 import { SignatureSealTab } from './SignatureSealTab';
+import { DatabaseSetupTab } from './DatabaseSetupTab';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -34,12 +35,25 @@ import {
   Stamp,
   PenTool,
   Plus,
+  Database,
 } from 'lucide-react';
 
 const SUB_TAB_TITLES: Record<
   string,
   { label: string; description: string; icon: React.ComponentType<{ className?: string }>; badge?: string }
 > = {
+  database_setup: {
+    label: 'Hostinger MySQL Database & Live Sync',
+    description: 'Configure central MySQL database server credentials, verify phpMyAdmin table structures, and run 1-Click Fresh Installation.',
+    icon: Database,
+    badge: 'cPanel Live DB',
+  },
+  database: {
+    label: 'Hostinger MySQL Database & Live Sync',
+    description: 'Configure central MySQL database server credentials, verify phpMyAdmin table structures, and run 1-Click Fresh Installation.',
+    icon: Database,
+    badge: 'cPanel Live DB',
+  },
   signature_seal: {
     label: 'Signature & Company Address Seal',
     description: 'Configure authorized administrator signatures and official company address seals/stamps for invoices and bills.',
@@ -304,6 +318,7 @@ export const SettingsView: React.FC = () => {
         {settingsSubTab === 'payment_methods' && <PaymentMethodsTab />}
         {settingsSubTab === 'notification_templates' && <NotificationTemplatesView />}
         {settingsSubTab === 'signature_seal' && <SignatureSealTab />}
+        {(settingsSubTab === 'database_setup' || settingsSubTab === 'database') && <DatabaseSetupTab />}
       </div>
     </div>
   );
