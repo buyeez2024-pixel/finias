@@ -1126,7 +1126,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
         })()}
 
         {/* Staff Table */}
-        <div className={`overflow-x-auto rounded-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+        <div className={`overflow-x-auto scroll-smooth touch-pan-x overscroll-x-contain custom-scrollbar rounded-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <table className="w-full text-left text-xs">
             <thead
               className={`font-bold border-b uppercase text-[10px] tracking-wider ${

@@ -100,8 +100,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const isLight = settings?.themeMode === 'light';
+
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white shrink-0 z-30 shadow-xs transition-colors duration-300">
+    <header className={`w-full border-b shrink-0 z-30 shadow-xs transition-colors duration-300 ${
+      isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+    }`}>
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 max-w-full">
         {/* Left Branding & Mobile Drawer Toggle & Location Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -110,11 +114,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="mobile-nav-toggle-btn"
             type="button"
             onClick={toggleMobileSidebar}
-            className="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 text-slate-200 border border-slate-700 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
+            className={`lg:hidden p-2 rounded-xl border flex items-center justify-center transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer shadow-2xs ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
             title="Open Navigation Menu"
             aria-label="Toggle navigation menu"
           >
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 dark:text-indigo-400" />
           </button>
 
           <div
@@ -129,20 +137,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           </div>
 
-          <div className="h-5 w-px bg-slate-800 hidden md:block" />
+          <div className={`h-5 w-px hidden md:block ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`} />
 
           {/* Location / Warehouse Selector */}
-          <div className="relative hidden md:flex items-center gap-2 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/70">
-            <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="text-xs text-slate-400 font-medium">Branch:</span>
+          <div className={`relative hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
+            isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-800/80 border-slate-700/70'
+          }`}>
+            <Building2 className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <span className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Branch:</span>
             <select
               id="branch-location-select"
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 max-w-[160px] lg:max-w-[200px] truncate"
+              className={`bg-transparent text-xs font-semibold focus:outline-none cursor-pointer pr-2 max-w-[160px] lg:max-w-[200px] truncate ${
+                isLight ? 'text-slate-900' : 'text-white'
+              }`}
             >
               {(locations || []).map((loc) => (
-                <option key={loc.id} value={loc.id} className="bg-slate-900 text-white">
+                <option key={loc.id} value={loc.id} className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>
                   {loc.name} {loc.code ? `(${loc.code})` : ''}
                 </option>
               ))}
@@ -167,7 +179,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className={`hidden md:flex p-2 rounded-xl border items-center justify-center transition active:scale-95 active:opacity-80 group ${
                   isPosActive
-                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-300 border-slate-700 cursor-pointer'
+                    ? isLight
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-indigo-600 border-slate-300 cursor-pointer'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-300 border-slate-700 cursor-pointer'
+                    : isLight
+                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-40'
                     : 'bg-slate-800/40 text-slate-600 border-slate-800/60 cursor-not-allowed opacity-40'
                 }`}
                 title={
@@ -176,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'Calculator is enabled only when POS Terminal is in use'
                 }
               >
-                <Calculator className={`w-4 h-4 ${isPosActive ? 'text-indigo-400 group-hover:scale-110 transition-transform' : 'text-slate-600'}`} />
+                <Calculator className={`w-4 h-4 ${isPosActive ? 'text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform' : 'text-slate-400'}`} />
               </button>
             );
           })()}
@@ -192,14 +208,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenRegisterModal}
             className={`hidden md:flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 ${
               cashRegister.status === 'open'
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
+                ? isLight
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/60'
+                : isLight
+                ? 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'
                 : 'bg-rose-950/60 text-rose-300 border-rose-700/50 hover:bg-rose-900/60'
             }`}
             title={cashRegister.status === 'open' ? 'Cash Register: Active Shift' : 'Cash Register: Closed'}
           >
             <div
               className={`w-2 h-2 rounded-full shrink-0 ${
-                cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                cashRegister.status === 'open' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
               }`}
             />
             <span className="text-xs">
@@ -239,7 +259,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 setShowNotifications(!showNotifications);
                 setShowProfileMenu(false);
               }}
-              className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 active:opacity-80 border border-slate-700 text-slate-200 transition shadow-2xs flex items-center justify-center"
+              className={`relative p-2 rounded-xl border transition shadow-2xs flex items-center justify-center active:scale-95 active:opacity-80 cursor-pointer ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
+                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+              }`}
               title={
                 lockedUsers.length > 0
                   ? `${lockedUsers.length} account(s) locked. ${unlockRequestedUsers.length} unlock request mail(s) received.`

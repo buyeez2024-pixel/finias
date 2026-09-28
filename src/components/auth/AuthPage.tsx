@@ -1392,9 +1392,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                               id="login-email-input"
                               type="text"
                               required
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck="false"
                               value={loginEmail}
                               onChange={(e) => setLoginEmail(e.target.value)}
-                              placeholder="admin@finiaspos.com"
+                              placeholder="Username or email address (e.g. admin)"
                               className={`w-full text-xs pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1 transition ${
                                 isLight
                                   ? 'bg-slate-50 text-slate-900 border-slate-300 focus:border-indigo-600 focus:ring-indigo-600/30'

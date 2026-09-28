@@ -45,7 +45,7 @@ export const UserMenuView: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 pb-12 animate-fadeIn max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 pb-20 lg:pb-12 animate-fadeIn max-w-7xl mx-auto w-full scroll-smooth overscroll-y-contain">
       {/* Top Header & Breadcrumb Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
         <div className="space-y-1.5">

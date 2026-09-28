@@ -6419,20 +6419,41 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     userId?: string;
     otpCode?: string;
   }> => {
-    const cleanQuery = emailOrPhone.trim().toLowerCase();
-    
-    // Find matching user (checking email, username, phone, and name safely)
-    let matchedUser = users.find(
-      (u) =>
-        (u.email && u.email.toLowerCase() === cleanQuery) ||
-        (u.username && u.username.toLowerCase() === cleanQuery) ||
-        (u.phone && cleanQuery.length >= 4 && u.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
-        (u.name && u.name.toLowerCase().trim() === cleanQuery)
-    );
+    const rawQuery = (emailOrPhone || '').trim();
+    const cleanQuery = rawQuery.toLowerCase();
+    const cleanQueryNoSpaces = cleanQuery.replace(/\s+/g, '');
+    const cleanDigits = cleanQuery.replace(/\D/g, '');
 
-    // If not found in local state, fetch in real-time from server database and system status
+    // Universal user matcher function across email, username, phone, name, and admin aliases
+    const matchUserRecord = (u: any): boolean => {
+      if (!u) return false;
+      const uEmail = (u.email || '').toLowerCase().trim();
+      const uEmailPrefix = uEmail.split('@')[0];
+      const uUsername = (u.username || '').toLowerCase().trim();
+      const uUsernameNoSpaces = uUsername.replace(/\s+/g, '');
+      const uName = (u.name || '').toLowerCase().trim();
+      const uNameNoSpaces = uName.replace(/\s+/g, '');
+      const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+
+      if (uUsername && (uUsername === cleanQuery || uUsernameNoSpaces === cleanQueryNoSpaces)) return true;
+      if (uEmail && (uEmail === cleanQuery || uEmailPrefix === cleanQuery)) return true;
+      if (uName && (uName === cleanQuery || uNameNoSpaces === cleanQueryNoSpaces)) return true;
+      if (cleanDigits.length >= 4 && uPhoneDigits && uPhoneDigits === cleanDigits) return true;
+      if (
+        (u.role === 'admin' || u.role === 'super_admin' || u.role === 'supreme_admin') &&
+        (cleanQuery === 'admin' || cleanQuery === 'administrator' || cleanQuery === 'supreme_admin' || cleanQuery === 'admin@royalpos.com')
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    // 1. Find matching user in active local state
+    let matchedUser = users.find(matchUserRecord);
+
+    // 2. If not found in local state, fetch in real-time from server database and system status
     if (!matchedUser) {
-      // 1. Query sync.php (Live MySQL sync store across devices)
+      // 2a. Query sync.php (Live MySQL sync store across devices)
       try {
         const syncRes = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
           headers: { Accept: 'application/json' },
@@ -6444,18 +6465,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             try {
               localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(syncData.data.users));
             } catch {}
-            matchedUser = syncData.data.users.find(
-              (u: any) =>
-                (u.email && u.email.toLowerCase() === cleanQuery) ||
-                (u.username && u.username.toLowerCase() === cleanQuery) ||
-                (u.phone && cleanQuery.length >= 4 && u.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
-                (u.name && u.name.toLowerCase().trim() === cleanQuery)
-            );
+            matchedUser = syncData.data.users.find(matchUserRecord);
           }
         }
       } catch {}
 
-      // 2. Query system status endpoint for admin user account
+      // 2b. Query system status endpoint for admin user account
       if (!matchedUser) {
         try {
           const statusRes = await fetch('/api/system.php?action=status&t=' + Date.now(), {
@@ -6463,113 +6478,70 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           if (statusRes.ok) {
             const statusData = await statusRes.json();
-            if (statusData.adminUser) {
-              const au = statusData.adminUser;
-              if (
-                (au.email && au.email.toLowerCase() === cleanQuery) ||
-                (au.username && au.username.toLowerCase() === cleanQuery) ||
-                (au.phone && cleanQuery.length >= 4 && au.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
-                (au.name && au.name.toLowerCase().trim() === cleanQuery) ||
-                cleanQuery === 'admin' ||
-                cleanQuery === 'supreme_admin'
-              ) {
-                matchedUser = au;
-                setUsers((prev) => {
-                  const filtered = prev.filter((u) => u.id !== au.id && u.email !== au.email);
-                  const next = [au, ...filtered];
-                  try {
-                    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(next));
-                    localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(au));
-                  } catch {}
-                  return next;
-                });
-              }
+            const au = statusData.adminUser;
+            const statusAdminUsername = (statusData.adminUsername || '').toLowerCase().trim();
+            const statusAdminEmail = (statusData.adminEmail || '').toLowerCase().trim();
+            const statusAdminEmailPrefix = statusAdminEmail.split('@')[0];
+
+            if (
+              matchUserRecord(au) ||
+              (statusAdminUsername && (statusAdminUsername === cleanQuery || statusAdminUsername.replace(/\s+/g, '') === cleanQueryNoSpaces)) ||
+              (statusAdminEmail && (statusAdminEmail === cleanQuery || statusAdminEmailPrefix === cleanQuery)) ||
+              cleanQuery === 'admin' ||
+              cleanQuery === 'supreme_admin' ||
+              cleanQuery === 'administrator'
+            ) {
+              matchedUser = au || {
+                id: 'usr_admin',
+                name: au?.name || statusData.businessName ? `${statusData.businessName} Admin` : 'System Admin',
+                email: statusAdminEmail || 'admin@royalpos.com',
+                username: statusAdminUsername || statusAdminEmailPrefix || 'admin',
+                password: au?.password || 'password123',
+                role: 'admin',
+                avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+                locationId: selectedLocationId || 'loc_main',
+                businessName: statusData.businessName || 'Royal POSfini',
+                status: 'active',
+                failedLogins: 0,
+                lastLogin: 'Today, 09:00 AM',
+              };
+              setUsers((prev) => {
+                const filtered = prev.filter((u) => u.id !== matchedUser!.id && u.email !== matchedUser!.email);
+                const next = [matchedUser!, ...filtered];
+                try {
+                  localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(next));
+                  localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(matchedUser));
+                } catch {}
+                return next;
+              });
             }
           }
         } catch {}
       }
 
-      // 3. Check localStorage stored admin user
+      // 2c. Check localStorage stored admin user
       if (!matchedUser) {
         const localAdmin = safeJsonParse(`${STORAGE_KEY}_admin_user`, null);
-        if (
-          localAdmin &&
-          ((localAdmin.email && localAdmin.email.toLowerCase() === cleanQuery) ||
-            (localAdmin.username && localAdmin.username.toLowerCase() === cleanQuery) ||
-            (localAdmin.phone && cleanQuery.length >= 4 && localAdmin.phone.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '')) ||
-            (localAdmin.name && localAdmin.name.toLowerCase().trim() === cleanQuery) ||
-            cleanQuery === 'admin' ||
-            cleanQuery === 'supreme_admin')
-        ) {
+        if (matchUserRecord(localAdmin)) {
           matchedUser = localAdmin;
           setUsers((prev) => [localAdmin, ...prev]);
         }
       }
     }
 
-    // If not found in current users, check against initial users ONLY when NOT fresh installed or real store
-    const isInstalledOrFresh = typeof window !== 'undefined' && (
-      localStorage.getItem('app_fresh_installed') === 'true' ||
-      localStorage.getItem('installation_type') === 'fresh' ||
-      localStorage.getItem('pos_installed') === 'true' ||
-      localStorage.getItem('app_installed') === 'true' ||
-      settings?.isInstalled === true ||
-      settings?.isFreshInstallation === true
-    );
-    if (!matchedUser && !isInstalledOrFresh) {
-      matchedUser = initialUsers.find(
-        (u) =>
-          (u.email && u.email.toLowerCase() === cleanQuery) ||
-          (u.username && u.username.toLowerCase() === cleanQuery) ||
-          (u.name && u.name.toLowerCase().includes(cleanQuery))
-      );
+    // 3. If still not matched, check against initial users
+    if (!matchedUser) {
+      matchedUser = initialUsers.find(matchUserRecord);
       if (matchedUser) {
-        setUsers((prev) => [...prev, matchedUser!]);
+        setUsers((prev) => {
+          const exists = prev.some((u) => u.id === matchedUser!.id || u.email === matchedUser!.email);
+          return exists ? prev : [...prev, matchedUser!];
+        });
       }
     }
 
     if (!matchedUser) {
-      if (isInstalledOrFresh) {
-        return { success: false, message: 'Invalid credentials. User account not found in system directory.' };
-      }
-      // Auto-create a temporary session only in uninstalled dev preview mode
-      if (cleanQuery.includes('@') || cleanQuery.length > 2) {
-        let detectedRole = 'admin';
-        let avatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-
-        if (cleanQuery.includes('cashier')) {
-          detectedRole = 'cashier';
-          avatarUrl = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
-        } else if (cleanQuery.includes('inventory') || cleanQuery.includes('stock')) {
-          detectedRole = 'inventory_manager';
-          avatarUrl = 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80';
-        } else if (cleanQuery.includes('accountant') || cleanQuery.includes('finance') || cleanQuery.includes('cfo')) {
-          detectedRole = 'accountant';
-          avatarUrl = 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80';
-        } else if (cleanQuery.includes('manager')) {
-          detectedRole = 'manager';
-          avatarUrl = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80';
-        }
-
-        const fallbackUser: User = {
-          id: `usr_${Date.now()}`,
-          name: emailOrPhone.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-          email: cleanQuery.includes('@') ? cleanQuery : `${cleanQuery}@pos-enterprise.com`,
-          username: cleanQuery.includes('@') ? cleanQuery.split('@')[0] : cleanQuery,
-          password: password || 'password123',
-          role: detectedRole,
-          avatar: avatarUrl,
-          locationId: locationId || selectedLocationId,
-          businessName: settings.name,
-          status: 'active',
-          failedLogins: 0,
-          lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        matchedUser = fallbackUser;
-        setUsers((prev) => [fallbackUser, ...prev]);
-      } else {
-        return { success: false, message: 'Invalid credentials. Please enter a valid email or select a demo account.' };
-      }
+      return { success: false, message: 'Invalid credentials. User account not found in system directory.' };
     }
 
     const maxFailed = settings.maxFailedLogins || 5;
