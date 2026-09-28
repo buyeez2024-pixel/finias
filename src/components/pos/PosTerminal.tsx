@@ -117,6 +117,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
   }, [selectedCustomer]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileViewTab, setMobileViewTab] = useState<'catalog' | 'cart'>('catalog');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [orderDiscountPercent, setOrderDiscountPercent] = useState<number>(() => settings?.defaultSaleDiscount || 0);
@@ -754,10 +755,66 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
       )}
 
+      {/* Mobile/Tablet Screen View Switcher: Switch between Products Search & Cart */}
+      <div className="lg:hidden flex items-center p-2 bg-slate-900 border-b border-slate-800 gap-2 shrink-0 z-20">
+        <button
+          type="button"
+          onClick={() => setMobileViewTab('catalog')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+            mobileViewTab === 'catalog'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
+          }`}
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span>Products & Search ({filteredProducts.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileViewTab('cart')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+            mobileViewTab === 'cart'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-400'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
+          }`}
+        >
+          <ShoppingCart className="w-3.5 h-3.5" />
+          <span>Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})</span>
+          {cart.length > 0 && (
+            <span className="bg-white text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full ml-1 font-mono">
+              {settings.currencySymbol}{grandTotal.toFixed(2)}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* LEFT: Product Catalog & Fast Grid */}
-      <div className="flex-1 flex flex-col border-r border-slate-800 bg-slate-950 overflow-hidden min-h-0">
+      <div className={`flex-1 flex flex-col border-r border-slate-800 bg-slate-950 overflow-hidden min-h-0 ${
+        mobileViewTab === 'cart' ? 'hidden lg:flex' : 'flex'
+      }`}>
         {/* Top Controls: Search, Barcode Scan, Cashier Tools */}
-        <div className="p-3 border-b border-slate-800 bg-slate-900/95 space-y-2.5 shrink-0">
+        <div className="p-2.5 sm:p-3 border-b border-slate-800 bg-slate-900/95 space-y-2 shrink-0">
+          {/* Dedicated Full-Width Search Input Bar - Always 100% visible and wide */}
+          <div className="relative w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="pos-product-search-input"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search Product by Name, SKU, or Barcode..."
+              className="w-full bg-slate-950 text-slate-100 pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           {/* Offline Mode Alert Strip */}
           {!isEffectiveOnline && (
             <div className="p-2 rounded-xl bg-amber-950/60 border border-amber-800/70 flex items-center justify-between gap-3 text-xs text-amber-200">
@@ -777,31 +834,10 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             </div>
           )}
 
-          {/* Primary Top Bar: Search & Quick Barcode laser input + Cashier Status */}
-          <div className="flex items-center justify-between gap-2.5 flex-wrap">
-            {/* Search Input */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                id="pos-product-search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Product Name, SKU, or Barcode..."
-                className="w-full bg-slate-950 text-slate-100 pl-9 pr-8 py-2 rounded-xl text-xs border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
+          {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             {/* Barcode Laser Input */}
-            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-700 shrink-0">
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-700 flex-1 min-w-[170px] sm:flex-initial">
               <Barcode className="w-4 h-4 text-emerald-400 shrink-0" />
               <input
                 id="barcode-scanner-input"
@@ -814,7 +850,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   }
                 }}
                 placeholder="Barcode Gun Input..."
-                className="bg-transparent text-xs text-slate-200 w-32 sm:w-36 focus:outline-none placeholder:text-slate-500 font-mono"
+                className="bg-transparent text-xs text-slate-200 w-full sm:w-32 focus:outline-none placeholder:text-slate-500 font-mono"
               />
               <button
                 id="simulate-barcode-btn"
@@ -839,7 +875,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                 title="Immediate Sale Return & Refund (F7)"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                <span className="hidden md:inline text-[11px]">Sale Return</span>
+                <span className="hidden sm:inline text-[11px]">Sale Return</span>
               </button>
 
               {/* Shift status button */}
@@ -1070,9 +1106,26 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       </div>
 
       {/* RIGHT: Active Cart & Billing Terminal */}
-      <div className="w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl">
+      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl ${
+        mobileViewTab === 'catalog' ? 'hidden lg:flex' : 'flex'
+      }`}>
         {/* Cart Top: Customer selector & Header */}
         <div className="p-3 sm:p-3.5 border-b border-slate-800 bg-slate-950/90 shrink-0 space-y-2.5 relative z-20">
+          {/* Mobile Back to Products Catalog Button */}
+          <div className="lg:hidden flex items-center justify-between pb-1 border-b border-slate-800/80">
+            <button
+              type="button"
+              onClick={() => setMobileViewTab('catalog')}
+              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 py-1 px-2 rounded-lg bg-indigo-950/60 border border-indigo-800/60 transition active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>+ Add More Items (Search Catalog)</span>
+            </button>
+            <span className="text-[11px] font-mono text-slate-400">
+              {cart.reduce((sum, item) => sum + item.quantity, 0)} in cart
+            </span>
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg">

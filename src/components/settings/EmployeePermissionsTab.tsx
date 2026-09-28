@@ -644,18 +644,23 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
   };
 
   const filteredUsers = users.filter((u) => {
-    // Always include Supreme Admin / Super Admin accounts or the currentUser account
-    const uRole = (u.role || '').toLowerCase();
-    const isMasterAdmin = uRole.includes('supreme') || uRole.includes('super_admin') || uRole === 'admin' || u.id === currentUser?.id || u.email === currentUser?.email;
-    
-    if (!isMasterAdmin) {
-      // Multi-tenant business isolation for secondary employee accounts
+    // Filter out dummy demo accounts if current user has their own real account
+    const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+    const isCurrentDemo = currentUser?.email && currentUser.email.endsWith('@royalpos.com');
+    const hasCustomAccounts = users.some((other) => other.email && !other.email.endsWith('@royalpos.com'));
+
+    if (isDemoUser && !isCurrentDemo && hasCustomAccounts && u.id !== currentUser?.id) {
+      return false;
+    }
+
+    // Business-scoped isolation
+    if (u.id !== currentUser?.id && u.email !== currentUser?.email) {
       if (currentBusinessId && u.businessId && u.businessId !== currentBusinessId) {
         return false;
       }
       if (currentBusinessName) {
         const uBiz = (u.businessName || '').trim().toLowerCase();
-        if (uBiz && uBiz !== currentBusinessName) {
+        if (uBiz && uBiz !== currentBusinessName && uBiz !== 'royal posfini') {
           return false;
         }
       }

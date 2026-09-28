@@ -31,7 +31,14 @@ export const UserMenuView: React.FC = () => {
 
   const currentBusinessName = (currentUser?.businessName || '').trim().toLowerCase();
   const currentBusinessId = currentUser?.businessId;
+  const isCurrentDemo = currentUser?.email && currentUser.email.endsWith('@royalpos.com');
+  const hasCustomAccounts = users.some((other) => other.email && !other.email.endsWith('@royalpos.com'));
+
   const businessUsersCount = users.filter((u) => {
+    const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+    if (isDemoUser && !isCurrentDemo && hasCustomAccounts && u.id !== currentUser?.id) {
+      return false;
+    }
     if (currentBusinessId && u.businessId) return u.businessId === currentBusinessId;
     if (currentBusinessName && u.businessName) return u.businessName.trim().toLowerCase() === currentBusinessName;
     if (currentBusinessName && !u.businessName) return u.id === currentUser?.id;

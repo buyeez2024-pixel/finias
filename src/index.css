@@ -1,22 +1,48 @@
 @import "tailwindcss";
 
-/* Universal Smooth & Momentum Touch Scrolling across Mobile & Desktop */
-html {
+/* Universal Smooth & Momentum Touch Scrolling across Mobile & Tablet */
+html,
+body,
+#root {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: contain;
 }
 
-/* Enable momentum scrolling for all scroll containers */
-* {
+/* Enable momentum & smooth scrolling for all scroll containers, menus, modals, and tables */
+*,
+*::before,
+*::after {
   -webkit-overflow-scrolling: touch;
+}
+
+main,
+aside,
+nav,
+div[class*="overflow-y-auto"],
+div[class*="overflow-x-auto"],
+div[class*="overflow-auto"],
+table,
+tbody,
+ul,
+section {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+div[class*="overflow-x-auto"] {
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+div[class*="overflow-y-auto"] {
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
 }
 
 @layer utilities {

@@ -1154,14 +1154,17 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let loadedUsers: User[] = [];
     if (isFresh || isInstalled) {
       let rawList = Array.isArray(parsed) ? parsed : [];
-      if (isFresh) {
-        rawList = rawList.filter((u: any) => 
-          u.email !== 'admin@royalpos.com' &&
-          u.email !== 'cashier@royalpos.com' &&
-          u.email !== 'inventory@royalpos.com' &&
-          u.email !== 'finance@royalpos.com'
-        );
-      }
+      // Always filter out demo dummy users in installed / fresh store environments
+      rawList = rawList.filter((u: any) => 
+        u.email !== 'admin@royalpos.com' &&
+        u.email !== 'cashier@royalpos.com' &&
+        u.email !== 'inventory@royalpos.com' &&
+        u.email !== 'finance@royalpos.com' &&
+        u.id !== 'usr_admin' &&
+        u.id !== 'usr_cashier' &&
+        u.id !== 'usr_inventory' &&
+        u.id !== 'usr_finance'
+      );
       if (rawList.length === 0) {
         const authUser = safeJsonParse(`${STORAGE_KEY}_auth_user`, null);
         const adminUser = safeJsonParse(`${STORAGE_KEY}_admin_user`, null);
@@ -1173,7 +1176,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       loadedUsers = rawList;
     } else {
-      loadedUsers = Array.isArray(parsed) ? parsed : initialUsers;
+      let rawList = Array.isArray(parsed) ? parsed : initialUsers;
+      // If user saved real accounts, don't show demo users
+      const hasRealAccounts = rawList.some((u: any) => !u.email?.endsWith('@royalpos.com'));
+      if (hasRealAccounts) {
+        rawList = rawList.filter((u: any) => !u.email?.endsWith('@royalpos.com') && !['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id));
+      }
+      loadedUsers = rawList;
     }
 
     // Migration: backfill security and system_updates if they have settings
