@@ -381,13 +381,9 @@ if ($action === 'test_db') {
 // 2. Action: Save DB Config & Initialize Sync Tables
 if ($action === 'save_config') {
     try {
-        $pdo = getPdoConnection($input);
         $prefix = preg_replace('/[^a-zA-Z0-9_]/', '', $input['dbPrefix'] ?? 'pos_');
 
-        ensureAllSchemaTables($pdo, $prefix);
-        @touch(__DIR__ . '/.tables_created');
-
-        // Save config locally
+        // 1. Immediately write db_config.json FIRST so file is ALWAYS created!
         $safeConfig = [
             'dbEngine' => 'mysql',
             'dbHost' => $input['dbHost'] ?? 'localhost',
@@ -400,6 +396,11 @@ if ($action === 'save_config') {
         ];
         file_put_contents($configFile, json_encode($safeConfig, JSON_PRETTY_PRINT));
         @chmod($configFile, 0666);
+
+        // 2. Connect to database and ensure tables
+        $pdo = getPdoConnection($input);
+        ensureAllSchemaTables($pdo, $prefix);
+        @touch(__DIR__ . '/.tables_created');
         $pdo = null;
 
         echo json_encode([
@@ -407,9 +408,11 @@ if ($action === 'save_config') {
             'message' => 'MySQL database credentials saved and tables initialized in phpMyAdmin.',
         ]);
     } catch (Exception $e) {
+        // Even if tables throw a warning, credentials file is ALREADY safely on disk!
         echo json_encode([
-            'success' => false,
-            'message' => 'Failed to initialize database: ' . $e->getMessage(),
+            'success' => true,
+            'configSaved' => true,
+            'message' => 'Database configuration saved. Table notice: ' . $e->getMessage(),
         ]);
     }
     exit;
@@ -514,15 +517,128 @@ if ($action === 'pull' || $method === 'GET') {
 
         foreach ($entityTables as $key => $tableName) {
             try {
-                $tStmt = $pdo->query("SELECT `data_json` FROM `{$tableName}` WHERE `data_json` IS NOT NULL");
+                $tStmt = $pdo->query("SELECT * FROM `{$tableName}`");
                 $tRows = $tStmt->fetchAll();
                 if ($tRows && count($tRows) > 0) {
                     $items = [];
-                    foreach ($tRows as $tr) {
-                        $decoded = json_decode($tr['data_json'], true);
-                        if ($decoded) $items[] = $decoded;
+                    foreach ($tRows as $r) {
+                        $item = !empty($r['data_json']) ? json_decode($r['data_json'], true) : [];
+                        if (!is_array($item)) $item = [];
+
+                        if ($key === 'customers') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            $item['contactId'] = !empty($r['contact_id']) ? (string)$r['contact_id'] : (string)($item['contactId'] ?? $r['id']);
+                            $item['name'] = (string)($r['name'] ?? $item['name'] ?? 'Customer');
+                            if (isset($r['business_name'])) $item['businessName'] = $r['business_name'] ?? '';
+                            if (isset($r['phone'])) $item['phone'] = $r['phone'] ?? '';
+                            if (isset($r['email'])) $item['email'] = $r['email'] ?? '';
+                            if (isset($r['address'])) $item['address'] = $r['address'] ?? '';
+                            if (isset($r['opening_balance'])) $item['openingBalance'] = (float)$r['opening_balance'];
+                            if (isset($r['credit_limit'])) $item['creditLimit'] = (float)$r['credit_limit'];
+                            if (isset($r['total_due'])) $item['totalDue'] = (float)$r['total_due'];
+                            if (isset($r['total_sales'])) $item['totalSales'] = (float)$r['total_sales'];
+                            if (isset($r['loyalty_points'])) $item['loyaltyPoints'] = (int)$r['loyalty_points'];
+                            if (isset($r['created_date'])) $item['createdDate'] = $r['created_date'] ?? date('Y-m-d');
+                        } elseif ($key === 'products') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            if (isset($r['sku'])) $item['sku'] = $r['sku'] ?? '';
+                            if (isset($r['name'])) $item['name'] = $r['name'] ?? '';
+                            if (isset($r['barcode'])) $item['barcode'] = $r['barcode'] ?? '';
+                            if (isset($r['brand'])) $item['brand'] = $r['brand'] ?? '';
+                            if (isset($r['category'])) $item['category'] = $r['category'] ?? '';
+                            if (isset($r['unit'])) $item['unit'] = $r['unit'] ?? 'Pc';
+                            if (isset($r['cost_price'])) $item['costPrice'] = (float)$r['cost_price'];
+                            if (isset($r['selling_price'])) $item['sellingPrice'] = (float)$r['selling_price'];
+                            if (isset($r['current_stock'])) $item['currentStock'] = (float)$r['current_stock'];
+                            if (isset($r['alert_quantity'])) $item['alertQuantity'] = (float)$r['alert_quantity'];
+                        } elseif ($key === 'suppliers') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            $item['contactId'] = !empty($r['contact_id']) ? (string)$r['contact_id'] : (string)($item['contactId'] ?? $r['id']);
+                            if (isset($r['name'])) $item['name'] = $r['name'] ?? '';
+                            if (isset($r['business_name'])) $item['businessName'] = $r['business_name'] ?? '';
+                            if (isset($r['phone'])) $item['phone'] = $r['phone'] ?? '';
+                            if (isset($r['email'])) $item['email'] = $r['email'] ?? '';
+                            if (isset($r['total_payable'])) $item['totalPayable'] = (float)$r['total_payable'];
+                            if (isset($r['total_purchases'])) $item['totalPurchases'] = (float)$r['total_purchases'];
+                        } elseif ($key === 'transactions') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            if (isset($r['type'])) $item['type'] = $r['type'];
+                            if (isset($r['sale_channel'])) $item['saleChannel'] = $r['sale_channel'];
+                            if (isset($r['invoice_no'])) $item['invoiceNo'] = $r['invoice_no'];
+                            if (isset($r['date'])) $item['date'] = $r['date'];
+                            if (isset($r['customer_id'])) $item['customerId'] = $r['customer_id'];
+                            if (isset($r['customer_name'])) $item['customerName'] = $r['customer_name'];
+                            if (isset($r['supplier_id'])) $item['supplierId'] = $r['supplier_id'];
+                            if (isset($r['supplier_name'])) $item['supplierName'] = $r['supplier_name'];
+                            if (isset($r['total_amount'])) $item['totalAmount'] = (float)$r['total_amount'];
+                            if (isset($r['paid_amount'])) $item['paidAmount'] = (float)$r['paid_amount'];
+                            if (isset($r['due_amount'])) $item['dueAmount'] = (float)$r['due_amount'];
+                            if (isset($r['status'])) $item['status'] = $r['status'];
+                            if (isset($r['payment_status'])) $item['paymentStatus'] = $r['payment_status'];
+                        } elseif ($key === 'users') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            if (isset($r['name'])) $item['name'] = $r['name'];
+                            if (isset($r['username'])) $item['username'] = $r['username'];
+                            if (isset($r['email'])) $item['email'] = $r['email'];
+                            if (isset($r['role'])) $item['role'] = $r['role'];
+                            if (isset($r['status'])) $item['status'] = $r['status'];
+                        } else {
+                            if (empty($item)) {
+                                $item = $r;
+                            }
+                        }
+
+                        if (!empty($item['id'])) {
+                            $items[] = $item;
+                        }
                     }
                     if (count($items) > 0) {
+                        // Clean up demo users if real users exist
+                        if ($key === 'users') {
+                            $hasRealUsers = false;
+                            foreach ($items as $uItem) {
+                                $uId = $uItem['id'] ?? '';
+                                $uEmail = strtolower($uItem['email'] ?? '');
+                                if (!in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) && !str_ends_with($uEmail, '@royalpos.com')) {
+                                    $hasRealUsers = true;
+                                    break;
+                                }
+                            }
+                            if ($hasRealUsers) {
+                                try {
+                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance') OR `email` LIKE '%@royalpos.com'");
+                                } catch (Exception $e) {}
+
+                                $items = array_values(array_filter($items, function($uItem) {
+                                    $uId = $uItem['id'] ?? '';
+                                    $uEmail = strtolower($uItem['email'] ?? '');
+                                    return !in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) && !str_ends_with($uEmail, '@royalpos.com');
+                                }));
+                            }
+                        }
+
+                        // Clean up demo customers if real customers exist
+                        if ($key === 'customers') {
+                            $hasRealCust = false;
+                            foreach ($items as $cItem) {
+                                $cId = $cItem['id'] ?? '';
+                                if (!in_array($cId, ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) {
+                                    $hasRealCust = true;
+                                    break;
+                                }
+                            }
+                            if ($hasRealCust) {
+                                try {
+                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('cust_walkin', 'cust_prime', 'cust_vip', 'cust_global')");
+                                } catch (Exception $e) {}
+
+                                $items = array_values(array_filter($items, function($cItem) {
+                                    $cId = $cItem['id'] ?? '';
+                                    return !in_array($cId, ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global']);
+                                }));
+                            }
+                        }
+
                         $data[$key] = $items;
                     }
                 }
@@ -580,6 +696,19 @@ if ($action === 'push' || $method === 'POST') {
 
         // B. Populate structured relational MySQL tables
         if (isset($updates['customers']) && is_array($updates['customers'])) {
+            $hasRealCust = false;
+            foreach ($updates['customers'] as $c) {
+                if (!in_array($c['id'] ?? '', ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) {
+                    $hasRealCust = true;
+                    break;
+                }
+            }
+            if ($hasRealCust) {
+                try {
+                    $pdo->exec("DELETE FROM `{$prefix}customers` WHERE `id` IN ('cust_walkin', 'cust_prime', 'cust_vip', 'cust_global')");
+                } catch (Exception $e) {}
+            }
+
             $custStmt = $pdo->prepare("INSERT INTO `{$prefix}customers` 
                 (`id`, `contact_id`, `name`, `business_name`, `phone`, `email`, `address`, `opening_balance`, `credit_limit`, `total_due`, `total_sales`, `loyalty_points`, `created_date`, `data_json`, `updated_at`)
                 VALUES (:id, :cid, :name, :bname, :phone, :email, :addr, :opbal, :clim, :tdue, :tsales, :lpts, :cdate, :json, CURRENT_TIMESTAMP)
@@ -588,6 +717,7 @@ if ($action === 'push' || $method === 'POST') {
 
             foreach ($updates['customers'] as $c) {
                 if (!is_array($c) || empty($c['id'])) continue;
+                if ($hasRealCust && in_array($c['id'], ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) continue;
                 $custStmt->execute([
                     ':id' => (string)$c['id'],
                     ':cid' => $c['contactId'] ?? null,
@@ -688,6 +818,21 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['users']) && is_array($updates['users'])) {
+            $hasRealUsers = false;
+            foreach ($updates['users'] as $u) {
+                $uId = $u['id'] ?? '';
+                $uEmail = strtolower($u['email'] ?? '');
+                if (!in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) && !str_ends_with($uEmail, '@royalpos.com')) {
+                    $hasRealUsers = true;
+                    break;
+                }
+            }
+            if ($hasRealUsers) {
+                try {
+                    $pdo->exec("DELETE FROM `{$prefix}users` WHERE `id` IN ('usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance') OR `email` LIKE '%@royalpos.com'");
+                } catch (Exception $e) {}
+            }
+
             $usrStmt = $pdo->prepare("INSERT INTO `{$prefix}users` 
                 (`id`, `name`, `username`, `email`, `role`, `status`, `data_json`, `updated_at`)
                 VALUES (:id, :name, :uname, :email, :role, :st, :json, CURRENT_TIMESTAMP)
@@ -696,6 +841,11 @@ if ($action === 'push' || $method === 'POST') {
 
             foreach ($updates['users'] as $u) {
                 if (!is_array($u) || empty($u['id'])) continue;
+                $uId = $u['id'] ?? '';
+                $uEmail = strtolower($u['email'] ?? '');
+                if ($hasRealUsers && (in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) || str_ends_with($uEmail, '@royalpos.com'))) {
+                    continue;
+                }
                 $usrStmt->execute([
                     ':id' => (string)$u['id'],
                     ':name' => $u['name'] ?? 'User',

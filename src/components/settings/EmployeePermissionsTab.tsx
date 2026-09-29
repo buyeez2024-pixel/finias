@@ -659,7 +659,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       if (currentBusinessId && u.businessId && u.businessId !== currentBusinessId) {
         return false;
       }
-      if (currentBusinessName) {
+      if (currentBusinessName && u.businessName) {
         const uBiz = (u.businessName || '').trim().toLowerCase();
         if (uBiz && uBiz !== currentBusinessName && uBiz !== 'royal posfini') {
           return false;

@@ -1780,30 +1780,131 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (result.success && result.isConfigured && result.data && active) {
               isRemoteSyncingRef.current = true;
               const d = result.data;
-              if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
-              if (Array.isArray(d.transactions) && d.transactions.length > 0) setTransactions(d.transactions);
-              if (Array.isArray(d.customers) && d.customers.length > 0) setCustomers(d.customers);
-              if (Array.isArray(d.customer_groups) && d.customer_groups.length > 0) setCustomerGroups(d.customer_groups);
-              if (Array.isArray(d.suppliers) && d.suppliers.length > 0) setSuppliers(d.suppliers);
-              if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
-              if (Array.isArray(d.brands) && d.brands.length > 0) setBrands(d.brands);
-              if (Array.isArray(d.expenses) && d.expenses.length > 0) setExpenses(d.expenses);
-              if (Array.isArray(d.units) && d.units.length > 0) setUnits(d.units);
-              if (Array.isArray(d.warranties) && d.warranties.length > 0) setWarranties(d.warranties);
-              if (Array.isArray(d.racks) && d.racks.length > 0) setRacks(d.racks);
-              if (Array.isArray(d.tax_rates) && d.tax_rates.length > 0) setTaxRates(d.tax_rates);
-              if (Array.isArray(d.tax_groups) && d.tax_groups.length > 0) setTaxGroups(d.tax_groups);
-              if (Array.isArray(d.currencies) && d.currencies.length > 0) setCurrencies(d.currencies);
-              if (Array.isArray(d.accounts) && d.accounts.length > 0) setAccounts(d.accounts);
-              if (Array.isArray(d.payment_methods) && d.payment_methods.length > 0) setPaymentMethods(d.payment_methods);
+              if (Array.isArray(d.customers) && d.customers.length > 0) {
+                const hasRealCust = d.customers.some((c: any) => !['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
+                const cleanCustomers = hasRealCust
+                  ? d.customers.filter((c: any) => !['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
+                  : d.customers;
+                setCustomers(cleanCustomers);
+                try { localStorage.setItem(`${STORAGE_KEY}_customers`, JSON.stringify(cleanCustomers)); } catch {}
+              }
+              if (Array.isArray(d.products) && d.products.length > 0) {
+                setProducts(d.products);
+                try { localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(d.products)); } catch {}
+              }
+              if (Array.isArray(d.transactions) && d.transactions.length > 0) {
+                setTransactions(d.transactions);
+                try { localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(d.transactions)); } catch {}
+              }
+              if (Array.isArray(d.customer_groups) && d.customer_groups.length > 0) {
+                setCustomerGroups(d.customer_groups);
+                try { localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(d.customer_groups)); } catch {}
+              }
+              if (Array.isArray(d.suppliers) && d.suppliers.length > 0) {
+                setSuppliers(d.suppliers);
+                try { localStorage.setItem(`${STORAGE_KEY}_suppliers`, JSON.stringify(d.suppliers)); } catch {}
+              }
+              if (Array.isArray(d.categories) && d.categories.length > 0) {
+                setCategories(d.categories);
+                try { localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(d.categories)); } catch {}
+              }
+              if (Array.isArray(d.brands) && d.brands.length > 0) {
+                setBrands(d.brands);
+                try { localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(d.brands)); } catch {}
+              }
+              if (Array.isArray(d.expenses) && d.expenses.length > 0) {
+                setExpenses(d.expenses);
+                try { localStorage.setItem(`${STORAGE_KEY}_expenses`, JSON.stringify(d.expenses)); } catch {}
+              }
+              if (Array.isArray(d.units) && d.units.length > 0) {
+                setUnits(d.units);
+                try { localStorage.setItem(`${STORAGE_KEY}_units`, JSON.stringify(d.units)); } catch {}
+              }
+              if (Array.isArray(d.warranties) && d.warranties.length > 0) {
+                setWarranties(d.warranties);
+                try { localStorage.setItem(`${STORAGE_KEY}_warranties`, JSON.stringify(d.warranties)); } catch {}
+              }
+              if (Array.isArray(d.racks) && d.racks.length > 0) {
+                setRacks(d.racks);
+                try { localStorage.setItem(`${STORAGE_KEY}_racks`, JSON.stringify(d.racks)); } catch {}
+              }
+              if (Array.isArray(d.tax_rates) && d.tax_rates.length > 0) {
+                setTaxRates(d.tax_rates);
+                try { localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(d.tax_rates)); } catch {}
+              }
+              if (Array.isArray(d.tax_groups) && d.tax_groups.length > 0) {
+                setTaxGroups(d.tax_groups);
+                try { localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(d.tax_groups)); } catch {}
+              }
+              if (Array.isArray(d.currencies) && d.currencies.length > 0) {
+                setCurrencies(d.currencies);
+                try { localStorage.setItem(`${STORAGE_KEY}_currencies`, JSON.stringify(d.currencies)); } catch {}
+              }
+              if (Array.isArray(d.accounts) && d.accounts.length > 0) {
+                setAccounts(d.accounts);
+                try { localStorage.setItem(`${STORAGE_KEY}_accounts`, JSON.stringify(d.accounts)); } catch {}
+              }
+              if (Array.isArray(d.payment_methods) && d.payment_methods.length > 0) {
+                setPaymentMethods(d.payment_methods);
+                try { localStorage.setItem(`${STORAGE_KEY}_payment_methods`, JSON.stringify(d.payment_methods)); } catch {}
+              }
               if (Array.isArray(d.sales_commission_agents) && d.sales_commission_agents.length > 0) {
                 setSalesCommissionAgents(d.sales_commission_agents);
+                try { localStorage.setItem(`${STORAGE_KEY}_sales_commission_agents`, JSON.stringify(d.sales_commission_agents)); } catch {}
               }
-              if (Array.isArray(d.users) && d.users.length > 0) {
-                setUsers(d.users);
-                try {
-                  localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(d.users));
-                } catch {}
+              if (Array.isArray(d.users)) {
+                const cleanRemoteUsers = d.users.filter((u: any) => {
+                  const isDemo = (u.email && u.email.endsWith('@royalpos.com')) ||
+                    ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+                  return !isDemo;
+                });
+
+                setUsers((prev) => {
+                  const userMap = new Map<string, User>();
+                  cleanRemoteUsers.forEach((u: User) => {
+                    if (u.id) userMap.set(u.id, u);
+                  });
+
+                  prev.forEach((u: User) => {
+                    const isDemo = (u.email && u.email.endsWith('@royalpos.com')) ||
+                      ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+                    if (!isDemo && u.id && !userMap.has(u.id)) {
+                      userMap.set(u.id, u);
+                    }
+                  });
+
+                  const activeAdmin = currentUser || safeJsonParse(`${STORAGE_KEY}_admin_user`, null) || safeJsonParse(`${STORAGE_KEY}_auth_user`, null);
+                  if (activeAdmin && activeAdmin.id) {
+                    const existing = userMap.get(activeAdmin.id);
+                    userMap.set(activeAdmin.id, {
+                      ...activeAdmin,
+                      ...(existing || {}),
+                      role: activeAdmin.role || existing?.role || 'supreme_admin',
+                      status: activeAdmin.status || existing?.status || 'active',
+                    });
+                  }
+
+                  const mergedUsers = Array.from(userMap.values());
+                  try {
+                    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(mergedUsers));
+                  } catch {}
+
+                  if (mergedUsers.length > 0 && cleanRemoteUsers.length === 0) {
+                    try {
+                      fetch(getApiUrl('api/sync.php?action=push'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          updates: {
+                            users: mergedUsers,
+                          },
+                        }),
+                      }).catch(() => {});
+                    } catch {}
+                  }
+
+                  return mergedUsers;
+                });
               }
             }
           }

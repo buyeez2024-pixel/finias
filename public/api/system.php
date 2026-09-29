@@ -69,6 +69,24 @@ if ($method === 'POST' || $action === 'install') {
 
     $jsonEncoded = json_encode($lockData, JSON_PRETTY_PRINT);
 
+    // If DB credentials were provided during installation, write db_config.json immediately!
+    $dbConfigInput = $data['dbConfig'] ?? (isset($data['dbHost']) ? $data : null);
+    if ($dbConfigInput && !empty($dbConfigInput['dbName'])) {
+        $safeConfig = [
+            'dbEngine' => 'mysql',
+            'dbHost' => $dbConfigInput['dbHost'] ?? 'localhost',
+            'dbPort' => $dbConfigInput['dbPort'] ?? '3306',
+            'dbName' => $dbConfigInput['dbName'] ?? '',
+            'dbUser' => $dbConfigInput['dbUser'] ?? '',
+            'dbPassword' => $dbConfigInput['dbPassword'] ?? '',
+            'dbPrefix' => preg_replace('/[^a-zA-Z0-9_]/', '', $dbConfigInput['dbPrefix'] ?? 'pos_'),
+            'configuredAt' => date('c'),
+        ];
+        $dbConfigJson = json_encode($safeConfig, JSON_PRETTY_PRINT);
+        @file_put_contents(__DIR__ . '/db_config.json', $dbConfigJson);
+        @chmod(__DIR__ . '/db_config.json', 0666);
+    }
+
     // Save to all target locations for maximum reliability on cPanel
     $saved = false;
     $primaryPath = __DIR__ . '/system_status.json';

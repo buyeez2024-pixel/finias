@@ -81,6 +81,7 @@ export const completeServerInstallation = async (payload: {
   settings?: any;
   adminUser?: any;
   isDemoInstallation?: boolean;
+  dbConfig?: any;
 }): Promise<boolean> => {
   let anySuccess = false;
   const endpoints = [

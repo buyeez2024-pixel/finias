@@ -584,6 +584,23 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
     setMigrationLogs([]);
     setMigrationProgress(5);
 
+    // Save db_config.json on server immediately at start of migration
+    if ((dbEngine === 'mysql' || dbEngine === 'mariadb') && dbHost && dbName && dbUser) {
+      fetch(getApiUrl('api/sync.php?action=save_config'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dbHost,
+          dbPort,
+          dbName,
+          dbUser,
+          dbPassword,
+          dbPrefix,
+          dbCharset,
+        }),
+      }).catch(() => {});
+    }
+
     const steps = [
       { progress: 15, msg: `Initializing ${dbEngine.toUpperCase()} database engine on ${dbHost}...` },
       { progress: 25, msg: `Checking existing tables with prefix "${dbPrefix}"...` },
@@ -944,6 +961,15 @@ SET FOREIGN_KEY_CHECKS = 1;
       settings: finalSettings,
       adminUser: supremeAdminData,
       isDemoInstallation,
+      dbConfig: (dbEngine === 'mysql' || dbEngine === 'mariadb') ? {
+        dbHost,
+        dbPort,
+        dbName,
+        dbUser,
+        dbPassword,
+        dbPrefix,
+        dbCharset,
+      } : undefined,
     });
 
     // If MySQL was selected, save DB configuration and push initial seed state for live universal syncing
@@ -1361,6 +1387,22 @@ SET FOREIGN_KEY_CHECKS = 1;
                   if ((dbEngine === 'mysql' || dbEngine === 'mariadb' || dbEngine === 'postgresql') && (!dbHost.trim() || !dbName.trim() || !dbUser.trim() || !dbPassword.trim())) {
                     showFlashNotification('Please fill in all mandatory database fields (Database Host, Name, Username, and Password).', 'error');
                     return;
+                  }
+                  // Immediately write db_config.json on the server so file is ALWAYS created!
+                  if (dbEngine === 'mysql' || dbEngine === 'mariadb') {
+                    fetch(getApiUrl('api/sync.php?action=save_config'), {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        dbHost,
+                        dbPort,
+                        dbName,
+                        dbUser,
+                        dbPassword,
+                        dbPrefix,
+                        dbCharset,
+                      }),
+                    }).catch(() => {});
                   }
                   setCurrentStep(3);
                 }}

@@ -41,8 +41,7 @@ export const UserMenuView: React.FC = () => {
       return false;
     }
     if (currentBusinessId && u.businessId) return u.businessId === currentBusinessId;
-    if (currentBusinessName && u.businessName) return u.businessName.trim().toLowerCase() === currentBusinessName;
-    if (currentBusinessName && !u.businessName) return u.id === currentUser?.id;
+    if (currentBusinessName && u.businessName) return u.businessName.trim().toLowerCase() === currentBusinessName || u.businessName.trim().toLowerCase() === 'royal posfini';
     return true;
   }).length;
 
