@@ -178,7 +178,56 @@ export const initialCategories = [
     createdDate: '2026-01-01',
   },
 ];
-export const initialBrands = [];
+export const initialBrands = [
+  {
+    id: 'brd_apple',
+    name: 'Apple',
+    code: 'BRD-APPL',
+    shortCode: 'AAPL',
+    description: 'Consumer electronics, laptops, and smartphones',
+    originCountry: 'United States',
+    website: 'https://apple.com',
+    color: '#6366f1',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'brd_samsung',
+    name: 'Samsung',
+    code: 'BRD-SAMS',
+    shortCode: 'SMSNG',
+    description: 'Displays, smartphones, appliances, and memory',
+    originCountry: 'South Korea',
+    website: 'https://samsung.com',
+    color: '#0ea5e9',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'brd_sony',
+    name: 'Sony',
+    code: 'BRD-SONY',
+    shortCode: 'SONY',
+    description: 'Audio, cameras, gaming, and entertainment electronics',
+    originCountry: 'Japan',
+    website: 'https://sony.com',
+    color: '#8b5cf6',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'brd_logitech',
+    name: 'Logitech',
+    code: 'BRD-LOGI',
+    shortCode: 'LOGI',
+    description: 'Computer peripherals, keyboards, mice, and webcams',
+    originCountry: 'Switzerland',
+    website: 'https://logitech.com',
+    color: '#10b981',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
+];
 export const initialUnits = [];
 export const initialSettings = {
   themeMode: 'light',
@@ -192,10 +241,19 @@ export const initialSettings = {
   blockedDomains: [],
   enableSecurityGuard: true,
   blockDisposableEmails: true,
+  enableBrand: true,
+  enableCategory: true,
+  enableSubCategory: true,
+  enableWarranty: true,
+  enableRacks: true,
+  enableUnits: true,
+  enablePriceTax: true,
+  enableProductExpiry: true,
   name: 'Royal POSfini',
   businessName: 'Royal POSfini',
-  currency: 'USD',
-  currencySymbol: '$',
+  currency: 'INR',
+  currencyCode: 'INR',
+  currencySymbol: '₹',
   currencyPlacement: 'prefix',
   currencyDecimalPlaces: 2,
   invoiceLayoutConfig: {
@@ -355,8 +413,60 @@ export const initialCashRegister = {
   notes: '',
   createdAt: new Date().toISOString()
 };
-export const initialCurrencies = [];
-export const initialCustomerGroups = [];
+export const initialCurrencies = [
+  {
+    id: 'curr_inr',
+    name: 'Indian Rupee',
+    code: 'INR',
+    symbol: '₹',
+    placement: 'prefix',
+    decimalPlaces: 2,
+    isDefault: true,
+  },
+  {
+    id: 'curr_usd',
+    name: 'US Dollar',
+    code: 'USD',
+    symbol: '$',
+    placement: 'prefix',
+    decimalPlaces: 2,
+    isDefault: false,
+  },
+];
+export const initialCustomerGroups = [
+  {
+    id: 'cg_retail',
+    name: 'Retail Standard',
+    percentage: 0,
+    calculationPercentage: 0,
+    description: 'Standard consumer retail pricing (0% adjustment)',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cg_vip',
+    name: 'VIP Platinum',
+    percentage: -10,
+    calculationPercentage: -10,
+    description: 'Loyal VIP customer group with 10% discount on selling price',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cg_wholesale',
+    name: 'Wholesale Tier',
+    percentage: -20,
+    calculationPercentage: -20,
+    description: 'Bulk wholesale buyers with 20% discount on selling price',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cg_friends',
+    name: 'Friends & Family',
+    percentage: -15,
+    calculationPercentage: -15,
+    description: 'Special relationship pricing with 15% discount',
+    createdDate: '2026-01-01',
+  },
+];
 export const initialExpenses = [];
 export const initialRacks = [];
 export const initialRolePermissions = {

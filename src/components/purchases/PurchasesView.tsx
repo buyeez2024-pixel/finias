@@ -26,7 +26,10 @@ import {
   AlertTriangle,
   AlertCircle,
   Ban,
-  ArrowRight
+  ArrowRight,
+  LayoutGrid,
+  Table as TableIcon,
+  Sparkles
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ViewPurchasePaymentsModal } from './ViewPurchasePaymentsModal';
@@ -122,7 +125,8 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
+  const [activeSwipeIndex, setActiveSwipeIndex] = useState(0);
 
   const [showColumnVisibility, setShowColumnVisibility] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<PurchaseColumnVisibility>(() => {
@@ -286,20 +290,22 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0 w-full max-w-full overflow-x-hidden pb-28">
       {/* Header & KPI */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 transition-colors duration-300 shadow-sm">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Truck className="w-5 h-5 text-indigo-400" />
-            <span>Purchases & Inward Orders (Procurement)</span>
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border shadow-sm w-full min-w-0 ${
+        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+      }`}>
+        <div className="min-w-0 w-full sm:w-auto">
+          <h1 className={`text-lg sm:text-xl font-bold tracking-tight flex items-center gap-2 truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <Truck className="w-5 h-5 text-indigo-400 shrink-0" />
+            <span className="truncate">Purchases & Inward Orders</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className={`text-xs mt-0.5 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
             Manage vendor purchase orders, receive shipments, and update warehouse stock balances.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <button
             id="purchases-import-btn"
             onClick={() => {
@@ -309,58 +315,64 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
                 setShowImportPage(true);
               }
             }}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold border border-slate-700 hover:border-slate-600 shadow-sm flex items-center gap-2 transition cursor-pointer"
+            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold border border-slate-700 shadow-sm flex items-center justify-center gap-2 transition cursor-pointer"
             title="Bulk Import Purchases from Excel or CSV"
           >
-            <Upload className="w-4 h-4 text-emerald-400" />
+            <Upload className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>Import Purchases</span>
           </button>
 
           <button
             id="purchases-add-order-btn"
             onClick={onOpenNewPurchase}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition cursor-pointer"
+            className="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition cursor-pointer shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span>+ New Purchase Order</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>+ New Purchase</span>
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between transition-colors shadow-sm">
-          <div>
-            <div className="text-xs text-slate-400 font-semibold">Total Purchases Value</div>
-            <div className="text-xl font-extrabold text-white font-mono mt-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0">
+        <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-sm min-w-0 ${
+          isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+        }`}>
+          <div className="min-w-0">
+            <div className={`text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Total Purchases Value</div>
+            <div className="text-lg sm:text-xl font-extrabold font-mono mt-1 truncate">
               {formatCurrency(totalPurchasesAmount, settings)}
             </div>
           </div>
-          <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl">
+          <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl shrink-0">
             <DollarSign className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between transition-colors shadow-sm">
-          <div>
-            <div className="text-xs text-slate-400 font-semibold">Purchase Invoices</div>
-            <div className="text-xl font-extrabold text-white font-mono mt-1">
+        <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-sm min-w-0 ${
+          isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+        }`}>
+          <div className="min-w-0">
+            <div className={`text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Purchase Invoices</div>
+            <div className="text-lg sm:text-xl font-extrabold font-mono mt-1 truncate">
               {purchaseList.length} Invoices
             </div>
           </div>
-          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl shrink-0">
             <FileText className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between transition-colors shadow-sm">
-          <div>
-            <div className="text-xs text-slate-400 font-semibold">Pending Inward Receipts</div>
-            <div className="text-xl font-extrabold text-amber-400 font-mono mt-1">
+        <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-sm min-w-0 ${
+          isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+        }`}>
+          <div className="min-w-0">
+            <div className={`text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Pending Inward Receipts</div>
+            <div className="text-lg sm:text-xl font-extrabold text-amber-400 font-mono mt-1 truncate">
               {pendingPurchasesCount} Orders
             </div>
           </div>
-          <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl">
+          <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl shrink-0">
             <Clock className="w-5 h-5" />
           </div>
         </div>
@@ -536,7 +548,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
       {/* Unified Attached Container for Filters & Purchases Table (Zero Gap) */}
       <div className="shadow-sm">
         {/* Filter Bar (Attached to Table Top) */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 p-3.5 rounded-t-2xl border border-b-0 border-slate-800 transition-colors">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 p-3.5 rounded-t-2xl border border-b-0 border-slate-800 transition-colors w-full min-w-0">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -548,7 +560,35 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
+            {/* Mobile View Toggle */}
+            <div className="flex items-center p-1 bg-slate-950 rounded-xl border border-slate-800 md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileViewMode('cards')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition ${
+                  mobileViewMode === 'cards'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileViewMode('table')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition ${
+                  mobileViewMode === 'table'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <TableIcon className="w-3.5 h-3.5" />
+                <span>Table</span>
+              </button>
+            </div>
+
             {isLight && (
               <select
                 value={pageSize}
@@ -621,10 +661,125 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
           </div>
         </div>
 
-        {/* Purchases Table (Attached Directly to Filter Bar with Zero Gap) */}
-        <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors duration-300">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {/* Purchases Table & Mobile Touch Cards */}
+        <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors duration-300 w-full min-w-0">
+          {/* Mobile Touch Cards View */}
+          {mobileViewMode === 'cards' && (
+            <div className="md:hidden p-3.5 space-y-3">
+              {paginatedPurchases.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-xs font-medium">
+                  No purchase orders found matching filter criteria.
+                </div>
+              ) : (
+                paginatedPurchases.map((po, idx) => {
+                  const supplier = resolveSupplierForPurchase(po);
+                  const displaySupplierName = po.supplierName || supplier?.name || 'Walk-In Supplier';
+                  const location = locations.find((l) => l.id === po.locationId);
+                  const paymentStatus = po.paymentStatus || 'paid';
+                  const due = Math.max(0, po.totalAmount - (po.paidAmount || 0));
+
+                  return (
+                    <div
+                      key={po.id}
+                      className="bg-slate-950 p-4 rounded-xl border border-slate-800 shadow-sm space-y-3 transition active:scale-[0.99]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-white text-xs">{po.invoiceNo}</span>
+                          {po.lotNumber && (
+                            <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono">
+                              {po.lotNumber}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                            po.status === 'received'
+                              ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                              : 'bg-amber-950 text-amber-300 border-amber-800'
+                          }`}
+                        >
+                          {po.status}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-slate-300 space-y-1 border-t border-b border-slate-800/80 py-2">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Supplier:</span>
+                          <span className="font-semibold text-white">{displaySupplierName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Location:</span>
+                          <span className="text-slate-300">{location?.name || 'Main Location'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Date:</span>
+                          <span className="font-mono text-slate-300">{formatDate(po.date, settings.dateFormat || 'DD-MM-YYYY', settings.timeZone)}</span>
+                        </div>
+                        <div className="flex justify-between pt-1 font-bold">
+                          <span className="text-slate-400">Grand Total:</span>
+                          <span className="font-mono text-emerald-400 text-sm">{formatCurrency(po.totalAmount, settings)}</span>
+                        </div>
+                        {due > 0 && (
+                          <div className="flex justify-between text-xs text-rose-400">
+                            <span>Balance Due:</span>
+                            <span className="font-mono font-bold">{formatCurrency(due, settings)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          onClick={() => setSelectedPaymentPurchase(po)}
+                          className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition border ${
+                            paymentStatus === 'paid'
+                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                              : paymentStatus === 'partial'
+                              ? 'bg-amber-950/80 text-amber-300 border-amber-800'
+                              : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                          }`}
+                        >
+                          {paymentStatus}
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openViewPurchasePage(po)}
+                            className="p-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:text-white"
+                            title="View PO Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => openEditPurchasePage(po)}
+                              className="p-1.5 bg-slate-800 text-amber-400 rounded-lg text-xs"
+                              title="Edit PO"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          {po.status !== 'received' && (
+                            <button
+                              onClick={() => receivePurchaseOrder(po.id)}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-md shadow-emerald-950"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Receive</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* Desktop Table & Mobile Scrollable Table */}
+          <div className={`${mobileViewMode === 'cards' ? 'hidden md:block' : 'block'} overflow-x-auto w-full min-w-0 scrollbar-thin`}>
+            <table className="w-full text-left text-xs min-w-[850px]">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>
                 {visibleColumns.invoiceNo && <th className="py-3 px-3">PO Invoice No.</th>}

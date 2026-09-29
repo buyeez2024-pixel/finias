@@ -1511,16 +1511,16 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
               </div>
 
               {/* Category, Sub-Category & Brand with Quick Suggestions */}
-              {Boolean(settings.enableCategory || settings.enableSubCategory || settings.enableBrand) && (
+              {Boolean(settings.enableCategory !== false || settings.enableSubCategory !== false || settings.enableBrand !== false) && (
                 <div className={`grid grid-cols-1 ${
-                  [Boolean(settings.enableCategory), Boolean(settings.enableSubCategory), Boolean(settings.enableBrand)].filter(Boolean).length === 3
+                  [(settings.enableCategory !== false), (settings.enableSubCategory !== false), (settings.enableBrand !== false)].filter(Boolean).length === 3
                     ? 'sm:grid-cols-3'
-                    : [Boolean(settings.enableCategory), Boolean(settings.enableSubCategory), Boolean(settings.enableBrand)].filter(Boolean).length === 2
+                    : [(settings.enableCategory !== false), (settings.enableSubCategory !== false), (settings.enableBrand !== false)].filter(Boolean).length === 2
                     ? 'sm:grid-cols-2'
                     : 'sm:grid-cols-1'
                 } gap-4`}>
                   {/* Category */}
-                  {Boolean(settings.enableCategory) && (
+                  {settings.enableCategory !== false && (
                     <div>
                       <div className="flex items-center justify-between">
                         <label className="text-slate-300 font-semibold">Category</label>
@@ -1557,7 +1557,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   )}
 
                   {/* Sub-Category */}
-                  {Boolean(settings.enableSubCategory) && (
+                  {settings.enableSubCategory !== false && (
                     <div>
                       <div className="flex items-center justify-between">
                         <label className="text-slate-300 font-semibold">Sub-Category</label>
@@ -1608,16 +1608,18 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   )}
 
                   {/* Brand */}
-                  {Boolean(settings.enableBrand) && (
+                  {settings.enableBrand !== false && (
                     <div>
                       <div className="flex items-center justify-between">
                         <label className="text-slate-300 font-semibold">Brand / Manufacturer</label>
                         <button
                           type="button"
                           onClick={() => setInventorySubTab('brands')}
-                          className="text-[10px] text-sky-400 hover:underline flex items-center gap-1"
+                          className="text-[10px] text-sky-400 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                          title="Manage Brands Registry"
                         >
                           <span>Manage Brands</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
                         </button>
                       </div>
                       <select
@@ -1626,9 +1628,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         onChange={(e) => setBrand(e.target.value)}
                         className="w-full bg-slate-950 text-white font-medium px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
                       >
-                        <option value="">Select Brand</option>
-                        {(erpBrands && erpBrands.length > 0 ? erpBrands.filter((b) => b.status === 'active') : PRESET_BRANDS.map(b => ({id: b, name: b}))).map((b) => (
-                          <option key={b.id} value={b.name}>{b.name}</option>
+                        <option value="">Select Brand (Optional)</option>
+                        {(erpBrands && erpBrands.length > 0
+                          ? erpBrands.filter((b) => b.status === 'active' || b.name === brand)
+                          : PRESET_BRANDS.map(b => ({ id: b, name: b, originCountry: '' }))
+                        ).map((b) => (
+                          <option key={b.id} value={b.name}>
+                            {b.name} {b.originCountry ? `(${b.originCountry})` : ''}
+                          </option>
                         ))}
                       </select>
                     </div>

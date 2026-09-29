@@ -63,9 +63,9 @@ export const PurchaseReturnsView: React.FC<PurchaseReturnsViewProps> = ({ onOpen
   const pendingPurchasesCount = purchaseList.filter((p) => p.status !== 'received').length;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto text-slate-100 min-w-0 w-full max-w-full overflow-x-hidden pb-28">
       {/* Header & KPI */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-sm w-full min-w-0">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             <Truck className="w-5 h-5 text-rose-400" />
@@ -168,9 +168,9 @@ export const PurchaseReturnsView: React.FC<PurchaseReturnsViewProps> = ({ onOpen
         </div>
 
         {/* Purchases Table (Attached Directly with Zero Gap) */}
-        <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+        <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors w-full min-w-0">
+          <div className="overflow-x-auto w-full min-w-0 scrollbar-thin">
+            <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>
                 <th className="py-3 px-3">PO Invoice No.</th>

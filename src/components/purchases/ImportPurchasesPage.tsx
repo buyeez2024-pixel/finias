@@ -595,6 +595,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           const cost = r.unitCostPrice || 10;
           const sellingPrice = Math.round(cost * 1.35 * 100) / 100;
 
+          const itemLot = r.lotNumber ? r.lotNumber.trim() : undefined;
           newProductsToCreate.push({
             name: r.productIdentifier,
             sku: generatedSku,
@@ -614,22 +615,30 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
             creationSource: 'direct_purchase',
             isDirectPurchase: true,
             createdAt: new Date().toISOString(),
+            lotNumber: itemLot,
+            lots: itemLot ? [
+              {
+                id: `lot_imp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                lotNumber: itemLot,
+                costPrice: cost,
+                sellingPrice,
+                currentStock: 0,
+                createdDate: new Date().toISOString().slice(0, 10),
+              }
+            ] : [],
           } as any);
         }
       });
 
       if (autoCreateProducts && newProductsToCreate.length > 0) {
-        addProducts(newProductsToCreate);
-        newProductsToCreate.forEach((p, idx) => {
-          const mappedProd = {
-            id: `prod_auto_${Date.now()}_${idx}`,
-            ...p,
-            currentStock: 0,
-          } as Product;
-          productMap.set(p.name.toLowerCase(), mappedProd);
-          if (p.sku) productMap.set(p.sku.toLowerCase(), mappedProd);
-          if (p.barcode) productMap.set(p.barcode.toLowerCase(), mappedProd);
-        });
+        const createdProds = addProducts(newProductsToCreate);
+        if (createdProds && Array.isArray(createdProds)) {
+          createdProds.forEach((mappedProd) => {
+            productMap.set(mappedProd.name.toLowerCase(), mappedProd);
+            if (mappedProd.sku) productMap.set(mappedProd.sku.toLowerCase(), mappedProd);
+            if (mappedProd.barcode) productMap.set(mappedProd.barcode.toLowerCase(), mappedProd);
+          });
+        }
       }
 
       // 3. Group rows by Supplier & PO / Invoice No
@@ -730,6 +739,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           total: itemTotal,
           supplierId: suppId,
           supplierName: cleanSuppName,
+          lotNumber: row.lotNumber ? row.lotNumber.trim() : undefined,
         };
 
         if (!groups.has(groupKey)) {

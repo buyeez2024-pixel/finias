@@ -37,7 +37,10 @@ import {
   Trash2,
   Info,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  LayoutGrid,
+  Table as TableIcon,
+  ArrowRight
 } from 'lucide-react';
 
 export type LedgerEntryType =
@@ -104,9 +107,11 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
     paymentMethods,
   } = useErp();
 
-  const currencySymbol = settings.currencySymbol || '$';
+  const currencySymbol = settings.currencySymbol || '₹';
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'supreme_admin';
   const isLight = settings?.themeMode === 'light';
+  const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
+  const [activeSwipeIndex, setActiveSwipeIndex] = useState(0);
 
   // Active Ledger Type: Customer Ledger vs Supplier Ledger
   const [ledgerType, setLedgerType] = useState<'customer' | 'supplier'>(() => {
@@ -1056,22 +1061,21 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto animate-fadeIn text-slate-100">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fadeIn text-slate-100 min-w-0 w-full max-w-full overflow-x-hidden pb-28">
       {/* Top Header & Party Toggle Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-          </div>
-
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" />
-            <span>
+      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border shadow-md w-full min-w-0 ${
+        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+      }`}>
+        <div className="min-w-0 w-full lg:w-auto">
+          <h1 className={`text-xl font-bold tracking-tight flex items-center gap-2 truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <BookOpen className="w-5 h-5 text-indigo-400 shrink-0" />
+            <span className="truncate">
               {ledgerType === 'customer'
                 ? 'Customer Ledger'
                 : 'Supplier Ledger'}
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className={`text-xs mt-0.5 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
             {ledgerType === 'customer'
               ? 'Complete statement of sales invoices, payments received, credit notes, ledger discounts, and running balance.'
               : 'Complete statement of purchase orders, vendor disbursements, purchase returns, payable waivers, and liabilities.'}
@@ -1079,15 +1083,15 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
         </div>
 
         {/* Action Buttons: Add Discount (Admin), Record Payment, Export CSV, Print, Edit Profile */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
           {/* Admin Ledger Discount Button */}
           <button
             onClick={handleOpenDiscountModal}
             id="btn-open-add-ledger-discount"
-            className="px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-xs font-bold shadow-md shadow-fuchsia-600/20 flex items-center gap-2 transition transform active:scale-95 border border-fuchsia-500/30"
+            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-xs font-bold shadow-md shadow-fuchsia-600/20 flex items-center justify-center gap-1.5 transition transform active:scale-95 border border-fuchsia-500/30 cursor-pointer"
             title={isAdmin ? 'Add Balance Due Discount (Admin Only)' : 'Admin Only Feature'}
           >
-            <Percent className="w-4 h-4" />
+            <Percent className="w-4 h-4 shrink-0" />
             <span>Add Ledger Discount</span>
             {!isAdmin ? (
               <span className="px-1.5 py-0.5 bg-slate-900/60 text-slate-300 text-[10px] rounded flex items-center gap-1 font-normal">
@@ -1108,9 +1112,9 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
               setShowPaymentModal(true);
             }}
             id="btn-open-record-payment"
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition transform active:scale-95"
+            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 transition transform active:scale-95 cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 shrink-0" />
             <span>{ledgerType === 'customer' ? 'Receive Payment' : 'Pay Supplier'}</span>
           </button>
 
@@ -1119,11 +1123,11 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
             <button
               onClick={() => openEditCustomerPage(currentCustomer)}
               id="btn-edit-customer-profile"
-              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition"
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition cursor-pointer"
               title="Edit Customer Profile & Balances"
             >
-              <Edit className="w-4 h-4 text-indigo-400" />
-              <span>Edit Customer</span>
+              <Edit className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>Edit</span>
             </button>
           )}
 
@@ -1131,11 +1135,11 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
             <button
               onClick={() => openEditSupplierPage(currentSupplier)}
               id="btn-edit-supplier-profile"
-              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition"
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition cursor-pointer"
               title="Edit Supplier Profile & Terms"
             >
-              <Edit className="w-4 h-4 text-indigo-400" />
-              <span>Edit Supplier</span>
+              <Edit className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>Edit</span>
             </button>
           )}
 
@@ -1171,29 +1175,31 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
           <button
             onClick={handlePrint}
             id="btn-print-ledger-statement"
-            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition"
+            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition cursor-pointer"
             title="Print Account Statement"
           >
-            <Printer className="w-4 h-4 text-indigo-400" />
+            <Printer className="w-4 h-4 text-indigo-400 shrink-0" />
             <span>Print</span>
           </button>
 
           <button
             onClick={() => navigateToContacts(ledgerType === 'customer' ? 'customers' : 'suppliers')}
-            className="px-3 py-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-medium border border-slate-800 transition"
+            className="px-3 py-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-medium border border-slate-800 transition cursor-pointer"
           >
-            <span>Back to Directory</span>
+            <span>Back</span>
           </button>
         </div>
       </div>
 
       {/* CONTACT SELECTOR CARD */}
-      <div className={`p-5 rounded-2xl border shadow-sm grid grid-cols-1 md:grid-cols-3 gap-5 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
-        <div className={`md:col-span-1 border-b md:border-b-0 md:border-r pb-4 md:pb-0 md:pr-5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+      <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 w-full min-w-0 ${
+        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+      }`}>
+        <div className={`md:col-span-1 border-b md:border-b-0 md:border-r pb-4 md:pb-0 md:pr-5 min-w-0 w-full ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <label className={`block text-[11px] uppercase tracking-wider font-bold mb-2 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
             Select {ledgerType === 'customer' ? 'Customer Profile' : 'Supplier / Vendor'}
           </label>
-          <div className="relative">
+          <div className="relative w-full min-w-0">
             <select
               value={activeContactId}
               onChange={(e) => {
@@ -1201,7 +1207,7 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
                 setSelectedLedgerContactId(e.target.value);
               }}
               id="select-active-ledger-contact"
-              className={`w-full text-sm font-semibold px-3 py-2.5 rounded-xl border transition appearance-none pr-8 cursor-pointer ${
+              className={`w-full text-xs sm:text-sm font-semibold px-3 py-2.5 rounded-xl border transition appearance-none pr-8 cursor-pointer truncate ${
                 isLight 
                   ? 'bg-white text-slate-900 border-slate-300 focus:outline-none focus:border-indigo-600' 
                   : 'bg-slate-950 text-slate-100 border-slate-700 focus:outline-none focus:border-indigo-500'
@@ -1243,7 +1249,7 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
         </div>
 
         {/* Selected Contact Details Card with Quick Edit Link */}
-        <div className="md:col-span-2 flex flex-col justify-between">
+        <div className="md:col-span-2 flex flex-col justify-between min-w-0 w-full">
           {!activeContactId && (
             <div className={`flex flex-col items-center justify-center py-6 px-4 rounded-xl border border-dashed text-center h-full ${
               isLight 
@@ -1779,11 +1785,53 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
         </div>
       </div>
 
-      {/* DETAILED STATEMENT / LEDGER TABLE */}
+      {/* DETAILED STATEMENT / LEDGER TABLE & MOBILE TOUCH CARDS */}
       <div
         ref={printContainerRef}
-        className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm"
+        className={`rounded-2xl border shadow-sm w-full min-w-0 overflow-hidden ${
+          isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+        }`}
       >
+        {/* Section Header with View Toggle for Mobile */}
+        <div className={`p-3.5 sm:p-4 border-b flex items-center justify-between gap-2 ${
+          isLight ? 'bg-slate-50 border-slate-100' : 'bg-slate-950/50 border-slate-800'
+        }`}>
+          <h2 className={`text-xs sm:text-sm font-bold flex items-center gap-2 truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+            <span>Account Statement ({filteredRows.length} Records)</span>
+          </h2>
+
+          {/* Mobile View Mode Toggle */}
+          <div className="flex sm:hidden items-center p-1 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <button
+              type="button"
+              onClick={() => setMobileViewMode('cards')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                mobileViewMode === 'cards'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Touch Swipe Cards"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="text-[10px]">Cards</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileViewMode('table')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                mobileViewMode === 'table'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Full Table View"
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span className="text-[10px]">Table</span>
+            </button>
+          </div>
+        </div>
+
         {/* Printable Header Details (Only rendered during print) */}
         <div className="hidden print:block p-6 border-b border-slate-300 text-slate-900 bg-white">
           <div className="flex justify-between items-start">
@@ -1810,7 +1858,155 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* 1. MOBILE TOUCH-SWIPE CARDS VIEW (Active on mobile when 'cards' mode selected) */}
+        <div className={`sm:hidden ${mobileViewMode === 'cards' ? 'block' : 'hidden'} p-3 space-y-3`}>
+          {filteredRows.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-500">
+              No transactions match the selected date range and filters.
+            </div>
+          ) : (
+            <>
+              {/* Swipe Instruction Banner */}
+              <div className={`flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-medium border ${
+                isLight ? 'bg-indigo-50/70 text-indigo-800 border-indigo-100' : 'bg-indigo-950/30 text-indigo-300 border-indigo-900/40'
+              }`}>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>Swipe horizontally to browse ledger entries</span>
+                </span>
+                <span className="text-[10px] font-bold opacity-75">{filteredRows.length} Records</span>
+              </div>
+
+              {/* Horizontal Touch Swipe Carousel */}
+              <div
+                className="flex gap-3 overflow-x-auto snap-x snap-mandatory py-1 pb-3 custom-scrollbar -webkit-overflow-scrolling-touch touch-pan-x w-full"
+                onScroll={(e) => {
+                  const target = e.currentTarget;
+                  const itemWidth = target.offsetWidth * 0.85;
+                  const index = Math.round(target.scrollLeft / itemWidth);
+                  setActiveSwipeIndex(Math.min(index, filteredRows.length - 1));
+                }}
+                style={{ scrollSnapType: 'x mandatory' }}
+              >
+                {filteredRows.map((row) => (
+                  <div
+                    key={row.id}
+                    className={`snap-center shrink-0 w-[86vw] max-w-[340px] p-4 rounded-2xl border shadow-md flex flex-col justify-between transition-all ${
+                      isLight
+                        ? 'bg-white border-slate-200 text-slate-900'
+                        : 'bg-slate-950 border-slate-800 text-white'
+                    }`}
+                  >
+                    <div>
+                      {/* Card Header: Ref # & Date */}
+                      <div className="flex items-start justify-between gap-2 mb-2.5">
+                        <div>
+                          <span className="font-mono font-bold text-sm text-indigo-400 block truncate">
+                            {row.referenceNo}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono block">
+                            {row.date}
+                          </span>
+                        </div>
+                        <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${row.badgeColor}`}>
+                          {row.typeLabel}
+                        </span>
+                      </div>
+
+                      {/* Particulars & Description */}
+                      <p className={`text-xs font-medium mb-3 line-clamp-2 ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                        {row.description}
+                      </p>
+
+                      {/* Debit, Credit & Running Balance Pill */}
+                      <div className={`p-2.5 rounded-xl border text-xs font-mono space-y-1.5 ${
+                        isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-900/90 border-slate-800 text-slate-300'
+                      }`}>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500">Debit (Dr):</span>
+                          <span className={row.debit > 0 ? (row.type === 'ledger_discount' ? 'text-fuchsia-400 font-bold' : 'font-bold text-slate-900 dark:text-white') : 'text-slate-500'}>
+                            {row.debit > 0 ? formatCurrency(row.debit, settings) : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500">Credit (Cr):</span>
+                          <span className={row.credit > 0 ? 'font-bold text-emerald-500' : 'text-slate-500'}>
+                            {row.credit > 0 ? formatCurrency(row.credit, settings) : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-bold pt-1 border-t border-slate-200 dark:border-slate-800">
+                          <span>Running Balance:</span>
+                          <span className={row.runningBalance > 0 ? 'text-amber-500' : row.runningBalance < 0 ? 'text-emerald-400' : 'text-slate-400'}>
+                            {formatCurrency(Math.abs(row.runningBalance), settings)} <span className="text-[10px] font-normal">{row.balanceIndicator}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-500 font-mono truncate">
+                        Method: {row.paymentMethod || 'Standard'}
+                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {row.rawTransaction && (row.type === 'sale' || row.type === 'pos_sale') && (
+                          <button
+                            type="button"
+                            onClick={() => openViewSalePage(row.rawTransaction!)}
+                            className="p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 text-xs transition cursor-pointer"
+                            title="View Invoice"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {row.rawTransaction && row.type === 'purchase' && (
+                          <button
+                            type="button"
+                            onClick={() => openViewPurchasePage(row.rawTransaction!)}
+                            className="p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 text-xs transition cursor-pointer"
+                            title="View Bill"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {(row.type === 'ledger_discount' || (row.type === 'payment' && row.isEditable)) && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditRowModal(row)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition cursor-pointer"
+                            title="Edit Entry"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Swipe Pagination Dots */}
+              {filteredRows.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 pt-1">
+                  {filteredRows.slice(0, 10).map((_, dotIdx) => (
+                    <div
+                      key={dotIdx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        activeSwipeIndex === dotIdx
+                          ? 'w-5 bg-indigo-500'
+                          : 'w-1.5 bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* 2. FULL RESPONSIVE TABLE VIEW */}
+        <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden sm:block'} w-full overflow-x-auto custom-scrollbar touch-pan-x -webkit-overflow-scrolling-touch pb-2`}>
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>

@@ -495,7 +495,7 @@ export const BrandsView: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center justify-center gap-1.5 ${
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
                 isLight 
                   ? 'bg-slate-900 hover:bg-slate-850 text-slate-100 shadow-slate-900/10' 
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shadow-slate-800/20'
@@ -505,9 +505,9 @@ export const BrandsView: React.FC = () => {
             </button>
             <button
               id="brand-form-submit-btn"
-              type="button"
-              onClick={handleSaveBrand}
-              className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-1.5 active:scale-95"
+              type="submit"
+              form="brand-main-form"
+              className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-1.5 active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{editingBrand ? 'Save Changes' : 'Create Brand'}</span>
@@ -516,7 +516,7 @@ export const BrandsView: React.FC = () => {
         </div>
 
         {/* Full Page Form Grid */}
-        <form onSubmit={handleSaveBrand} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form id="brand-main-form" onSubmit={handleSaveBrand} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Form Area (8 cols) */}
           <div className="lg:col-span-8 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-5">
             <div className="border-b border-slate-800 pb-3">
@@ -877,6 +877,29 @@ export const BrandsView: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Bottom Form Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                  isLight
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                id="brand-form-bottom-submit-btn"
+                className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{editingBrand ? 'Save Changes' : 'Create Brand'}</span>
+              </button>
             </div>
           </div>
         </form>

@@ -68,7 +68,7 @@ export const formatCurrency = (
   const num = typeof amount === 'number' ? amount : parseFloat(String(amount || 0));
   const validNum = isNaN(num) ? 0 : num;
   
-  const symbol = settings?.currencySymbol || '$';
+  const symbol = settings?.currencySymbol || '₹';
   const placement = settings?.currencyPlacement || 'prefix';
   const decimals = settings?.currencyDecimalPlaces !== undefined ? settings.currencyDecimalPlaces : 2;
 

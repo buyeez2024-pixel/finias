@@ -998,21 +998,51 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [productsState, setProductsState] = useState<Product[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_products`);
     const raw = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialProducts);
-    return (Array.isArray(raw) ? raw : []).map((p: any) => ({
-      ...p,
-      category: getCategoryName(p.category),
-      brand: getBrandName(p.brand),
-    }));
+    return (Array.isArray(raw) ? raw : []).map((p: any) => {
+      const sanitized = {
+        ...p,
+        category: getCategoryName(p.category),
+        brand: getBrandName(p.brand),
+      };
+      let lots = Array.isArray(sanitized.lots) ? [...sanitized.lots] : [];
+      if (lots.length > 1) {
+        const hasRealLots = lots.some((l: any) => Number(l.currentStock) > 0 && !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+        if (hasRealLots) {
+          lots = lots.filter((l: any) => Number(l.currentStock) > 0 || !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+        }
+      }
+      let stock = sanitized.currentStock;
+      if (lots.length > 0) {
+        const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
+        if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
+      }
+      return { ...sanitized, lots, currentStock: stock, stock };
+    });
   });
 
   const setProducts = (updater: Product[] | ((prev: Product[]) => Product[])) => {
     setProductsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      return (Array.isArray(next) ? next : []).map((p: any) => ({
-        ...p,
-        category: getCategoryName(p.category),
-        brand: getBrandName(p.brand),
-      }));
+      return (Array.isArray(next) ? next : []).map((p: any) => {
+        const sanitized = {
+          ...p,
+          category: getCategoryName(p.category),
+          brand: getBrandName(p.brand),
+        };
+        let lots = Array.isArray(sanitized.lots) ? [...sanitized.lots] : [];
+        if (lots.length > 1) {
+          const hasRealLots = lots.some((l: any) => Number(l.currentStock) > 0 && !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+          if (hasRealLots) {
+            lots = lots.filter((l: any) => Number(l.currentStock) > 0 || !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+          }
+        }
+        let stock = sanitized.currentStock;
+        if (lots.length > 0) {
+          const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
+          if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
+        }
+        return { ...sanitized, lots, currentStock: stock, stock };
+      });
     });
   };
 
@@ -1037,7 +1067,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [brands, setBrands] = useState<Brand[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_brands`);
-    return saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialBrands);
+    let list: Brand[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialBrands);
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialBrands;
+    } else {
+      // Ensure standard initial brands exist alongside user-created brands
+      const existingNames = new Set(list.map((b) => (b.name || '').trim().toLowerCase()));
+      initialBrands.forEach((initBrd) => {
+        if (!existingNames.has(initBrd.name.toLowerCase())) {
+          list.push(initBrd);
+        }
+      });
+    }
+    return list;
   });
 
   const [warranties, setWarranties] = useState<Warranty[]>(() => {
@@ -1094,7 +1136,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [customerGroups, setCustomerGroups] = useState<CustomerGroup[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_customer_groups`);
-    return saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCustomerGroups);
+    let list: CustomerGroup[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCustomerGroups);
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialCustomerGroups;
+    }
+    return list;
   });
 
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
@@ -3081,20 +3127,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Product Management
-  const addProducts = (productsData: Omit<Product, 'id' | 'currentStock'>[]) => {
+  const addProducts = (productsData: Omit<Product, 'id' | 'currentStock'>[]): Product[] => {
     const newProducts = productsData.map((productData, idx) => {
       const totalStock = Object.values(productData.locationStocks || {}).reduce((a: any, b: any) => a + b, 0) as number;
       const newId = `prod_${Date.now()}_${idx}`;
-      const lots = productData.lots && productData.lots.length > 0 ? productData.lots : [
-        {
-          id: `lot_${Date.now()}_${idx}`,
-          lotNumber: `LOT-${new Date().getFullYear()}-${String(idx + 1).padStart(3, '0')}`,
-          costPrice: productData.costPrice,
-          sellingPrice: productData.sellingPrice,
-          currentStock: totalStock,
-          createdDate: new Date().toISOString().slice(0, 10),
+      let lots = productData.lots && productData.lots.length > 0 ? [...productData.lots] : [];
+      if (lots.length === 0) {
+        const itemLotNum = (productData as any).lotNumber;
+        if (itemLotNum) {
+          lots = [{
+            id: `lot_${Date.now()}_${idx}`,
+            lotNumber: itemLotNum,
+            costPrice: productData.costPrice,
+            sellingPrice: productData.sellingPrice,
+            currentStock: totalStock,
+            createdDate: new Date().toISOString().slice(0, 10),
+          }];
+        } else if ((productData as any).source !== 'purchase' && (productData as any).creationSource !== 'direct_purchase') {
+          lots = [{
+            id: `lot_${Date.now()}_${idx}`,
+            lotNumber: `LOT-${new Date().getFullYear()}-${String(idx + 1).padStart(3, '0')}`,
+            costPrice: productData.costPrice,
+            sellingPrice: productData.sellingPrice,
+            currentStock: totalStock,
+            createdDate: new Date().toISOString().slice(0, 10),
+          }];
         }
-      ];
+      }
       return {
         ...productData,
         id: newId,
@@ -3107,6 +3166,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ products: updated });
       return updated;
     });
+    return newProducts;
   };
 
   const addProduct = (productData: Omit<Product, 'id' | 'currentStock'>) => {
@@ -3114,16 +3174,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newId = `prod_${Date.now()}`;
     
     // Create initial lot if not provided
-    const lots = productData.lots && productData.lots.length > 0 ? productData.lots : [
-      {
-        id: `lot_${Date.now()}`,
-        lotNumber: `LOT-${new Date().getFullYear()}-001`,
-        costPrice: productData.costPrice,
-        sellingPrice: productData.sellingPrice,
-        currentStock: totalStock,
-        createdDate: new Date().toISOString().slice(0, 10),
+    let lots = productData.lots && productData.lots.length > 0 ? [...productData.lots] : [];
+    if (lots.length === 0) {
+      const itemLotNum = (productData as any).lotNumber;
+      if (itemLotNum) {
+        lots = [{
+          id: `lot_${Date.now()}`,
+          lotNumber: itemLotNum,
+          costPrice: productData.costPrice,
+          sellingPrice: productData.sellingPrice,
+          currentStock: totalStock,
+          createdDate: new Date().toISOString().slice(0, 10),
+        }];
+      } else if ((productData as any).source !== 'purchase') {
+        lots = [{
+          id: `lot_${Date.now()}`,
+          lotNumber: `LOT-${new Date().getFullYear()}-001`,
+          costPrice: productData.costPrice,
+          sellingPrice: productData.sellingPrice,
+          currentStock: totalStock,
+          createdDate: new Date().toISOString().slice(0, 10),
+        }];
       }
-    ];
+    }
 
     // Check if initial lot already exists when creating
     if (lots && lots.length > 0) {
@@ -3565,7 +3638,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: brandData.status || 'active',
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setBrands((prev) => [...prev, newBrand]);
+    const updated = [...brands, newBrand];
+    setBrands(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ brands: updated });
+    } catch {}
     return newBrand;
   };
 
@@ -3574,24 +3652,28 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const oldName = currentBrand?.name;
     const newName = brandData.name !== undefined ? brandData.name.trim() : oldName;
 
-    setBrands((prev) =>
-      prev.map((b) => {
-        if (b.id !== id) return b;
-        return {
-          ...b,
-          ...brandData,
-          name: newName || b.name,
-          code: brandData.code !== undefined ? brandData.code.trim().toUpperCase() : b.code,
-          shortCode: brandData.shortCode !== undefined ? brandData.shortCode.trim().toUpperCase() : b.shortCode,
-          description: brandData.description !== undefined ? brandData.description.trim() : b.description,
-          website: brandData.website !== undefined ? brandData.website.trim() : b.website,
-          originCountry: brandData.originCountry !== undefined ? brandData.originCountry.trim() : b.originCountry,
-          color: brandData.color !== undefined ? brandData.color : b.color,
-          logo: brandData.logo !== undefined ? brandData.logo : b.logo,
-          status: brandData.status !== undefined ? brandData.status : b.status,
-        };
-      })
-    );
+    const updated = brands.map((b) => {
+      if (b.id !== id) return b;
+      return {
+        ...b,
+        ...brandData,
+        name: newName || b.name,
+        code: brandData.code !== undefined ? brandData.code.trim().toUpperCase() : b.code,
+        shortCode: brandData.shortCode !== undefined ? brandData.shortCode.trim().toUpperCase() : b.shortCode,
+        description: brandData.description !== undefined ? brandData.description.trim() : b.description,
+        website: brandData.website !== undefined ? brandData.website.trim() : b.website,
+        originCountry: brandData.originCountry !== undefined ? brandData.originCountry.trim() : b.originCountry,
+        color: brandData.color !== undefined ? brandData.color : b.color,
+        logo: brandData.logo !== undefined ? brandData.logo : b.logo,
+        status: brandData.status !== undefined ? brandData.status : b.status,
+      };
+    });
+
+    setBrands(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ brands: updated });
+    } catch {}
 
     // Synchronize brand name in products if updated
     if (oldName && newName && oldName !== newName) {
@@ -3634,7 +3716,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    setBrands((prev) => prev.filter((b) => b.id !== id));
+    const updated = brands.filter((b) => b.id !== id);
+    setBrands(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ brands: updated });
+    } catch {}
 
     return {
       success: true,
@@ -5628,7 +5715,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (newPurchase.status === 'received' || newPurchase.type === 'purchase_return') {
       const isReturn = newPurchase.type === 'purchase_return';
       const canEditCost = settings.enableEditPurchasePrice !== false && !isReturn;
-      const canTrackLot = settings.enableLotNumber !== false && Boolean(purchaseData.lotNumber);
+      const canTrackLot = settings.enableLotNumber !== false && Boolean(purchaseData.lotNumber || (purchaseData.items && purchaseData.items.some((i: any) => i.lotNumber)));
       const targetLocId = purchaseData.locationId || selectedLocationId || locations[0]?.id || 'loc_1';
 
       setProducts((prev) =>
@@ -5683,41 +5770,55 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ? Math.max(0, (Number(p.currentStock) || 0) - totalItemQty)
             : (Number(p.currentStock) || 0) + totalItemQty;
 
-          // Handle Lot Logic
+          // Handle Lot Logic (supports item-level lotNumber or purchase-level lotNumber)
           let updatedLots = p.lots ? [...p.lots] : [];
-          if (canTrackLot && purchaseData.lotNumber) {
+          const itemSpecificLot = (matchingItems[0] as any)?.lotNumber || purchaseData.lotNumber;
+
+          if (canTrackLot && itemSpecificLot) {
+            const cleanTargetLot = String(itemSpecificLot).trim();
             const existingLotIdx = updatedLots.findIndex(
-              (l) => l.lotNumber.toLowerCase() === purchaseData.lotNumber?.toLowerCase()
+              (l) => l.lotNumber.toLowerCase() === cleanTargetLot.toLowerCase()
             );
 
             if (existingLotIdx >= 0) {
               const lotStock = Number(updatedLots[existingLotIdx].currentStock) || 0;
               updatedLots[existingLotIdx] = {
                 ...updatedLots[existingLotIdx],
+                lotNumber: cleanTargetLot,
                 currentStock: isReturn ? Math.max(0, lotStock - totalItemQty) : lotStock + totalItemQty,
                 costPrice: isReturn ? updatedLots[existingLotIdx].costPrice : (matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice),
                 sellingPrice: isReturn ? updatedLots[existingLotIdx].sellingPrice : (matchingItems[0]?.sellingPrice || p.sellingPrice),
               };
-            } else if (!isReturn) {
-              updatedLots.push({
-                id: `lot_pur_${Date.now()}_${p.id}`,
-                lotNumber: purchaseData.lotNumber,
-                costPrice: matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice,
-                sellingPrice: matchingItems[0]?.sellingPrice || p.sellingPrice,
-                currentStock: totalItemQty,
-                createdDate: nowStr.slice(0, 10),
-              });
-            } else if (isReturn && updatedLots.length > 0) {
-              let rem = totalItemQty;
-              for (let idx = updatedLots.length - 1; idx >= 0 && rem > 0; idx--) {
-                const cur = Number(updatedLots[idx].currentStock) || 0;
-                const deduct = Math.min(cur, rem);
-                updatedLots[idx] = {
-                  ...updatedLots[idx],
-                  currentStock: cur - deduct,
+            } else {
+              // Check if there is an unused auto-generated dummy lot (currentStock === 0)
+              const dummyIdx = updatedLots.findIndex((l) => (Number(l.currentStock) === 0 || !l.currentStock) && /^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+              if (dummyIdx >= 0) {
+                updatedLots[dummyIdx] = {
+                  ...updatedLots[dummyIdx],
+                  lotNumber: cleanTargetLot,
+                  currentStock: totalItemQty,
+                  costPrice: matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice,
+                  sellingPrice: matchingItems[0]?.sellingPrice || p.sellingPrice,
+                  createdDate: nowStr.slice(0, 10),
                 };
-                rem -= deduct;
+              } else if (!isReturn) {
+                updatedLots.push({
+                  id: `lot_pur_${Date.now()}_${p.id}_${Math.random().toString(36).substring(2, 6)}`,
+                  lotNumber: cleanTargetLot,
+                  costPrice: matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice,
+                  sellingPrice: matchingItems[0]?.sellingPrice || p.sellingPrice,
+                  currentStock: totalItemQty,
+                  createdDate: nowStr.slice(0, 10),
+                });
               }
+            }
+          }
+
+          // Clean up dummy 0-stock lots if valid lots with stock exist
+          if (updatedLots.length > 1) {
+            const hasRealLotsWithStock = updatedLots.some((l) => Number(l.currentStock) > 0 && !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+            if (hasRealLotsWithStock) {
+              updatedLots = updatedLots.filter((l) => Number(l.currentStock) > 0 || !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
             }
           } else if (isReturn && updatedLots.length > 0) {
             let rem = totalItemQty;

@@ -441,9 +441,9 @@ export const PurchaseFormPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pb-24 animate-fadeIn">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 pb-28 animate-fadeIn w-full max-w-full min-w-0 overflow-x-hidden text-slate-100">
       {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-sm w-full min-w-0">
         <div className="flex items-center gap-3">
           <button 
             type="button"
@@ -673,8 +673,8 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+          <div className="overflow-x-auto w-full min-w-0 scrollbar-thin">
+            <table className="w-full border-collapse text-left min-w-[850px]">
               <thead>
                 <tr className="bg-slate-950/80 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-800">
                   <th className="py-3 px-4 w-12 text-center">#</th>

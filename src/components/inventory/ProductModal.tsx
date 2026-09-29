@@ -27,7 +27,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   productToEdit,
 }) => {
-  const { products, locations, addProduct, updateProduct, settings, taxGroups, taxRates, units } = useErp();
+  const { products, locations, addProduct, updateProduct, settings, taxGroups, taxRates, units, brands = [] } = useErp();
 
   const [name, setName] = useState(productToEdit?.name || '');
   const [sku, setSku] = useState(productToEdit?.sku || `SKU-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -309,18 +309,27 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               )}
 
               {/* Brand */}
-              {Boolean(settings.enableBrand) && (
+              {settings.enableBrand !== false && (
                 <div>
-                  <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold`}>Brand / Manufacturer</label>
-                  <input
-                    type="text"
+                  <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold block mb-1`}>Brand / Manufacturer</label>
+                  <select
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
-                    placeholder="e.g. Apex Tech"
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none mt-1 ${
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none text-xs font-medium ${
                       isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
                     }`}
-                  />
+                  >
+                    <option value="">Select Brand (Optional)</option>
+                    {brands && brands.length > 0 ? (
+                      brands.filter(b => b.status === 'active' || b.name === brand).map((b) => (
+                        <option key={b.id} value={b.name}>{b.name}</option>
+                      ))
+                    ) : (
+                      ['Apex Tech', 'Apple', 'Samsung', 'Sony', 'Logitech'].map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))
+                    )}
+                  </select>
                 </div>
               )}
 
