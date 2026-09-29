@@ -743,6 +743,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       raw = window.location.pathname.replace(/^\/+|\/+$/g, '').trim();
     }
+    if (raw.startsWith('farm/')) {
+      raw = raw.replace(/^farm\//, '');
+    } else if (raw === 'farm') {
+      raw = '';
+    }
     const parts = raw.split('/').filter(Boolean);
     const main = (parts[0] || '').toLowerCase();
     const sub = (parts[1] || '').toLowerCase();

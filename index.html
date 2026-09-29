@@ -12,6 +12,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        var p = window.location.pathname;
+        var base = (p.startsWith('/farm/') || p === '/farm') ? '/farm/' : '/';
+        var el = document.createElement('base');
+        el.href = base;
+        document.head.prepend(el);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
