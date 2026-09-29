@@ -1661,14 +1661,19 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       {/* Modal: Add New Staff Member (finias POS Replicated users/create) */}
       {showAddUserModal && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 animate-fadeIn overflow-y-auto overscroll-contain"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center pt-10 sm:pt-4 p-0 sm:p-4 animate-fadeIn overflow-hidden"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               handleCloseAddUserModal();
             }
           }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-3xl w-full shadow-2xl space-y-4 sm:space-y-5 my-auto max-h-[92vh] flex flex-col overflow-hidden min-w-0">
+          <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 max-w-3xl w-full shadow-2xl space-y-4 sm:space-y-5 h-[calc(100dvh-2.5rem)] sm:h-auto sm:max-h-[92vh] flex flex-col overflow-hidden min-w-0">
+            {/* Mobile Pull Handle & Top Margin */}
+            <div className="pt-1 pb-0 flex justify-center sm:hidden shrink-0">
+              <div className="w-12 h-1.5 bg-slate-700 rounded-full" />
+            </div>
+
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0 min-w-0">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -1683,9 +1688,10 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
               <button
                 type="button"
                 onClick={handleCloseAddUserModal}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white shrink-0 active:scale-95 transition"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center shrink-0 active:scale-95 transition cursor-pointer shadow-2xs"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
@@ -2285,8 +2291,13 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
 
       {/* Modal: Edit Staff Member */}
       {userToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
-          <div className={`rounded-t-3xl sm:rounded-3xl w-full max-w-3xl h-[95vh] sm:h-auto sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border ${isLight ? 'bg-white text-slate-900 border-slate-200' : 'bg-slate-900 text-white border-slate-800'}`}>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center pt-10 sm:pt-4 p-0 sm:p-4 animate-fadeIn overflow-hidden">
+          <div className={`rounded-t-3xl sm:rounded-3xl w-full max-w-3xl h-[calc(100dvh-2.5rem)] sm:h-auto sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border ${isLight ? 'bg-white text-slate-900 border-slate-200' : 'bg-slate-900 text-white border-slate-800'}`}>
+            {/* Mobile Pull Handle & Top Margin */}
+            <div className="pt-2.5 pb-1 flex justify-center sm:hidden shrink-0">
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+            </div>
+
             {/* Header */}
             <div className={`px-4 py-3 sm:px-6 sm:py-4 border-b flex items-center justify-between shrink-0 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'}`}>
               <div className="flex items-center gap-2.5 min-w-0">
@@ -2301,10 +2312,16 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setUserToEdit(null)}
-                className={`p-1.5 rounded-lg transition shrink-0 ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 shadow-2xs ${
+                  isLight
+                    ? 'bg-slate-200/80 hover:bg-slate-300 text-slate-700 border-slate-300'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+                title="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 

@@ -435,7 +435,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-5 ${isLight ? 'bg-slate-900/60' : 'bg-black/80'} backdrop-blur-xs overflow-hidden`}>
+    <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center pt-10 sm:pt-4 p-0 sm:p-4 md:p-5 ${isLight ? 'bg-slate-900/60' : 'bg-black/80'} backdrop-blur-xs overflow-hidden`}>
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-60 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 border border-indigo-400 animate-bounce">
           <CheckCircle2 className="w-4 h-4" />
@@ -443,12 +443,17 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
         </div>
       )}
       <div
-        className={`w-full max-w-5xl h-[95vh] sm:h-[90vh] max-h-[95vh] sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border transition-all ${
+        className={`w-full max-w-5xl h-[calc(100dvh-2.5rem)] sm:h-[90vh] max-h-[calc(100dvh-2.5rem)] sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border transition-all ${
           isLight
             ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/60'
             : 'bg-slate-900 border-slate-800 text-white shadow-black/90'
         }`}
       >
+        {/* Mobile Pull Handle & Safe Top Margin */}
+        <div className="pt-2.5 pb-1 flex justify-center sm:hidden shrink-0">
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+        </div>
+
         {/* Top Header & Profile Banner */}
         <div
           className={`p-3.5 sm:p-5 md:p-6 border-b shrink-0 ${
@@ -549,10 +554,10 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
               <button
                 onClick={onClose}
-                className={`p-1.5 sm:p-2 rounded-xl transition border ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 shadow-2xs ${
                   isLight
-                    ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800 border-transparent'
+                    ? 'bg-slate-200/80 hover:bg-slate-300 text-slate-700 border-slate-300'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 }`}
                 title="Close (Esc)"
               >

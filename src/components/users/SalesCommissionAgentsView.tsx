@@ -460,10 +460,15 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
       {/* Add/Edit Modal - 100% Mobile Portrait Responsive with Pinned Sticky Footer */}
       {isAddingAgent && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-fade-in overflow-hidden">
-          <div className={`w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[88vh] rounded-t-3xl sm:rounded-3xl border shadow-2xl overflow-hidden flex flex-col transition-all ${
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm pt-10 sm:pt-4 p-0 sm:p-4 animate-fade-in overflow-hidden">
+          <div className={`w-full max-w-2xl h-[calc(100dvh-2.5rem)] sm:h-auto sm:max-h-[88vh] rounded-t-3xl sm:rounded-3xl border shadow-2xl overflow-hidden flex flex-col transition-all ${
             isLight ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/60' : 'bg-slate-900 border-slate-800 text-white shadow-black/90'
           }`}>
+            {/* Mobile Pull Handle & Top Margin */}
+            <div className="pt-2.5 pb-1 flex justify-center sm:hidden shrink-0">
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+            </div>
+
             {/* Modal Header */}
             <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b shrink-0 ${
               isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'
@@ -478,12 +483,16 @@ export const SalesCommissionAgentsView: React.FC = () => {
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsAddingAgent(false)}
-                className={`p-1.5 rounded-lg transition-colors shrink-0 ${
-                  isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-200' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 shadow-2xs ${
+                  isLight
+                    ? 'bg-slate-200/80 hover:bg-slate-300 text-slate-700 border-slate-300'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 }`}
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
             
