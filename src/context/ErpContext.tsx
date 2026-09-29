@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { getCategoryName, getBrandName, applyAmountRounding } from '../utils/formatters';
 import { validatePhoneNumber } from '../utils/phoneValidation';
 import {
@@ -653,6 +653,9 @@ const safeJsonParse = (key: string, defaultValue: any) => {
 };
 
 export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isRemoteSyncingRef = useRef(false);
+  const isInitialMountRef = useRef(true);
+
   const isFreshInstalled = typeof window !== 'undefined' && (
     localStorage.getItem('app_fresh_installed') === 'true' ||
     localStorage.getItem('installation_type') === 'fresh'
@@ -1712,6 +1715,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Universal Live MySQL Sync: Push updates to server database across Desktop, Mobile, and Tablet
   useEffect(() => {
+    // Skip initial mount to prevent pushing on page load
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
+    // Skip push if change was triggered by remote data pull
+    if (isRemoteSyncingRef.current) {
+      isRemoteSyncingRef.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
       try {
         fetch('/api/sync.php?action=push', {
@@ -1743,12 +1758,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }),
         }).catch(() => {});
       } catch {}
-    }, 1500);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations, salesCommissionAgents]);
 
-  // Universal Live MySQL Sync: Pull latest database records on startup, tab focus, and every 15s
+  // Universal Live MySQL Sync: Pull latest database records on startup, tab focus, and interval
   useEffect(() => {
     let active = true;
     const syncFromRemote = async () => {
@@ -1762,6 +1777,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (contentType.includes('application/json')) {
             const result = await res.json();
             if (result.success && result.isConfigured && result.data && active) {
+              isRemoteSyncingRef.current = true;
               const d = result.data;
               if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
               if (Array.isArray(d.transactions) && d.transactions.length > 0) setTransactions(d.transactions);
@@ -1824,7 +1840,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     syncFromRemote();
-    const interval = setInterval(syncFromRemote, 15000);
+    const interval = setInterval(syncFromRemote, 45000);
     window.addEventListener('focus', syncFromRemote);
 
     return () => {

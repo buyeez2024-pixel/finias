@@ -385,6 +385,7 @@ if ($action === 'save_config') {
         $prefix = preg_replace('/[^a-zA-Z0-9_]/', '', $input['dbPrefix'] ?? 'pos_');
 
         ensureAllSchemaTables($pdo, $prefix);
+        @touch(__DIR__ . '/.tables_created');
 
         // Save config locally
         $safeConfig = [
@@ -399,6 +400,7 @@ if ($action === 'save_config') {
         ];
         file_put_contents($configFile, json_encode($safeConfig, JSON_PRETTY_PRINT));
         @chmod($configFile, 0666);
+        $pdo = null;
 
         echo json_encode([
             'success' => true,
@@ -433,12 +435,39 @@ if (!$dbConfig || empty($dbConfig['dbName'])) {
     exit;
 }
 
+// Action: Manual init tables if requested
+if ($action === 'init_tables') {
+    try {
+        $pdo = getPdoConnection($dbConfig);
+        $prefix = preg_replace('/[^a-zA-Z0-9_]/', '', $dbConfig['dbPrefix'] ?? 'pos_');
+        ensureAllSchemaTables($pdo, $prefix);
+        @touch(__DIR__ . '/.tables_created');
+        $pdo = null;
+        echo json_encode([
+            'success' => true,
+            'message' => 'All database tables successfully created in phpMyAdmin.',
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to initialize tables: ' . $e->getMessage(),
+        ]);
+    }
+    exit;
+}
+
 // 3. Action: PULL
 if ($action === 'pull' || $method === 'GET') {
     try {
         $pdo = getPdoConnection($dbConfig);
         $prefix = preg_replace('/[^a-zA-Z0-9_]/', '', $dbConfig['dbPrefix'] ?? 'pos_');
-        ensureAllSchemaTables($pdo, $prefix);
+        
+        // Only run DDL once if tables have never been created
+        $tableMarker = __DIR__ . '/.tables_created';
+        if (!file_exists($tableMarker)) {
+            ensureAllSchemaTables($pdo, $prefix);
+            @touch($tableMarker);
+        }
 
         $data = [];
         $latestTimestamp = null;
@@ -500,6 +529,8 @@ if ($action === 'pull' || $method === 'GET') {
             } catch (Exception $e) {}
         }
 
+        $pdo = null;
+
         echo json_encode([
             'success' => true,
             'isConfigured' => true,
@@ -507,6 +538,7 @@ if ($action === 'pull' || $method === 'GET') {
             'lastUpdated' => $latestTimestamp,
         ]);
     } catch (Exception $e) {
+        $pdo = null;
         echo json_encode([
             'success' => false,
             'message' => 'Pull failed: ' . $e->getMessage(),
@@ -520,10 +552,16 @@ if ($action === 'push' || $method === 'POST') {
     try {
         $pdo = getPdoConnection($dbConfig);
         $prefix = preg_replace('/[^a-zA-Z0-9_]/', '', $dbConfig['dbPrefix'] ?? 'pos_');
-        ensureAllSchemaTables($pdo, $prefix);
+        
+        $tableMarker = __DIR__ . '/.tables_created';
+        if (!file_exists($tableMarker)) {
+            ensureAllSchemaTables($pdo, $prefix);
+            @touch($tableMarker);
+        }
 
         $updates = $input['updates'] ?? $input;
         if (!is_array($updates) || empty($updates)) {
+            $pdo = null;
             echo json_encode(['success' => true, 'updated' => 0]);
             exit;
         }
@@ -1005,12 +1043,15 @@ if ($action === 'push' || $method === 'POST') {
             }
         }
 
+        $pdo = null;
+
         echo json_encode([
             'success' => true,
             'updated' => $count,
             'timestamp' => date('c'),
         ]);
     } catch (Exception $e) {
+        $pdo = null;
         echo json_encode([
             'success' => false,
             'message' => 'Push failed: ' . $e->getMessage(),
