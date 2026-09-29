@@ -46,6 +46,8 @@ import {
   HelpCircle,
   UserCog,
   RefreshCw,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 import { UserDetailsModal } from '../users/UserDetailsModal';
 import { UserRolePermissionsModal, CustomRoleDefinition } from '../users/UserRolePermissionsModal';
@@ -1131,8 +1133,147 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
           );
         })()}
 
-        {/* Staff Table */}
-        <div className={`overflow-x-auto scroll-smooth touch-pan-x overscroll-x-contain custom-scrollbar rounded-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+        {/* Mobile View: Card List (< md) */}
+        <div className="md:hidden space-y-3">
+          {paginatedUsers.length === 0 ? (
+            <div className={`p-8 text-center font-semibold rounded-2xl border ${isLight ? 'bg-white border-slate-200 text-slate-400' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+              No matching staff members found.
+            </div>
+          ) : (
+            paginatedUsers.map((user) => {
+              const isCurrent = currentUser?.id === user.id;
+              const activeBiz = user.businessName || currentUser?.businessName || settings.businessName || settings.name || 'Royal POSfini';
+              const loc =
+                locations.find((l) => l.id === user.locationId) ||
+                locations.find((l) => (l.businessName || '').toLowerCase() === activeBiz.toLowerCase()) ||
+                locations.find((l) => l.id === selectedLocationId) ||
+                locations[0];
+              const branchDisplayName = (loc?.name && loc.name !== 'Main HQ') ? loc.name : activeBiz;
+
+              return (
+                <div
+                  key={`mobile_user_${user.id}`}
+                  className={`p-4 rounded-2xl border transition shadow-xs space-y-3 ${
+                    isLight
+                      ? 'bg-white border-slate-200 text-slate-800'
+                      : 'bg-slate-900 border-slate-800 text-slate-200'
+                  }`}
+                >
+                  {/* Top row: Avatar + Name + Email + Status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-11 h-11 rounded-2xl object-cover ring-1 ring-slate-300 dark:ring-slate-700 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center font-black text-sm text-white shrink-0 shadow-xs">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`font-bold text-sm truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            {user.name}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[9px] bg-indigo-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-xs">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-400 block truncate">{user.email}</span>
+                      </div>
+                    </div>
+
+                    {/* Status Pill */}
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                        user.status === 'active'
+                          ? isLight
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : isLight
+                          ? 'bg-rose-50 text-rose-800 border-rose-200'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      }`}
+                    >
+                      {user.status === 'active' ? 'Active' : 'Suspended'}
+                    </span>
+                  </div>
+
+                  {/* Middle row: Role Badge & Branch */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-lg border ${
+                      user.role === 'supreme_admin'
+                        ? isLight ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-amber-950/60 text-amber-300 border-amber-700/50'
+                        : user.role === 'admin' || user.role === 'super_admin'
+                        ? isLight ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-rose-950/60 text-rose-300 border-rose-700/50'
+                        : isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-950/60 text-indigo-300 border-indigo-700/50'
+                    }`}>
+                      <Shield className="w-3 h-3 shrink-0" />
+                      <span className="capitalize">{user.role.replace('_', ' ')}</span>
+                    </span>
+
+                    <span className="flex items-center gap-1 text-slate-400 text-xs truncate max-w-[150px]">
+                      <Building className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{branchDisplayName}</span>
+                    </span>
+                  </div>
+
+                  {/* Bottom row: Touch-Friendly Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => setUserToView(user)}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                        isLight
+                          ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
+                          : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border-slate-700'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Details</span>
+                    </button>
+
+                    {(!(currentUser?.role !== 'supreme_admin' && user.role === 'supreme_admin')) ? (
+                      <button
+                        type="button"
+                        onClick={() => setUserToEdit(user)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                          isLight
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 shadow-2xs'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                        }`}
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Edit Staff</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setUserToManageRole(user)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                          isLight
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-slate-800 text-purple-300 border-slate-700'
+                        }`}
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Manage Role</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Staff Table (>= md) */}
+        <div className={`hidden md:block overflow-x-auto scroll-smooth touch-pan-x overscroll-x-contain custom-scrollbar rounded-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <table className="w-full text-left text-xs">
             <thead
               className={`font-bold border-b uppercase text-[10px] tracking-wider ${
@@ -2144,53 +2285,58 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
 
       {/* Modal: Edit Staff Member */}
       {userToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className={`rounded-t-3xl sm:rounded-3xl w-full max-w-3xl h-[95vh] sm:h-auto sm:max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border ${isLight ? 'bg-white text-slate-900 border-slate-200' : 'bg-slate-900 text-white border-slate-800'}`}>
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <div className={`px-4 py-3 sm:px-6 sm:py-4 border-b flex items-center justify-between shrink-0 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/70 border-slate-800'}`}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shrink-0">
                   <Edit2 className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-black text-white">Edit Staff Details</h3>
-                  <p className="text-[10px] text-slate-400">Modifying profile, access roles, commission structures, & HRM logs for <span className="text-white font-bold">{userToEdit.name}</span></p>
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-black truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Edit Staff Details</h3>
+                  <p className={`text-[10px] truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Modifying profile, access roles, & HRM logs for <span className="font-bold underline text-indigo-600 dark:text-indigo-400">{userToEdit.name}</span>
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setUserToEdit(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                className={`p-1.5 rounded-lg transition shrink-0 ${isLight ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Scrollable Horizontal Tabs Switcher */}
-            <div className="flex items-center gap-1.5 border-b border-slate-800 p-2.5 bg-slate-950/40 text-xs overflow-x-auto shrink-0">
+            <div className={`flex items-center gap-1.5 border-b p-2 sm:p-2.5 text-xs overflow-x-auto shrink-0 scrollbar-none ${isLight ? 'bg-slate-100/70 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
               {[
-                { id: 'basic', label: '1. Details & Login' },
-                { id: 'roles', label: '2. Roles & Location' },
-                { id: 'commission', label: '3. Commission & Discount' },
-                { id: 'personal', label: '4. Personal & HRM Info' },
-                { id: 'bank', label: '5. Bank & Payroll' },
+                { id: 'basic', label: '1. Details & Login', shortLabel: '1. Details' },
+                { id: 'roles', label: '2. Roles & Location', shortLabel: '2. Roles' },
+                { id: 'commission', label: '3. Commission & Discount', shortLabel: '3. Comm.' },
+                { id: 'personal', label: '4. Personal & HRM Info', shortLabel: '4. HR Info' },
+                { id: 'bank', label: '5. Bank & Payroll', shortLabel: '5. Bank' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setEditUserTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap border ${
+                  className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap border text-xs ${
                     editUserTab === tab.id
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border-transparent'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800 border-transparent'
                   }`}
                 >
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
                 </button>
               ))}
             </div>
 
             {/* Scrollable Form Body */}
-            <form onSubmit={handleUpdateExistingUser} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-white">
+            <form id="edit-user-form" onSubmit={handleUpdateExistingUser} className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs ${isLight ? 'text-slate-800' : 'text-white'}`}>
               {editUserTab === 'basic' && (
                 <div className="space-y-4">
                   <h4 className="text-[11px] font-black uppercase text-indigo-400 tracking-wider">Account Credentials & Contact</h4>
@@ -2625,8 +2771,73 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between shrink-0">
+            </form>
+
+            {/* Sticky Action Buttons Footer */}
+            <div className={`p-3 sm:p-4 border-t shrink-0 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/90 border-slate-800'}`}>
+              {/* Mobile 2-Row Layout (< sm) */}
+              <div className="flex flex-col gap-2 sm:hidden">
+                {/* Row 1: Step Navigation */}
+                <div className="flex items-center gap-2">
+                  {editUserTab !== 'basic' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+                        const idx = tabs.indexOf(editUserTab);
+                        if (idx > 0) setEditUserTab(tabs[idx - 1] as any);
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition border ${
+                        isLight ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      }`}
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back</span>
+                    </button>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+
+                  {editUserTab !== 'bank' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+                        const idx = tabs.indexOf(editUserTab);
+                        if (idx < tabs.length - 1) setEditUserTab(tabs[idx + 1] as any);
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white font-bold text-xs flex items-center justify-center gap-1 transition"
+                    >
+                      <span>Next Section</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Row 2: Cancel & Save Changes */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUserToEdit(null)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs transition border ${
+                      isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="edit-user-form"
+                    className="flex-[1.5] py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop Row (>= sm) */}
+              <div className="hidden sm:flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {editUserTab !== 'basic' && (
                     <button
@@ -2636,7 +2847,9 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         const idx = tabs.indexOf(editUserTab);
                         if (idx > 0) setEditUserTab(tabs[idx - 1] as any);
                       }}
-                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"
+                      className={`px-4 py-2 rounded-xl font-semibold transition border ${
+                        isLight ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      }`}
                     >
                       Back
                     </button>
@@ -2660,19 +2873,23 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                   <button
                     type="button"
                     onClick={() => setUserToEdit(null)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"
+                    className={`px-4 py-2 rounded-xl font-semibold transition border ${
+                      isLight ? 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-600/30 transition"
+                    form="edit-user-form"
+                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
                   >
-                    Save Changes
+                    <Check className="w-4 h-4" />
+                    <span>Save Changes</span>
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
