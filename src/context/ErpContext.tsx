@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { getApiUrl } from '../utils/apiBase';
 import { getCategoryName, getBrandName, applyAmountRounding } from '../utils/formatters';
 import { validatePhoneNumber } from '../utils/phoneValidation';
 import {
@@ -1729,7 +1730,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const timer = setTimeout(() => {
       try {
-        fetch('/api/sync.php?action=push', {
+        fetch(getApiUrl('api/sync.php?action=push'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1769,7 +1770,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const syncFromRemote = async () => {
       // 1. Pull from sync.php (MySQL sync store)
       try {
-        const res = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
+        const res = await fetch(getApiUrl('api/sync.php?action=pull&t=' + Date.now()), {
           headers: { Accept: 'application/json' },
         });
         if (res.ok) {
@@ -1811,7 +1812,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // 2. Also ensure server adminUser from system.php is present if users list is empty
       try {
-        const sysRes = await fetch('/api/system.php?action=status&t=' + Date.now(), {
+        const sysRes = await fetch(getApiUrl('api/system.php?action=status&t=' + Date.now()), {
           headers: { Accept: 'application/json' },
         });
         if (sysRes.ok) {
@@ -3848,7 +3849,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const triggerImmediateSyncPush = (customUpdates?: Record<string, any>) => {
     try {
-      fetch('/api/sync.php?action=push', {
+      fetch(getApiUrl('api/sync.php?action=push'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -6571,7 +6572,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!matchedUser) {
       // 2a. Query sync.php (Live MySQL sync store across devices)
       try {
-        const syncRes = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
+        const syncRes = await fetch(getApiUrl('api/sync.php?action=pull&t=' + Date.now()), {
           headers: { Accept: 'application/json' },
         });
         if (syncRes.ok) {
@@ -6589,7 +6590,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 2b. Query system status endpoint for admin user account
       if (!matchedUser) {
         try {
-          const statusRes = await fetch('/api/system.php?action=status&t=' + Date.now(), {
+          const statusRes = await fetch(getApiUrl('api/system.php?action=status&t=' + Date.now()), {
             headers: { Accept: 'application/json' },
           });
           if (statusRes.ok) {

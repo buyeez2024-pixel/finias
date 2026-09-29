@@ -1,20 +1,19 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
 
-  # 1. Direct system API routing for cPanel (status, install, reset, sync)
+  # 1. Allow existing files and directories to be served directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 2. Direct system API routing (works in root or /farm/)
   RewriteRule ^api/system/status/?$ api/system.php?action=status [QSA,L]
   RewriteRule ^api/system/install/?$ api/system.php?action=install [QSA,L]
   RewriteRule ^api/system/reset/?$ api/system.php?action=reset [QSA,L]
   RewriteRule ^api/system/?$ api/system.php [QSA,L]
   RewriteRule ^api/sync/?$ api/sync.php [QSA,L]
 
-  # 2. Allow existing files and directories to be served directly
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # 3. SPA fallback to index.html
+  # 3. SPA fallback to index.html (relative - safe for subfolders and root)
   RewriteRule ^index\.html$ - [L]
-  RewriteRule . /index.html [L]
+  RewriteRule . index.html [L]
 </IfModule>

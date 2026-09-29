@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
+import { getApiUrl } from '../../utils/apiBase';
 import { RoyalLogo } from '../common/RoyalLogo';
 import {
   Database,
@@ -439,7 +440,7 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
 
     // Real server test to MySQL via cPanel PHP API
     try {
-      const res = await fetch('/api/sync.php?action=test_db', {
+      const res = await fetch(getApiUrl('api/sync.php?action=test_db'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -460,7 +461,7 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
         if (data.success) {
           // Immediately save configuration and create all SQL tables in phpMyAdmin
           try {
-            await fetch('/api/sync.php?action=save_config', {
+            await fetch(getApiUrl('api/sync.php?action=save_config'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -948,7 +949,7 @@ SET FOREIGN_KEY_CHECKS = 1;
     // If MySQL was selected, save DB configuration and push initial seed state for live universal syncing
     if (dbEngine === 'mysql' || dbEngine === 'mariadb') {
       try {
-        await fetch('/api/sync.php?action=save_config', {
+        await fetch(getApiUrl('api/sync.php?action=save_config'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -963,7 +964,7 @@ SET FOREIGN_KEY_CHECKS = 1;
         });
 
         // Push initial admin user and settings to MySQL sync store
-        await fetch('/api/sync.php?action=push', {
+        await fetch(getApiUrl('api/sync.php?action=push'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

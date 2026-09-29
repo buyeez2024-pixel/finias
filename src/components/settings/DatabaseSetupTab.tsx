@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
+import { getApiUrl } from '../../utils/apiBase';
 import {
   Database,
   CheckCircle2,
@@ -66,7 +67,7 @@ export const DatabaseSetupTab: React.FC = () => {
   const checkLiveDbHealth = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/sync.php?action=pull&t=' + Date.now(), {
+      const res = await fetch(getApiUrl('api/sync.php?action=pull&t=' + Date.now()), {
         headers: { Accept: 'application/json' },
       });
       if (res.ok) {
@@ -105,7 +106,7 @@ export const DatabaseSetupTab: React.FC = () => {
         setDbStatus({
           tested: true,
           isConnected: false,
-          message: 'Unable to reach /api/sync.php backend script.',
+          message: 'Unable to reach backend sync script.',
         });
       }
     } catch (err: any) {
@@ -133,7 +134,7 @@ export const DatabaseSetupTab: React.FC = () => {
     setIsSaving(true);
     try {
       // 1. Test & save database config + auto-generate MySQL tables
-      const res = await fetch('/api/sync.php?action=save_config', {
+      const res = await fetch(getApiUrl('api/sync.php?action=save_config'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,7 +165,7 @@ export const DatabaseSetupTab: React.FC = () => {
     setIsResetting(true);
     try {
       // Call system reset API
-      const res = await fetch('/api/system.php?action=reset', {
+      const res = await fetch(getApiUrl('api/system.php?action=reset'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reset' }),

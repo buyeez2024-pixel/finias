@@ -1,3 +1,5 @@
+import { getApiUrl } from '../utils/apiBase';
+
 export interface SystemStatusResponse {
   success: boolean;
   isInstalled: boolean;
@@ -13,10 +15,10 @@ export interface SystemStatusResponse {
 export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> => {
   // Check endpoints in order of priority: Node.js server, PHP on cPanel, static JSON mirrors
   const endpoints = [
-    '/api/system/status',
-    '/api/system.php?action=status',
-    '/system_status.json',
-    '/api/system_status.json',
+    getApiUrl('api/system/status'),
+    getApiUrl('api/system.php?action=status'),
+    getApiUrl('system_status.json'),
+    getApiUrl('api/system_status.json'),
   ];
 
   for (const endpoint of endpoints) {
@@ -82,9 +84,9 @@ export const completeServerInstallation = async (payload: {
 }): Promise<boolean> => {
   let anySuccess = false;
   const endpoints = [
-    '/api/system/install',
-    '/api/system.php?action=install',
-    '/api/system.php',
+    getApiUrl('api/system/install'),
+    getApiUrl('api/system.php?action=install'),
+    getApiUrl('api/system.php'),
   ];
 
   for (const endpoint of endpoints) {
@@ -107,9 +109,9 @@ export const completeServerInstallation = async (payload: {
 
 export const resetServerInstallation = async (): Promise<boolean> => {
   const endpoints = [
-    '/api/system/reset',
-    '/api/system.php?action=reset',
-    '/api/system.php',
+    getApiUrl('api/system/reset'),
+    getApiUrl('api/system.php?action=reset'),
+    getApiUrl('api/system.php'),
   ];
 
   for (const ep of endpoints) {
