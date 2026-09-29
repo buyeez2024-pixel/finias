@@ -125,6 +125,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
   const [activeSwipeIndex, setActiveSwipeIndex] = useState(0);
 

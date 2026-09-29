@@ -2265,26 +2265,26 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
       {/* POPUP 1: ADD LEDGER DISCOUNT / DUE WAIVER (ADMIN ONLY)                    */}
       {/* ========================================================================= */}
       {showDiscountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scaleUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl animate-scaleUp max-h-[92vh] sm:max-h-[90vh] flex flex-col my-auto overflow-hidden text-slate-100">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/70">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/80 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20">
+                <div className="p-2.5 rounded-xl bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 shrink-0">
                   <Percent className="w-5 h-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-white text-base">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-white text-sm sm:text-base truncate">
                       {ledgerType === 'customer'
                         ? 'Add Customer Ledger Discount'
                         : 'Add Supplier Balance Discount'}
                     </h3>
-                    <span className="px-2 py-0.5 bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-bold rounded-full border border-fuchsia-500/30">
+                    <span className="px-2 py-0.5 bg-fuchsia-500/20 text-fuchsia-300 text-[10px] font-bold rounded-full border border-fuchsia-500/30 shrink-0">
                       Admin Authorized
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5 truncate">
                     For:{' '}
                     <span className="text-white font-semibold">
                       {ledgerType === 'customer'
@@ -2296,195 +2296,198 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
               </div>
               <button
                 onClick={() => setShowDiscountModal(false)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Explanatory Notice */}
-            <div className={`border-b p-4 text-xs flex items-start gap-2.5 ${isLight ? 'bg-fuchsia-50 border-fuchsia-200 text-white' : 'bg-fuchsia-950/30 border-fuchsia-900/40 text-fuchsia-200/90'}`}>
-              <Info className={`w-4 h-4 shrink-0 mt-0.5 ${isLight ? 'text-fuchsia-600' : 'text-fuchsia-400'}`} />
-              <div className={isLight ? 'text-slate-800' : ''}>
-                <span className={`font-bold ${isLight ? 'text-fuchsia-900' : 'text-fuchsia-300'}`}>Independent Ledger Discount:</span> This
-                discount directly reduces the account balance due in the contact ledger. It is completely
-                distinct from Sale Invoice Discounts and does <strong>NOT</strong> modify invoice items,
-                tax calculations, or POS sales reports.
-              </div>
-            </div>
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleRecordDiscountSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1 scrollbar-thin">
+                {/* Explanatory Notice */}
+                <div className={`rounded-xl border p-3.5 text-xs flex items-start gap-2.5 ${isLight ? 'bg-fuchsia-50 border-fuchsia-200 text-slate-800' : 'bg-fuchsia-950/30 border-fuchsia-900/40 text-fuchsia-200/90'}`}>
+                  <Info className={`w-4 h-4 shrink-0 mt-0.5 ${isLight ? 'text-fuchsia-600' : 'text-fuchsia-400'}`} />
+                  <div>
+                    <span className={`font-bold ${isLight ? 'text-fuchsia-900' : 'text-fuchsia-300'}`}>Independent Ledger Discount:</span> This
+                    discount directly reduces the account balance due in the contact ledger. It is completely
+                    distinct from Sale Invoice Discounts and does <strong>NOT</strong> modify invoice items,
+                    tax calculations, or POS sales reports.
+                  </div>
+                </div>
 
-            <form onSubmit={handleRecordDiscountSubmit} className="p-5 space-y-4">
-              {/* Current Outstanding Due Display */}
-              <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                {/* Current Outstanding Due Display */}
+                <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] uppercase font-bold text-slate-400">
+                      Current Outstanding {ledgerType === 'customer' ? 'Balance Due' : 'Payable'}
+                    </div>
+                    <div className="text-lg font-bold font-mono text-rose-400 mt-0.5">
+                      {currencySymbol}{activeBalanceDue.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] uppercase font-bold text-slate-400">Authorized Admin</div>
+                    <div className="text-xs font-semibold text-indigo-300 mt-0.5 flex items-center gap-1 justify-end">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      {currentUser?.name || 'Administrator'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Discount Amount Input with Quick Presets */}
                 <div>
-                  <div className="text-[11px] uppercase font-bold text-slate-400">
-                    Current Outstanding {ledgerType === 'customer' ? 'Balance Due' : 'Payable'}
-                  </div>
-                  <div className="text-lg font-bold font-mono text-rose-400 mt-0.5">
-                    {currencySymbol}{activeBalanceDue.toFixed(2)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[11px] uppercase font-bold text-slate-400">Authorized Admin</div>
-                  <div className="text-xs font-semibold text-indigo-300 mt-0.5 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    {currentUser?.name || 'Administrator'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Discount Amount Input with Quick Presets */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Ledger Discount Amount ({currencySymbol}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-fuchsia-400 font-bold text-base">
-                    {currencySymbol}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="0.00"
-                    value={discountAmount}
-                    onChange={(e) => setDiscountAmount(e.target.value)}
-                    id="input-ledger-discount-amount"
-                    className="w-full bg-slate-950 text-white font-mono text-lg font-bold pl-9 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
-                  />
-                </div>
-
-                {/* Quick Shortcut Buttons */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] text-slate-500 font-medium mr-1">Quick Apply:</span>
-                  {[
-                    { label: '5%', val: activeBalanceDue * 0.05 },
-                    { label: '10%', val: activeBalanceDue * 0.1 },
-                    { label: '20%', val: activeBalanceDue * 0.2 },
-                    { label: '50%', val: activeBalanceDue * 0.5 },
-                    { label: 'Full Balance', val: activeBalanceDue },
-                  ].map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setDiscountAmount(Math.max(0, +preset.val.toFixed(2)).toString())}
-                      className="px-2.5 py-1 bg-slate-800 hover:bg-fuchsia-900/60 hover:text-fuchsia-200 text-slate-300 text-[11px] font-semibold rounded-lg border border-slate-700 transition"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Date & Reference Number */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Effective Discount Date *
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Ledger Discount Amount ({currencySymbol}) *
                   </label>
-                  <input
-                    type="date"
-                    required
-                    value={discountDate}
-                    onChange={(e) => setDiscountDate(e.target.value)}
-                    id="input-ledger-discount-date"
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Voucher / Reference No *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={discountRef}
-                    onChange={(e) => setDiscountRef(e.target.value)}
-                    id="input-ledger-discount-ref"
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Reason / Notes with suggestions */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Reason / Settlement Description *
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="e.g. Account settlement waiver approved by management"
-                  value={discountNote}
-                  onChange={(e) => setDiscountNote(e.target.value)}
-                  id="input-ledger-discount-note"
-                  className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
-                />
-
-                {/* Suggestion Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                  <span className="text-[10px] text-slate-500">Suggestions:</span>
-                  {[
-                    'Settlement Concession',
-                    'Bad Debt Waiver',
-                    'Round-off Write-off',
-                    'Early Clearance Discount',
-                    'Loyalty Balance Waiver',
-                  ].map((chip, cIdx) => (
-                    <button
-                      key={cIdx}
-                      type="button"
-                      onClick={() => setDiscountNote(chip)}
-                      className="px-2 py-0.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-[10px] rounded border border-slate-800"
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Interactive Calculation Preview */}
-              {parseFloat(discountAmount) > 0 && (
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Original Balance Due:</span>
-                    <span>{currencySymbol}{activeBalanceDue.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-fuchsia-400 font-bold">
-                    <span>Ledger Discount to Deduct:</span>
-                    <span>- {currencySymbol}{parseFloat(discountAmount || '0').toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-slate-800 pt-1.5 flex justify-between font-bold text-white">
-                    <span>New Resulting Balance:</span>
-                    <span
-                      className={
-                        activeBalanceDue - parseFloat(discountAmount || '0') <= 0
-                          ? 'text-emerald-400'
-                          : 'text-rose-400'
-                      }
-                    >
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-fuchsia-400 font-bold text-base">
                       {currencySymbol}
-                      {Math.max(0, activeBalanceDue - parseFloat(discountAmount || '0')).toFixed(2)}
                     </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      value={discountAmount}
+                      onChange={(e) => setDiscountAmount(e.target.value)}
+                      id="input-ledger-discount-amount"
+                      className="w-full bg-slate-950 text-white font-mono text-lg font-bold pl-9 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
+                    />
+                  </div>
+
+                  {/* Quick Shortcut Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-[10px] text-slate-500 font-medium mr-1">Quick Apply:</span>
+                    {[
+                      { label: '5%', val: activeBalanceDue * 0.05 },
+                      { label: '10%', val: activeBalanceDue * 0.1 },
+                      { label: '20%', val: activeBalanceDue * 0.2 },
+                      { label: '50%', val: activeBalanceDue * 0.5 },
+                      { label: 'Full Balance', val: activeBalanceDue },
+                    ].map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setDiscountAmount(Math.max(0, +preset.val.toFixed(2)).toString())}
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-fuchsia-900/60 hover:text-fuchsia-200 text-slate-300 text-[11px] font-semibold rounded-lg border border-slate-700 transition cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* Form Actions */}
-              <div className="flex items-center justify-end gap-3 pt-2">
+                {/* Date & Reference Number */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Effective Discount Date *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={discountDate}
+                      onChange={(e) => setDiscountDate(e.target.value)}
+                      id="input-ledger-discount-date"
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Voucher / Reference No *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={discountRef}
+                      onChange={(e) => setDiscountRef(e.target.value)}
+                      id="input-ledger-discount-ref"
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Reason / Notes with suggestions */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Reason / Settlement Description *
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="e.g. Account settlement waiver approved by management"
+                    value={discountNote}
+                    onChange={(e) => setDiscountNote(e.target.value)}
+                    id="input-ledger-discount-note"
+                    className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-fuchsia-500"
+                  />
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <span className="text-[10px] text-slate-500">Suggestions:</span>
+                    {[
+                      'Settlement Concession',
+                      'Bad Debt Waiver',
+                      'Round-off Write-off',
+                      'Early Clearance Discount',
+                      'Loyalty Balance Waiver',
+                    ].map((chip, cIdx) => (
+                      <button
+                        key={cIdx}
+                        type="button"
+                        onClick={() => setDiscountNote(chip)}
+                        className="px-2 py-0.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-[10px] rounded border border-slate-800 cursor-pointer"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Interactive Calculation Preview */}
+                {parseFloat(discountAmount) > 0 && (
+                  <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Original Balance Due:</span>
+                      <span>{currencySymbol}{activeBalanceDue.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-fuchsia-400 font-bold">
+                      <span>Ledger Discount to Deduct:</span>
+                      <span>- {currencySymbol}{parseFloat(discountAmount || '0').toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-slate-800 pt-1.5 flex justify-between font-bold text-white">
+                      <span>New Resulting Balance:</span>
+                      <span
+                        className={
+                          activeBalanceDue - parseFloat(discountAmount || '0') <= 0
+                            ? 'text-emerald-400'
+                            : 'text-rose-400'
+                        }
+                      >
+                        {currencySymbol}
+                        {Math.max(0, activeBalanceDue - parseFloat(discountAmount || '0')).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Fixed Footer Form Actions */}
+              <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-800 bg-slate-950/90 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowDiscountModal(false)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   id="btn-submit-ledger-discount"
-                  className="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-xs font-bold shadow-md shadow-fuchsia-600/30 flex items-center gap-2 transition transform active:scale-95"
+                  className="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-xs font-bold shadow-md shadow-fuchsia-600/30 flex items-center gap-2 transition transform active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Save & Account in Ledger</span>
@@ -2499,107 +2502,109 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
       {/* POPUP 2: EDIT LEDGER ENTRY MODAL (DISCOUNT OR PAYMENT)                    */}
       {/* ========================================================================= */}
       {editingRow && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleUp">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl animate-scaleUp max-h-[92vh] sm:max-h-[90vh] flex flex-col my-auto overflow-hidden text-slate-100">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/80 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl border ${
+                <div className={`p-2 rounded-xl border shrink-0 ${
                   editingRow.type === 'ledger_discount'
                     ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 }`}>
                   <Edit className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-white text-base">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-white text-sm sm:text-base truncate">
                     {editingRow.type === 'ledger_discount' ? 'Edit Ledger Discount' : 'Edit Payment Entry'}
                   </h3>
-                  <p className="text-xs text-slate-400 font-mono">
+                  <p className="text-xs text-slate-400 font-mono truncate">
                     Ref: {editingRow.referenceNo}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingRow(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditRow} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Amount ({currencySymbol}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-slate-500 font-bold">
-                    {currencySymbol}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={editModalAmount}
-                    onChange={(e) => setEditModalAmount(e.target.value)}
-                    className="w-full bg-slate-950 text-white font-mono text-base pl-8 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+            <form onSubmit={handleSaveEditRow} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1 scrollbar-thin">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Amount ({currencySymbol}) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-slate-500 font-bold">
+                      {currencySymbol}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={editModalAmount}
+                      onChange={(e) => setEditModalAmount(e.target.value)}
+                      className="w-full bg-slate-950 text-white font-mono text-base pl-8 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {editingRow.type === 'payment' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
+                    <select
+                      value={editModalMethod}
+                      onChange={(e) => setEditModalMethod(e.target.value as PaymentMethod)}
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      {paymentMethods.filter(m => m.enabled).map(m => (
+                        <option key={m.id} value={m.code}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={editModalDate}
+                      onChange={(e) => setEditModalDate(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Reference No</label>
+                    <input
+                      type="text"
+                      value={editModalRef}
+                      onChange={(e) => setEditModalRef(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Notes / Description</label>
+                  <textarea
+                    rows={2}
+                    value={editModalNote}
+                    onChange={(e) => setEditModalNote(e.target.value)}
+                    className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
-              {editingRow.type === 'payment' && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
-                  <select
-                    value={editModalMethod}
-                    onChange={(e) => setEditModalMethod(e.target.value as PaymentMethod)}
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
-                  >
-                    {paymentMethods.filter(m => m.enabled).map(m => (
-                      <option key={m.id} value={m.code}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={editModalDate}
-                    onChange={(e) => setEditModalDate(e.target.value)}
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Reference No</label>
-                  <input
-                    type="text"
-                    value={editModalRef}
-                    onChange={(e) => setEditModalRef(e.target.value)}
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notes / Description</label>
-                <textarea
-                  rows={2}
-                  value={editModalNote}
-                  onChange={(e) => setEditModalNote(e.target.value)}
-                  className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-950/90 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleDeleteRow(editingRow)}
-                  className="px-3 py-2 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-rose-500/20"
+                  className="px-3 py-2 bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-rose-500/20 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Void / Delete</span>
@@ -2609,13 +2614,13 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
                   <button
                     type="button"
                     onClick={() => setEditingRow(null)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Save Changes</span>
@@ -2631,18 +2636,18 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
       {/* POPUP 3: RECORD PAYMENT MODAL                                             */}
       {/* ========================================================================= */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleUp">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/60">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl animate-scaleUp max-h-[92vh] sm:max-h-[90vh] flex flex-col my-auto overflow-hidden text-slate-100">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/80 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                   <DollarSign className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-white text-base">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-white text-sm sm:text-base truncate">
                     {ledgerType === 'customer' ? 'Receive Customer Payment' : 'Disburse Supplier Payment'}
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 truncate">
                     Party:{' '}
                     <span className="text-white font-semibold">
                       {ledgerType === 'customer' ? currentCustomer?.name : currentSupplier?.businessName}
@@ -2652,111 +2657,113 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
               </div>
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleRecordPaymentSubmit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Payment Amount ({currencySymbol}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-slate-500 font-bold">
-                    {currencySymbol}
-                  </span>
+            <form onSubmit={handleRecordPaymentSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1 scrollbar-thin">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Payment Amount ({currencySymbol}) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-slate-500 font-bold">
+                      {currencySymbol}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      id="input-ledger-payment-amount"
+                      className="w-full bg-slate-950 text-white font-mono text-base pl-8 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-slate-400 mt-1">
+                    <span>Current Outstanding Due:</span>
+                    <span className="font-bold text-rose-400 font-mono">
+                      {currencySymbol}
+                      {ledgerType === 'customer'
+                        ? Number(currentCustomer?.totalDue || 0).toFixed(2)
+                        : Number(currentSupplier?.totalPayable || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                      id="select-ledger-payment-method"
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      {paymentMethods.filter(m => m.enabled).map(m => (
+                        <option key={m.id} value={m.code}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Date</label>
+                    <input
+                      type="date"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      id="input-ledger-payment-date"
+                      className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Reference / Cheque / Txn #
+                  </label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="0.00"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    id="input-ledger-payment-amount"
-                    className="w-full bg-slate-950 text-white font-mono text-base pl-8 pr-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+                    type="text"
+                    placeholder="e.g. ACH-99201 or CHQ-00129"
+                    value={paymentRef}
+                    onChange={(e) => setPaymentRef(e.target.value)}
+                    id="input-ledger-payment-ref"
+                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Current Outstanding Due:</span>
-                  <span className="font-bold text-rose-400 font-mono">
-                    {currencySymbol}
-                    {ledgerType === 'customer'
-                      ? Number(currentCustomer?.totalDue || 0).toFixed(2)
-                      : Number(currentSupplier?.totalPayable || 0).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Method</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    id="select-ledger-payment-method"
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
-                  >
-                    {paymentMethods.filter(m => m.enabled).map(m => (
-                      <option key={m.id} value={m.code}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Date</label>
-                  <input
-                    type="date"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    id="input-ledger-payment-date"
-                    className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Payment Notes / Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Additional receipt remarks..."
+                    value={paymentNote}
+                    onChange={(e) => setPaymentNote(e.target.value)}
+                    id="input-ledger-payment-notes"
+                    className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Reference / Cheque / Txn #
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. ACH-99201 or CHQ-00129"
-                  value={paymentRef}
-                  onChange={(e) => setPaymentRef(e.target.value)}
-                  id="input-ledger-payment-ref"
-                  className="w-full bg-slate-950 text-slate-200 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Payment Notes / Description
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Additional receipt remarks..."
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  id="input-ledger-payment-notes"
-                  className="w-full bg-slate-950 text-slate-200 text-xs p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-800 bg-slate-950/90 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   id="btn-submit-ledger-payment"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-2"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Confirm & Post to Ledger</span>
@@ -2771,13 +2778,13 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
       {/* POPUP 4: UNAUTHORIZED ROLE RESTRICTION MODAL                              */}
       {/* ========================================================================= */}
       {showUnauthorizedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-scaleUp text-center space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl animate-scaleUp text-center space-y-4 max-h-[92vh] overflow-y-auto my-auto text-slate-100">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
               <ShieldAlert className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Administrator Access Required</h3>
+              <h3 className="text-base sm:text-lg font-bold text-white">Administrator Access Required</h3>
               <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
                 Ledger Balance Discounts can only be authorized and applied by users with the{' '}
                 <strong className="text-rose-300">Admin</strong> role. Your current logged-in account (
@@ -2794,7 +2801,7 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
             </div>
             <button
               onClick={() => setShowUnauthorizedModal(false)}
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition"
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
             >
               Close
             </button>
