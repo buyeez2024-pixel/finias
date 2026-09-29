@@ -401,43 +401,58 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const currencySymbol = settings.currencySymbol || '$';
 
   return (
-    <div className={`max-w-6xl mx-auto space-y-6 animate-fadeIn ${isModal ? 'p-0 pb-6' : 'p-4 sm:p-6 lg:p-8 pb-24'}`}>
+    <div className={`max-w-6xl mx-auto space-y-4 sm:space-y-6 animate-fadeIn ${isModal ? 'p-0 pb-6' : 'p-3 sm:p-6 lg:p-8 pb-36 sm:pb-28'}`}>
       {/* Top Header & Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl backdrop-blur-sm">
-        <div className="flex items-center gap-3">
+      <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 ${
+        isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'
+      }`}>
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack || closeContactPage}
             id="btn-back-to-customers"
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition border border-slate-700/60 shadow-sm group"
+            className={`p-2 rounded-xl transition border shadow-xs shrink-0 ${
+              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
             title="Back to Contact Directory"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">
-              <span>Contacts</span>
-              <span>/</span>
-              <span className="text-slate-400">{contactType === 'supplier' ? 'Suppliers' : 'Customers'}</span>
-              <span>/</span>
-              <span className="text-slate-200">{isEditMode ? 'Edit Profile' : contactType === 'supplier' ? 'New Supplier' : 'New Contact'}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider truncate">
+              <span className="text-indigo-500">Contacts</span>
+              <span className="text-slate-400">/</span>
+              <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>{contactType === 'supplier' ? 'Suppliers' : 'Customers'}</span>
+              <span className="text-slate-400">/</span>
+              <span className={`truncate font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+                {isEditMode ? 'Edit Profile' : contactType === 'supplier' ? 'New Supplier' : 'New Contact'}
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2 mt-0.5">
-              <UserPlus className="w-6 h-6 text-indigo-400 shrink-0" />
-              <span>{isEditMode ? `Edit Contact: ${(editingContact as any)?.name}` : contactType === 'supplier' ? 'Add New Supplier' : 'Add New Contact'}</span>
+            <h1 className={`text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2 mt-0.5 truncate ${
+              isLight ? 'text-slate-900' : 'text-white'
+            }`}>
+              <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500 shrink-0" />
+              <span className="truncate">
+                {isEditMode
+                  ? `Edit ${contactType === 'supplier' ? 'Supplier' : 'Customer'}: ${(editingContact as any)?.name}`
+                  : contactType === 'supplier'
+                  ? 'Add New Supplier'
+                  : 'Add New Contact'}
+              </span>
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        {/* Top Action Buttons */}
+        <div className={`flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
           <button
             type="button"
             onClick={closeContactPage}
             id="btn-cancel-customer-form"
-            className={`px-4 py-2.5 text-xs font-semibold rounded-xl transition border ${
+            className={`flex-1 sm:flex-initial px-4 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
               isLight
-                ? 'bg-slate-900 hover:bg-slate-850 text-slate-100 border-slate-800 shadow-sm'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
             }`}
           >
             Cancel
@@ -447,32 +462,38 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             onClick={handleSubmit}
             disabled={isSubmitting}
             id="btn-save-customer"
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+            className="flex-1 sm:flex-initial px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{isEditMode ? 'Update Customer' : 'Save Customer Profile'}</span>
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {isEditMode
+                ? contactType === 'supplier' ? 'Update Supplier' : 'Update Customer'
+                : contactType === 'supplier' ? 'Save Supplier' : 'Save Customer'}
+            </span>
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Section 1: Primary Identification */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
+        <div className={`p-4 sm:p-6 rounded-2xl border shadow-xs space-y-4 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
+          <div className={`flex items-center gap-2.5 pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
+            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500 border border-indigo-500/20 shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Basic & Contact Information</h2>
-              <p className="text-xs text-slate-400">Essential customer identification and communication coordinates</p>
+            <div className="min-w-0">
+              <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Basic & Contact Information</h2>
+              <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Essential identification and communication details</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 pt-1">
             {/* Customer Full Name */}
             <div className="lg:col-span-1">
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Full Name <span className="text-rose-400">*</span>
+              <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                Full Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -481,54 +502,89 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Johnathan Doe"
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                }`}
               />
             </div>
 
             {(contactType === 'supplier' || contactType === 'both') && (
-            <>
-            {/* Business / Company Name */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Business / Organization Name
-              </label>
-              <input
-                type="text"
-                id="input-customer-business"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Doe Enterprises Inc."
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
-              />
-            </div>
-            </>
-          )}
+              <div>
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  Business / Organization Name
+                </label>
+                <input
+                  type="text"
+                  id="input-customer-business"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g. Doe Enterprises Inc."
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
+                />
+              </div>
+            )}
 
             {/* Customer Type */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Customer Type
+              <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                Contact Type
               </label>
               <select
                 id="select-customer-type"
                 value={contactType}
                 onChange={(e) => setContactType(e.target.value as any)}
                 disabled={isEditMode}
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               >
                 <option value="">Please select</option>
                 <option value="customer">Customer</option>
                 <option value="supplier">Supplier</option>
-                <option value="both">Both</option>
+                <option value="both">Both (Customer & Supplier)</option>
               </select>
             </div>
 
+            {/* Customer Group (if applicable) */}
+            {contactType !== 'supplier' && customerGroups.length > 0 && (
+              <div>
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  Customer Group
+                </label>
+                <select
+                  value={customerGroupId}
+                  onChange={(e) => setCustomerGroupId(e.target.value)}
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                  }`}
+                >
+                  {customerGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.percentage ?? 0}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Contact ID */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
                 <span>Contact ID</span>
                 {(settings.autoGenerateContactId ?? true) && (
-                  <span className="text-[10px] text-indigo-400 font-normal font-mono bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                  <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-normal font-mono bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
                     Auto-generated
                   </span>
                 )}
@@ -543,7 +599,11 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                     ? (contactType === 'supplier' ? (settings.supplierPrefix || 'SUP-') + '0001' : (settings.customerPrefix || 'CUST-') + '0001')
                     : 'e.g. CUST-0001'
                 }
-                className="w-full bg-slate-950 text-slate-100 font-mono text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                className={`w-full font-mono text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               />
             </div>
 
@@ -579,7 +639,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center gap-1 ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
                 <span>Email Address</span>
               </label>
@@ -589,7 +651,11 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. contact@doe-enterprises.com"
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition font-mono"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition font-mono ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                }`}
               />
               {email.trim() && email.trim() !== 'N/A' && (customers.some(c => c.id !== editingContact?.id && c.email?.trim().toLowerCase() === email.trim().toLowerCase()) || suppliers.some(s => s.id !== editingContact?.id && s.email?.trim().toLowerCase() === email.trim().toLowerCase())) && (
                 <p className="text-[11px] text-rose-500 font-semibold mt-1">
@@ -601,22 +667,26 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         </div>
 
         {/* Section 2: Tax & Financial Ledger */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+        <div className={`p-4 sm:p-6 rounded-2xl border shadow-xs space-y-4 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
+          <div className={`flex items-center gap-2.5 pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
+            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 border border-emerald-500/20 shrink-0">
               <DollarSign className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Tax & Ledger Balances</h2>
-              <p className="text-xs text-slate-400">Opening balances, advance deposits, credit limits, and taxation details</p>
+            <div className="min-w-0">
+              <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Tax & Ledger Balances</h2>
+              <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Opening balances, advance deposits, credit limits, and taxation details</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 pt-1">
             {/* GST / TAX Number */}
             {contactType !== 'customer' && (
               <div className="sm:col-span-2 lg:col-span-1 animate-fadeIn">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+                <label className={`block text-xs font-semibold mb-1.5 flex items-center gap-1 ${
+                  isLight ? 'text-slate-700' : 'text-slate-300'
+                }`}>
                   <Receipt className="w-3.5 h-3.5 text-slate-400" />
                   <span>GST / TAX Number</span>
                 </label>
@@ -626,17 +696,23 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   value={taxNumber}
                   onChange={(e) => setTaxNumber(e.target.value)}
                   placeholder="e.g. GSTIN27AABCU9603R1ZM"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition uppercase font-mono"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition uppercase font-mono ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
-                <p className="text-[10px] text-slate-500 mt-1">Tax identifier for invoice generation</p>
+                <p className="text-[10px] text-slate-400 mt-1">Tax identifier for invoice generation</p>
               </div>
             )}
 
             {/* Opening Balance */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
                 <span>Opening Balance ({currencySymbol})</span>
-                <span className="text-[10px] text-amber-400 font-bold">Previous Due</span>
+                <span className="text-[10px] text-amber-500 font-bold">Previous Due</span>
               </label>
               <input
                 type="number"
@@ -644,19 +720,25 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 id="input-customer-opening-balance"
                 value={openingBalance}
                 onChange={(e) => setOpeningBalance(e.target.value)}
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none font-mono"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               />
               <div className="flex items-start gap-1 mt-1 text-[10px] text-slate-400 leading-tight">
-                <HelpCircle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
-                <span>Opening balance before using POS. Any previous balance owed.</span>
+                <HelpCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                <span>Any previous balance owed before system setup.</span>
               </div>
             </div>
 
             {/* Advance Balance */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
                 <span>Advance Balance ({currencySymbol})</span>
-                <span className="text-[10px] text-emerald-400 font-bold">Prepaid</span>
+                <span className="text-[10px] text-emerald-500 font-bold">Prepaid</span>
               </label>
               <input
                 type="number"
@@ -664,19 +746,25 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 id="input-customer-advance-balance"
                 value={advanceBalance}
                 onChange={(e) => setAdvanceBalance(e.target.value)}
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none font-mono"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               />
               <div className="flex items-start gap-1 mt-1 text-[10px] text-slate-400 leading-tight">
-                <HelpCircle className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
-                <span>Advance money paid/deposited by customer in advance.</span>
+                <HelpCircle className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                <span>Advance money deposited by contact.</span>
               </div>
             </div>
 
             {/* Credit Limit */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
                 <span>Credit Limit ({currencySymbol})</span>
-                <span className="text-[10px] text-indigo-400 font-bold">Max Ceiling</span>
+                <span className="text-[10px] text-indigo-500 font-bold">Max Ceiling</span>
               </label>
               <input
                 type="number"
@@ -684,22 +772,30 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 id="input-customer-credit-limit"
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none font-mono"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               />
-              <p className="text-[10px] text-slate-500 mt-1">Maximum allowed credit for deferred orders</p>
+              <p className="text-[10px] text-slate-400 mt-1">Maximum allowed credit for deferred orders</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                 Payment Terms
               </label>
               <select
                 id="select-customer-payterm"
                 value={payTerm}
                 onChange={(e) => setPayTerm(e.target.value)}
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                }`}
               >
                 <option value="Due on Receipt">Due on Receipt (Immediate)</option>
                 <option value="Net 7 Days">Net 7 Days</option>
@@ -709,25 +805,25 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               </select>
             </div>
 
-            {/* Financial Summary Card */}
-            <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-around text-center">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Initial Starting Due</span>
-                <span className="text-sm font-bold font-mono text-amber-400">
+            {/* Financial Summary Card - Mobile Friendly Grid */}
+            <div className={`p-3 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-center ${
+              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+            }`}>
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 sm:bg-transparent sm:border-0">
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Starting Due</span>
+                <span className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400">
                   {formatCurrency(parseFloat(openingBalance || '0'), settings)}
                 </span>
               </div>
-              <div className="h-7 w-px bg-slate-800" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Advance Deposit</span>
-                <span className="text-sm font-bold font-mono text-emerald-400">
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 sm:bg-transparent sm:border-0 sm:border-l sm:border-slate-200 sm:dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Advance Deposit</span>
+                <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(parseFloat(advanceBalance || '0'), settings)}
                 </span>
               </div>
-              <div className="h-7 w-px bg-slate-800" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Max Credit Allowed</span>
-                <span className="text-sm font-bold font-mono text-indigo-400">
+              <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 sm:bg-transparent sm:border-0 sm:border-l sm:border-slate-200 sm:dark:border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Credit Limit</span>
+                <span className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">
                   {formatCurrency(parseFloat(creditLimit || '0'), settings)}
                 </span>
               </div>
@@ -736,20 +832,22 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         </div>
 
         {/* Section 3: Address & Location Details */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-            <div className="p-2 bg-sky-500/10 rounded-xl text-sky-400 border border-sky-500/20">
+        <div className={`p-4 sm:p-6 rounded-2xl border shadow-xs space-y-4 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
+          <div className={`flex items-center gap-2.5 pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
+            <div className="p-2 bg-sky-500/10 rounded-xl text-sky-500 border border-sky-500/20 shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Address & Geographical Details</h2>
-              <p className="text-xs text-slate-400">Physical street address, city, state, province, and postal code</p>
+            <div className="min-w-0">
+              <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Address & Geographical Details</h2>
+              <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Physical street address, city, state, province, and postal code</p>
             </div>
           </div>
 
-          <div className="space-y-4 pt-2">
+          <div className="space-y-3.5 sm:space-y-4 pt-1">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                 Street Address
               </label>
               <input
@@ -758,16 +856,22 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="e.g. 742 Evergreen Terrace, Suite 400"
-                className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                }`}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                  isLight ? 'text-slate-700' : 'text-slate-300'
+                }`}>
                   <span>Zip / Postal Code</span>
                   {isZipLoading && (
-                    <span className="text-[10px] text-indigo-400 animate-pulse font-medium">Fetching...</span>
+                    <span className="text-[10px] text-indigo-500 animate-pulse font-medium">Fetching...</span>
                   )}
                 </label>
                 <input
@@ -783,12 +887,16 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                     }
                   }}
                   placeholder="e.g. 62701"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none font-mono transition"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                   City
                 </label>
                 <input
@@ -797,12 +905,16 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="e.g. Springfield"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                   Province / District
                 </label>
                 <input
@@ -811,12 +923,16 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   value={province}
                   onChange={(e) => setProvince(e.target.value)}
                   placeholder="e.g. Ontario / Central"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                   State
                 </label>
                 <input
@@ -825,12 +941,16 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   placeholder="e.g. Illinois"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                   Country
                 </label>
                 <input
@@ -839,22 +959,28 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   placeholder="e.g. United States"
-                  className="w-full bg-slate-950 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                  }`}
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Section 4: Notes & Memo */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
-            <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20">
+        {/* Section 4: Notes & Remarks */}
+        <div className={`p-4 sm:p-6 rounded-2xl border shadow-xs space-y-4 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
+          <div className={`flex items-center gap-2.5 pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
+            <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500 border border-purple-500/20 shrink-0">
               <FileText className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Additional Notes & Remarks</h2>
-              <p className="text-xs text-slate-400">Internal customer history, preferred shipment delivery times, or remarks</p>
+            <div className="min-w-0">
+              <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Additional Notes & Remarks</h2>
+              <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Internal remarks, shipping instructions, or customer preferences</p>
             </div>
           </div>
 
@@ -864,20 +990,26 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add internal remarks, special instructions, tax exemption IDs, or customer preferences..."
-              className="w-full bg-slate-950 text-slate-100 text-xs p-3.5 rounded-xl border border-slate-700/80 focus:border-indigo-500 focus:outline-none transition"
+              placeholder="Add internal remarks, special instructions, tax exemption IDs, or contact preferences..."
+              className={`w-full text-xs p-3.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition resize-none ${
+                isLight
+                  ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                  : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+              }`}
             />
           </div>
         </div>
 
-        {/* Bottom Actions Bar */}
-        <div className="flex items-center justify-between pt-2">
+        {/* Bottom Actions Bar (Desktop & Tablet) */}
+        <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+        }`}>
           <button
             type="button"
             onClick={closeContactPage}
-            className={`px-5 py-2.5 text-xs font-semibold rounded-xl transition border ${
+            className={`w-full sm:w-auto px-5 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
               isLight
-                ? 'bg-slate-900 hover:bg-slate-850 text-slate-100 border-slate-800 shadow-sm'
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
             }`}
           >
@@ -886,10 +1018,41 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{isEditMode ? 'Update Customer Profile' : 'Save Customer Profile'}</span>
+            <span>
+              {isEditMode
+                ? contactType === 'supplier' ? 'Update Supplier Profile' : 'Update Customer Profile'
+                : contactType === 'supplier' ? 'Save Supplier Profile' : 'Save Customer Profile'}
+            </span>
+          </button>
+        </div>
+
+        {/* Sticky Mobile Bottom Floating Save Bar (< lg) */}
+        <div className={`lg:hidden fixed bottom-14 left-0 right-0 z-30 p-2.5 border-t backdrop-blur-md flex items-center gap-2 shadow-2xl ${
+          isLight ? 'bg-white/95 border-slate-200 shadow-slate-300/80' : 'bg-slate-950/95 border-slate-800 shadow-black/90'
+        }`}>
+          <button
+            type="button"
+            onClick={closeContactPage}
+            className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
+              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
+            }`}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-[1.6] py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {isEditMode
+                ? contactType === 'supplier' ? 'Update Supplier' : 'Update Customer'
+                : contactType === 'supplier' ? 'Save Supplier' : 'Save Customer'}
+            </span>
           </button>
         </div>
       </form>

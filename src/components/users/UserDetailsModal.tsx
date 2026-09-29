@@ -1496,29 +1496,35 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer */}
+        {/* Modal Footer - Fixed responsive layout with no overlapping on mobile */}
         <div
-          className={`px-5 py-3.5 border-t flex items-center justify-between text-xs ${
+          className={`px-4 sm:px-6 py-3 sm:py-3.5 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs shrink-0 ${
             isLight
-              ? 'bg-slate-50/90 border-slate-200 text-slate-500 font-medium'
+              ? 'bg-slate-50 border-slate-200 text-slate-500 font-medium'
               : 'bg-slate-950 border-slate-800 text-slate-400'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px]">Staff ID: {user.id}</span>
-            <span>•</span>
-            <span className="font-mono text-[11px]">Security Tier: {user.role.toUpperCase()}</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap min-w-0 text-[10px] sm:text-[11px]">
+            <span className="font-mono truncate max-w-[190px] sm:max-w-none">
+              Staff ID: <span className="font-bold text-slate-700 dark:text-slate-300">{user.id}</span>
+            </span>
+            <span className="hidden sm:inline text-slate-400">•</span>
+            <span className="font-mono uppercase font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+              Tier: {user.role.replace('_', ' ')}
+            </span>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className={`px-4 py-2 rounded-xl font-bold transition active:scale-95 border ${
+            className={`w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-xl font-bold transition active:scale-95 border flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-2xs ${
               isLight
-                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
             }`}
           >
-            Close
+            <X className="w-3.5 h-3.5" />
+            <span>Close</span>
           </button>
         </div>
       </div>
