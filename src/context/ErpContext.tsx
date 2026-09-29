@@ -1049,9 +1049,31 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!Array.isArray(list) || list.length === 0) {
       list = initialCustomers;
     }
+    // Always ensure standard Walk-in Customer is present at the beginning
+    const walkInCustomer = initialCustomers.find((c) => c.id === 'cust_walkin') || {
+      id: 'cust_walkin',
+      contactId: 'CUST-0001',
+      name: 'Walk-in Retail Customer',
+      businessName: 'Walk-in Customer',
+      customerGroup: '',
+      phone: 'N/A',
+      email: '',
+      address: '',
+      city: '',
+      state: '',
+      taxNumber: '',
+      creditLimit: 0,
+      totalDue: 0,
+      totalSales: 0,
+      loyaltyPoints: 0,
+      createdDate: '2026-01-01',
+    };
+    if (!list.some((c) => c.id === 'cust_walkin')) {
+      list = [walkInCustomer as Customer, ...list];
+    }
     return list.map((c, idx) => ({
       ...c,
-      contactId: c.contactId || `CUST-${String(idx + 1).padStart(4, '0')}`,
+      contactId: c.contactId || (c.id === 'cust_walkin' ? 'CUST-0001' : `CUST-${String(idx + 1).padStart(4, '0')}`),
       totalDue: Number(c.totalDue || 0),
       totalSales: Number(c.totalSales || 0),
       creditLimit: Number(c.creditLimit || 0),
@@ -1797,10 +1819,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               isRemoteSyncingRef.current = true;
               const d = result.data;
               if (Array.isArray(d.customers) && d.customers.length > 0) {
-                const hasRealCust = d.customers.some((c: any) => !['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
-                const cleanCustomers = hasRealCust
-                  ? d.customers.filter((c: any) => !['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
+                const hasRealCust = d.customers.some((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
+                let cleanCustomers = hasRealCust
+                  ? d.customers.filter((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
                   : d.customers;
+                
+                // Always ensure standard Walk-in Retail Customer exists
+                const walkInCustomer = initialCustomers.find((c) => c.id === 'cust_walkin') || {
+                  id: 'cust_walkin',
+                  contactId: 'CUST-0001',
+                  name: 'Walk-in Retail Customer',
+                  businessName: 'Walk-in Customer',
+                  customerGroup: '',
+                  phone: 'N/A',
+                  email: '',
+                  address: '',
+                  city: '',
+                  state: '',
+                  taxNumber: '',
+                  creditLimit: 0,
+                  totalDue: 0,
+                  totalSales: 0,
+                  loyaltyPoints: 0,
+                  createdDate: '2026-01-01',
+                };
+                if (!cleanCustomers.some((c: any) => c.id === 'cust_walkin')) {
+                  cleanCustomers = [walkInCustomer as Customer, ...cleanCustomers];
+                }
                 setCustomers(cleanCustomers);
                 try { localStorage.setItem(`${STORAGE_KEY}_customers`, JSON.stringify(cleanCustomers)); } catch {}
               }
@@ -4140,6 +4185,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCustomer = (id: string) => {
+    if (id === 'cust_walkin') {
+      showFlashNotification('Standard Walk-in Retail Customer is a protected core system record and cannot be deleted.', 'error');
+      return;
+    }
     setCustomers((prev) => {
       const updated = prev.filter((c) => c.id !== id);
       triggerImmediateSyncPush({ customers: updated });

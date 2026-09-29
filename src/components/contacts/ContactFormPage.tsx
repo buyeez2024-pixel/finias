@@ -97,8 +97,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     (editingContact as any)?.customerGroupId ||
       ((editingContact as any)?.customerGroup
         ? customerGroups.find((g) => g.name.toLowerCase() === (editingContact as any)?.customerGroup?.toLowerCase())?.id
-        : customerGroups[0]?.id) ||
-      'cg_1'
+        : '') ||
+      ''
   );
   const [phone, setPhone] = useState(editingContact?.phone || '');
   const [countryCode, setCountryCode] = useState('+1');
@@ -220,8 +220,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         (editingContact as any)?.customerGroupId ||
           ((editingContact as any)?.customerGroup
             ? customerGroups.find((g) => g.name.toLowerCase() === (editingContact as any)?.customerGroup?.toLowerCase())?.id
-            : customerGroups[0]?.id) ||
-          'cg_1'
+            : '') ||
+          ''
       );
       setPhone((editingContact as any)?.phone || '');
       setAlternatePhone((editingContact as any)?.alternatePhone || '');
@@ -312,7 +312,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       const parsedCreditLimit = parseFloat(creditLimit) || 0;
 
       const selectedGrp = customerGroups.find((g) => g.id === customerGroupId);
-      const groupName = selectedGrp ? selectedGrp.name : 'Retail Customer';
+      const groupName = selectedGrp ? selectedGrp.name : '';
+      const finalGroupId = selectedGrp ? selectedGrp.id : undefined;
 
       const finalCustomId = contactCustomId.trim() || undefined;
 
@@ -344,8 +345,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         if (contactType === 'customer' || contactType === 'both') {
           const customerData = {
             ...baseData,
-            customerGroup: groupName,
-            customerGroupId: customerGroupId,
+            customerGroup: groupName || undefined,
+            customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
           };
           if (customers.some(c => c.id === contactId)) {
@@ -370,8 +371,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         if (contactType === 'customer' || contactType === 'both') {
           const customerData = {
             ...baseData,
-            customerGroup: groupName,
-            customerGroupId: customerGroupId,
+            customerGroup: groupName || undefined,
+            customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
             id: contactId
           };
@@ -553,27 +554,45 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               </select>
             </div>
 
-            {/* Customer Group (if applicable) */}
-            {contactType !== 'supplier' && customerGroups.length > 0 && (
+            {/* Customer Group (Pricing Strategy) */}
+            {contactType !== 'supplier' && (
               <div>
-                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Customer Group
+                <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  <span>Customer Group</span>
+                  {customerGroupId && (
+                    <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                      {(() => {
+                        const g = customerGroups.find((grp) => grp.id === customerGroupId);
+                        const p = g?.calculationPercentage ?? g?.percentage ?? 0;
+                        return p > 0 ? `+${p}% Mark-up` : p < 0 ? `${p}% Discount` : '0% Standard';
+                      })()}
+                    </span>
+                  )}
                 </label>
                 <select
                   value={customerGroupId}
                   onChange={(e) => setCustomerGroupId(e.target.value)}
+                  id="select-customer-group"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
                     isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100'
                   }`}
                 >
-                  {customerGroups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name} ({g.percentage ?? 0}%)
-                    </option>
-                  ))}
+                  <option value="">None / Standard Pricing (No Group Discount)</option>
+                  {customerGroups.map((g) => {
+                    const p = g.calculationPercentage ?? g.percentage ?? 0;
+                    const badge = p > 0 ? `+${p}%` : `${p}%`;
+                    return (
+                      <option key={g.id} value={g.id}>
+                        {g.name} ({badge} {p < 0 ? 'Discount' : p > 0 ? 'Mark-up' : ''})
+                      </option>
+                    );
+                  })}
                 </select>
+                <p className={`text-[10px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Optional: Select a group for automatic pricing adjustments at POS/Checkout. Leave as &quot;None&quot; for standard retail price.
+                </p>
               </div>
             )}
 

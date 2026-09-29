@@ -169,9 +169,12 @@ export const ContactsView: React.FC = () => {
   const currencySymbol = settings.currencySymbol || '$';
 
   const handleDeleteCustomer = (id: string, name: string) => {
+    if (id === 'cust_walkin') {
+      showFlashNotification('Standard Walk-in Retail Customer is a permanent system record and cannot be deleted.', 'error');
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete customer "${name}"?`)) {
       deleteCustomer(id);
-      showFlashNotification(`Customer "${name}" deleted.`, 'info');
     }
   };
 

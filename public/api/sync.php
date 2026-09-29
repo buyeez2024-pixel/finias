@@ -628,24 +628,24 @@ if ($action === 'pull' || $method === 'GET') {
                             }
                         }
 
-                        // Clean up demo customers if real customers exist
+                        // Clean up demo mock customers if real customers exist (Preserve standard cust_walkin)
                         if ($key === 'customers') {
                             $hasRealCust = false;
                             foreach ($items as $cItem) {
                                 $cId = $cItem['id'] ?? '';
-                                if (!in_array($cId, ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) {
+                                if (!in_array($cId, ['cust_prime', 'cust_vip', 'cust_global'])) {
                                     $hasRealCust = true;
                                     break;
                                 }
                             }
                             if ($hasRealCust) {
                                 try {
-                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('cust_walkin', 'cust_prime', 'cust_vip', 'cust_global')");
+                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('cust_prime', 'cust_vip', 'cust_global')");
                                 } catch (Exception $e) {}
 
                                 $items = array_values(array_filter($items, function($cItem) {
                                     $cId = $cItem['id'] ?? '';
-                                    return !in_array($cId, ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global']);
+                                    return !in_array($cId, ['cust_prime', 'cust_vip', 'cust_global']);
                                 }));
                             }
                         }
@@ -709,14 +709,14 @@ if ($action === 'push' || $method === 'POST') {
         if (isset($updates['customers']) && is_array($updates['customers'])) {
             $hasRealCust = false;
             foreach ($updates['customers'] as $c) {
-                if (!in_array($c['id'] ?? '', ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) {
+                if (!in_array($c['id'] ?? '', ['cust_prime', 'cust_vip', 'cust_global'])) {
                     $hasRealCust = true;
                     break;
                 }
             }
             if ($hasRealCust) {
                 try {
-                    $pdo->exec("DELETE FROM `{$prefix}customers` WHERE `id` IN ('cust_walkin', 'cust_prime', 'cust_vip', 'cust_global')");
+                    $pdo->exec("DELETE FROM `{$prefix}customers` WHERE `id` IN ('cust_prime', 'cust_vip', 'cust_global')");
                 } catch (Exception $e) {}
             }
 
@@ -728,7 +728,7 @@ if ($action === 'push' || $method === 'POST') {
 
             foreach ($updates['customers'] as $c) {
                 if (!is_array($c) || empty($c['id'])) continue;
-                if ($hasRealCust && in_array($c['id'], ['cust_walkin', 'cust_prime', 'cust_vip', 'cust_global'])) continue;
+                if ($hasRealCust && in_array($c['id'], ['cust_prime', 'cust_vip', 'cust_global'])) continue;
                 $custStmt->execute([
                     ':id' => (string)$c['id'],
                     ':cid' => $c['contactId'] ?? null,
