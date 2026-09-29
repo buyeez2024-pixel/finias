@@ -401,12 +401,12 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const currencySymbol = settings.currencySymbol || '$';
 
   return (
-    <div className={`max-w-6xl mx-auto space-y-4 sm:space-y-6 animate-fadeIn ${isModal ? 'p-0 pb-6' : 'p-3 sm:p-6 lg:p-8 pb-36 sm:pb-28'}`}>
+    <div className={`w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 animate-fadeIn min-w-0 overflow-x-hidden ${isModal ? 'p-0 pb-6' : 'p-2.5 sm:p-6 lg:p-8 pb-36 sm:pb-28'}`}>
       {/* Top Header & Breadcrumbs */}
-      <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 ${
+      <div className={`p-3.5 sm:p-5 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 overflow-hidden ${
         isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'
       }`}>
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={onBack || closeContactPage}
@@ -418,17 +418,17 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider truncate">
-              <span className="text-indigo-500">Contacts</span>
-              <span className="text-slate-400">/</span>
-              <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>{contactType === 'supplier' ? 'Suppliers' : 'Customers'}</span>
-              <span className="text-slate-400">/</span>
+              <span className="text-indigo-500 shrink-0">Contacts</span>
+              <span className="text-slate-400 shrink-0">/</span>
+              <span className={`shrink-0 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{contactType === 'supplier' ? 'Suppliers' : 'Customers'}</span>
+              <span className="text-slate-400 shrink-0">/</span>
               <span className={`truncate font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
                 {isEditMode ? 'Edit Profile' : contactType === 'supplier' ? 'New Supplier' : 'New Contact'}
               </span>
             </div>
-            <h1 className={`text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2 mt-0.5 truncate ${
+            <h1 className={`text-base sm:text-2xl font-bold tracking-tight flex items-center gap-2 mt-0.5 min-w-0 ${
               isLight ? 'text-slate-900' : 'text-white'
             }`}>
               <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500 shrink-0" />
@@ -444,12 +444,12 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         </div>
 
         {/* Top Action Buttons */}
-        <div className={`flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
+        <div className={`flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 shrink-0 min-w-0 ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
           <button
             type="button"
             onClick={closeContactPage}
             id="btn-cancel-customer-form"
-            className={`flex-1 sm:flex-initial px-4 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer truncate ${
               isLight
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -462,7 +462,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             onClick={handleSubmit}
             disabled={isSubmitting}
             id="btn-save-customer"
-            className="flex-1 sm:flex-initial px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="flex-[1.5] sm:flex-initial px-3.5 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 truncate min-w-0"
           >
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span className="truncate">
@@ -474,9 +474,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 w-full min-w-0">
         {/* Section 1: Primary Identification */}
-        <div className={`p-4 sm:p-6 rounded-2xl border shadow-xs space-y-4 ${
+        <div className={`p-3.5 sm:p-6 rounded-2xl border shadow-xs space-y-4 w-full min-w-0 overflow-hidden ${
           isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
         }`}>
           <div className={`flex items-center gap-2.5 pb-3 border-b ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>

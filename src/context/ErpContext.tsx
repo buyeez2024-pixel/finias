@@ -1749,25 +1749,36 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               units,
               customers,
               customerGroups,
+              customer_groups: customerGroups,
               suppliers,
               transactions,
               stockAdjustments,
+              stock_adjustments: stockAdjustments,
               stockTransfers,
+              stock_transfers: stockTransfers,
               expenses,
               accounts,
               paymentMethods,
+              payment_methods: paymentMethods,
               cashRegister,
+              registers: cashRegister ? [cashRegister] : [],
               users,
               locations,
+              salesCommissionAgents,
               sales_commission_agents: salesCommissionAgents,
+              taxRates,
+              tax_rates: taxRates,
+              taxGroups,
+              tax_groups: taxGroups,
+              currencies,
             },
           }),
         }).catch(() => {});
       } catch {}
-    }, 2000);
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations, salesCommissionAgents]);
+  }, [settings, products, categories, brands, warranties, racks, units, customers, customerGroups, suppliers, transactions, stockAdjustments, stockTransfers, expenses, accounts, paymentMethods, cashRegister, users, locations, salesCommissionAgents, taxRates, taxGroups, currencies]);
 
   // Universal Live MySQL Sync: Pull latest database records on startup, tab focus, and interval
   useEffect(() => {
@@ -3830,25 +3841,77 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addCustomerGroup = (groupData: Omit<CustomerGroup, 'id' | 'createdDate'>): CustomerGroup => {
+    const pct = parseFloat(String((groupData as any).calculationPercentage ?? (groupData as any).percentage ?? 0)) || 0;
     const newGroup: CustomerGroup = {
       ...groupData,
       id: `cg_${Date.now()}`,
       createdDate: new Date().toISOString().slice(0, 10),
+      percentage: pct,
+      calculationPercentage: pct,
     };
-    setCustomerGroups((prev) => [...prev, newGroup]);
+    const updated = [...customerGroups, newGroup];
+    setCustomerGroups(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(updated));
+      fetch(getApiUrl('api/sync.php?action=push'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: {
+            customer_groups: updated,
+            customerGroups: updated,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
     showFlashNotification(`Customer Group "${newGroup.name}" created (${newGroup.calculationPercentage > 0 ? '+' : ''}${newGroup.calculationPercentage}%).`, 'success');
     return newGroup;
   };
 
   const updateCustomerGroup = (id: string, groupData: Partial<CustomerGroup>) => {
-    setCustomerGroups((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...groupData } : g))
-    );
+    const updated = customerGroups.map((g) => {
+      if (g.id !== id) return g;
+      const merged = { ...g, ...groupData };
+      if (groupData.calculationPercentage !== undefined || groupData.percentage !== undefined) {
+        const pct = parseFloat(String(groupData.calculationPercentage ?? groupData.percentage ?? g.calculationPercentage ?? 0)) || 0;
+        merged.percentage = pct;
+        merged.calculationPercentage = pct;
+      }
+      return merged;
+    });
+    setCustomerGroups(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(updated));
+      fetch(getApiUrl('api/sync.php?action=push'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: {
+            customer_groups: updated,
+            customerGroups: updated,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
     showFlashNotification('Customer group updated successfully.', 'success');
   };
 
   const deleteCustomerGroup = (id: string) => {
-    setCustomerGroups((prev) => prev.filter((g) => g.id !== id));
+    const updated = customerGroups.filter((g) => g.id !== id);
+    setCustomerGroups(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(updated));
+      fetch(getApiUrl('api/sync.php?action=push'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: {
+            customer_groups: updated,
+            customerGroups: updated,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
     showFlashNotification('Customer group deleted.', 'info');
   };
 

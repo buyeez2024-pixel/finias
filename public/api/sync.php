@@ -585,6 +585,14 @@ if ($action === 'pull' || $method === 'GET') {
                             if (isset($r['email'])) $item['email'] = $r['email'];
                             if (isset($r['role'])) $item['role'] = $r['role'];
                             if (isset($r['status'])) $item['status'] = $r['status'];
+                        } elseif ($key === 'customer_groups') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            $item['name'] = (string)($r['name'] ?? $item['name'] ?? 'Group');
+                            $pct = (float)($r['percentage'] ?? $item['percentage'] ?? $item['calculationPercentage'] ?? 0);
+                            $item['percentage'] = $pct;
+                            $item['calculationPercentage'] = $pct;
+                            if (isset($r['amount'])) $item['amount'] = (float)$r['amount'];
+                            if (isset($r['description'])) $item['description'] = (string)$r['description'];
                         } else {
                             if (empty($item)) {
                                 $item = $r;
@@ -882,20 +890,24 @@ if ($action === 'push' || $method === 'POST') {
             }
         }
 
-        if (isset($updates['customer_groups']) && is_array($updates['customer_groups'])) {
+        $cgUpdates = $updates['customer_groups'] ?? $updates['customerGroups'] ?? null;
+        if (isset($cgUpdates) && is_array($cgUpdates)) {
             $cgStmt = $pdo->prepare("INSERT INTO `{$prefix}customer_groups` 
                 (`id`, `name`, `amount`, `percentage`, `data_json`, `updated_at`)
                 VALUES (:id, :name, :amt, :pct, :json, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE 
                 `name` = VALUES(`name`), `amount` = VALUES(`amount`), `percentage` = VALUES(`percentage`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['customer_groups'] as $cg) {
+            foreach ($cgUpdates as $cg) {
                 if (!is_array($cg) || empty($cg['id'])) continue;
+                $pct = (float)($cg['calculationPercentage'] ?? $cg['percentage'] ?? 0);
+                $cg['percentage'] = $pct;
+                $cg['calculationPercentage'] = $pct;
                 $cgStmt->execute([
                     ':id' => (string)$cg['id'],
                     ':name' => $cg['name'] ?? 'Group',
                     ':amt' => (float)($cg['amount'] ?? 0),
-                    ':pct' => (float)($cg['percentage'] ?? 0),
+                    ':pct' => $pct,
                     ':json' => json_encode($cg),
                 ]);
             }
