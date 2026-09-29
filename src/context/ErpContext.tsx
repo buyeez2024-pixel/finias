@@ -1830,6 +1830,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (result.success && result.isConfigured && result.data && active) {
               isRemoteSyncingRef.current = true;
               const d = result.data;
+              if (d.settings && typeof d.settings === 'object' && Object.keys(d.settings).length > 0) {
+                setSettings((prev) => {
+                  const merged = { ...prev, ...d.settings };
+                  // Preserve essential local runtime and installation flags
+                  if (prev.isInstalled) merged.isInstalled = true;
+                  if (prev.installationCompleted) merged.installationCompleted = true;
+                  if (prev.isFreshInstallation) merged.isFreshInstallation = true;
+                  try {
+                    localStorage.setItem(`${STORAGE_KEY}_settings`, JSON.stringify(merged));
+                  } catch {}
+                  return merged;
+                });
+              }
               if (Array.isArray(d.customers) && d.customers.length > 0) {
                 const hasRealCust = d.customers.some((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
                 let cleanCustomers = hasRealCust
@@ -2537,6 +2550,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }
+
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_settings`, JSON.stringify(updated));
+        triggerImmediateSyncPush({ settings: updated });
+      } catch {}
 
       return updated;
     });

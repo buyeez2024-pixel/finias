@@ -52,6 +52,13 @@ function ensureAllSchemaTables($pdo, $prefix) {
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+        // 1b. Business Settings Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}settings` (
+            `id` VARCHAR(191) NOT NULL PRIMARY KEY,
+            `settings_json` LONGTEXT NOT NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
         // 2. Customers Table
         $pdo->exec("CREATE TABLE IF NOT EXISTS `{$prefix}customers` (
             `id` VARCHAR(191) NOT NULL PRIMARY KEY,
@@ -656,6 +663,20 @@ if ($action === 'pull' || $method === 'GET') {
             } catch (Exception $e) {}
         }
 
+        // Read Business Settings
+        try {
+            $sStmt = $pdo->query("SELECT `settings_json` FROM `{$prefix}settings` WHERE `id` = 'business_settings' LIMIT 1");
+            $sRow = $sStmt->fetch();
+            if ($sRow && !empty($sRow['settings_json'])) {
+                $parsedSettings = json_decode($sRow['settings_json'], true);
+                if (is_array($parsedSettings) && !empty($parsedSettings)) {
+                    $data['settings'] = $parsedSettings;
+                }
+            } elseif (isset($data['settings']) && is_string($data['settings'])) {
+                $data['settings'] = json_decode($data['settings'], true);
+            }
+        } catch (Exception $e) {}
+
         $pdo = null;
 
         echo json_encode([
@@ -706,6 +727,15 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         // B. Populate structured relational MySQL tables
+        if (isset($updates['settings']) && (is_array($updates['settings']) || is_object($updates['settings']))) {
+            try {
+                $sStmt = $pdo->prepare("INSERT INTO `{$prefix}settings` (`id`, `settings_json`, `updated_at`)
+                    VALUES ('business_settings', :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE `settings_json` = VALUES(`settings_json`), `updated_at` = CURRENT_TIMESTAMP");
+                $sStmt->execute([':json' => json_encode($updates['settings'])]);
+            } catch (Exception $e) {}
+        }
+
         if (isset($updates['customers']) && is_array($updates['customers'])) {
             $hasRealCust = false;
             foreach ($updates['customers'] as $c) {
