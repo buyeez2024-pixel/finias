@@ -101,14 +101,6 @@ const SECTIONS: SectionMeta[] = [
     description: 'Core company profile, HQ contact details, trading entity, start date, default profit margin, currency, financial year & timezone.',
   },
   {
-    id: 'database',
-    label: 'Hostinger MySQL Database & Live Sync',
-    shortLabel: 'Database Setup',
-    icon: Database,
-    description: 'Configure central Hostinger MySQL credentials, check live phpMyAdmin table counts, and run 1-Click Fresh Installation.',
-    badge: 'cPanel Live DB',
-  },
-  {
     id: 'product',
     label: 'Product Settings',
     shortLabel: 'Product',

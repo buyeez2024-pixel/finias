@@ -47,6 +47,7 @@ import { AccessDeniedGuard } from './components/settings/AccessDeniedGuard';
 import { AuthPage } from './components/auth/AuthPage';
 import { SessionWarningModal } from './components/auth/SessionWarningModal';
 import { InstallationWizard } from './components/installer/InstallationWizard';
+import { InstallationLockedGuard } from './components/installer/InstallationLockedGuard';
 import { PosRegisterLockModal } from './components/pos/PosRegisterLockModal';
 import { FlashNotification } from './components/common/FlashNotification';
 import { Product, Transaction } from './types/erp';
@@ -315,11 +316,24 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // 2. Once installation is completed, the wizard is locked and deleted. Any attempt to access /install or /setup redirects to dashboard.
+  // 2. Once installation is completed, visiting /install or /setup presents the secure InstallationLockedGuard
+  // allowing immediate return to the POS or an emergency unlock & re-run if initial info was wrong
   if (isInstallUrl) {
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', '/dashboard');
-    }
+    return (
+      <InstallationLockedGuard
+        onGoToDashboard={() => {
+          setIsInstallUrl(false);
+          setActiveTab('dashboard');
+          if (typeof window !== 'undefined') {
+            window.history.replaceState(null, '', '/dashboard');
+          }
+        }}
+        onUnlockSuccess={() => {
+          setSystemInstalled(false);
+          setIsInstallUrl(true);
+        }}
+      />
+    );
   }
 
   // 3. Unauthenticated: always show Login Page (AuthPage) when logged out or accessing root/dashboard

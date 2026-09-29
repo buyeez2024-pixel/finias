@@ -2332,6 +2332,21 @@ SET FOREIGN_KEY_CHECKS = 1;
               </div>
             </div>
 
+            {/* Security Lock Notice */}
+            <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="space-y-1">
+                <h5 className="text-xs font-bold text-emerald-200">
+                  Automated Security Lock Activated
+                </h5>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  The server lock file (<code className="text-emerald-300 font-mono">api/system_status.json</code>) has been created. The installer is now locked to protect your database. No manual file deletion or renaming in Hostinger File Manager is required.
+                </p>
+              </div>
+            </div>
+
             {/* Final Launch Button */}
             <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs text-slate-500">

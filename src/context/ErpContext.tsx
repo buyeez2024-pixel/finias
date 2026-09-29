@@ -1942,13 +1942,20 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     syncFromRemote();
-    const interval = setInterval(syncFromRemote, 45000);
+    const interval = setInterval(syncFromRemote, 30000);
     window.addEventListener('focus', syncFromRemote);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromRemote();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       active = false;
       clearInterval(interval);
       window.removeEventListener('focus', syncFromRemote);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

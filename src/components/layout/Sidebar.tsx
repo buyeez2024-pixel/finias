@@ -622,15 +622,6 @@ export const Sidebar: React.FC = () => {
 
   const configurationSubItems: SubItemMeta[] = [
     {
-      id: 'database_setup',
-      label: 'Database & MySQL Sync',
-      badge: 'Live',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-      icon: Database,
-      onClick: () => navigateToSettings('database_setup' as any),
-      isActive: activeTab === 'settings' && (settingsSubTab === 'database_setup' || settingsSubTab === 'database'),
-    },
-    {
       id: 'locations',
       label: 'Branch Outlets',
       badge: 'Branches',
