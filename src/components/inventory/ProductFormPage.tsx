@@ -1544,9 +1544,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         className="w-full bg-slate-950 text-white font-medium px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
                       >
                         <option value="">Select Category</option>
-                        {(erpCategories && erpCategories.length > 0 ? erpCategories.filter((c) => c.status === 'active' && !c.parentId) : PRESET_CATEGORIES.map(c => ({id: c, name: c}))).map((cat) => (
-                          <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
+                        {(() => {
+                          const validCats = erpCategories && erpCategories.length > 0
+                            ? erpCategories.filter((c) => c.status !== 'inactive' && !c.parentId)
+                            : PRESET_CATEGORIES.map(c => ({ id: c, name: c }));
+                          return validCats.map((cat) => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                          ));
+                        })()}
                       </select>
                     </div>
                   )}

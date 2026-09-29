@@ -110,7 +110,74 @@ export const initialSuppliers = [
 ];
 export const initialSales = [];
 export const initialPurchases = [];
-export const initialCategories = [];
+export const initialCategories = [
+  {
+    id: 'cat_electronics',
+    name: 'Electronics',
+    code: 'CAT-ELEC',
+    shortCode: 'ELEC',
+    description: 'Consumer electronics, gadgets, and devices',
+    status: 'active',
+    color: '#6366f1',
+    icon: 'Laptop',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cat_accessories',
+    name: 'Accessories',
+    code: 'CAT-ACC',
+    shortCode: 'ACC',
+    description: 'Cables, adapters, cases, and add-ons',
+    status: 'active',
+    color: '#0ea5e9',
+    icon: 'Tag',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cat_audio',
+    name: 'Audio & Sound',
+    code: 'CAT-AUD',
+    shortCode: 'AUD',
+    description: 'Headphones, speakers, and audio equipment',
+    status: 'active',
+    color: '#8b5cf6',
+    icon: 'Headphones',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cat_wearables',
+    name: 'Smart Wearables',
+    code: 'CAT-WEAR',
+    shortCode: 'WEAR',
+    description: 'Smart watches, fitness trackers, and smart rings',
+    status: 'active',
+    color: '#10b981',
+    icon: 'Sparkles',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cat_computers',
+    name: 'Computers & IT',
+    code: 'CAT-COMP',
+    shortCode: 'COMP',
+    description: 'Desktops, laptops, storage, and networking',
+    status: 'active',
+    color: '#f59e0b',
+    icon: 'Cpu',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'cat_hardware',
+    name: 'Hardware & Tools',
+    code: 'CAT-HARD',
+    shortCode: 'HARD',
+    description: 'Tools, electrical equipment, and parts',
+    status: 'active',
+    color: '#f43f5e',
+    icon: 'Wrench',
+    createdDate: '2026-01-01',
+  },
+];
 export const initialBrands = [];
 export const initialUnits = [];
 export const initialSettings = {

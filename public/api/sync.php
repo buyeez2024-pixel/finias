@@ -890,6 +890,86 @@ if ($action === 'push' || $method === 'POST') {
             }
         }
 
+        if (isset($updates['categories']) && is_array($updates['categories'])) {
+            $catStmt = $pdo->prepare("INSERT INTO `{$prefix}categories` 
+                (`id`, `name`, `code`, `description`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :code, :desc, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `code` = VALUES(`code`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['categories'] as $cat) {
+                if (!is_array($cat) || empty($cat['id'])) continue;
+                $catStmt->execute([
+                    ':id' => (string)$cat['id'],
+                    ':name' => $cat['name'] ?? 'Category',
+                    ':code' => $cat['code'] ?? null,
+                    ':desc' => $cat['description'] ?? null,
+                    ':json' => json_encode($cat),
+                ]);
+            }
+        }
+
+        if (isset($updates['brands']) && is_array($updates['brands'])) {
+            $bStmt = $pdo->prepare("INSERT INTO `{$prefix}brands` 
+                (`id`, `name`, `description`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :desc, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['brands'] as $b) {
+                if (!is_array($b) || empty($b['id'])) continue;
+                $bStmt->execute([
+                    ':id' => (string)$b['id'],
+                    ':name' => $b['name'] ?? 'Brand',
+                    ':desc' => $b['description'] ?? null,
+                    ':json' => json_encode($b),
+                ]);
+            }
+        }
+
+        if (isset($updates['units']) && is_array($updates['units'])) {
+            $uStmt = $pdo->prepare("INSERT INTO `{$prefix}units` 
+                (`id`, `name`, `short_name`, `allow_decimal`, `base_unit_id`, `multiplier`, `data_json`, `updated_at`)
+                VALUES (:id, :name, :sname, :dec, :buid, :mult, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `name` = VALUES(`name`), `short_name` = VALUES(`short_name`), `allow_decimal` = VALUES(`allow_decimal`), `base_unit_id` = VALUES(`base_unit_id`), `multiplier` = VALUES(`multiplier`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['units'] as $u) {
+                if (!is_array($u) || empty($u['id'])) continue;
+                $uStmt->execute([
+                    ':id' => (string)$u['id'],
+                    ':name' => $u['name'] ?? 'Unit',
+                    ':sname' => $u['shortName'] ?? $u['short_name'] ?? 'Pc',
+                    ':dec' => !empty($u['allowDecimal']) ? 1 : 0,
+                    ':buid' => $u['baseUnitId'] ?? $u['base_unit_id'] ?? null,
+                    ':mult' => (float)($u['multiplier'] ?? 1),
+                    ':json' => json_encode($u),
+                ]);
+            }
+        }
+
+        if (isset($updates['expenses']) && is_array($updates['expenses'])) {
+            $expStmt = $pdo->prepare("INSERT INTO `{$prefix}expenses` 
+                (`id`, `expense_ref`, `category`, `amount`, `date`, `payment_status`, `payment_method`, `data_json`, `updated_at`)
+                VALUES (:id, :ref, :cat, :amt, :dt, :pstat, :pmeth, :json, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE 
+                `expense_ref` = VALUES(`expense_ref`), `category` = VALUES(`category`), `amount` = VALUES(`amount`), `date` = VALUES(`date`), `payment_status` = VALUES(`payment_status`), `payment_method` = VALUES(`payment_method`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+            foreach ($updates['expenses'] as $exp) {
+                if (!is_array($exp) || empty($exp['id'])) continue;
+                $expStmt->execute([
+                    ':id' => (string)$exp['id'],
+                    ':ref' => $exp['expenseRef'] ?? $exp['referenceNo'] ?? $exp['ref_no'] ?? null,
+                    ':cat' => $exp['category'] ?? 'General',
+                    ':amt' => (float)($exp['amount'] ?? 0),
+                    ':dt' => $exp['date'] ?? date('Y-m-d'),
+                    ':pstat' => $exp['paymentStatus'] ?? 'paid',
+                    ':pmeth' => $exp['paymentMethod'] ?? 'cash',
+                    ':json' => json_encode($exp),
+                ]);
+            }
+        }
+
         $cgUpdates = $updates['customer_groups'] ?? $updates['customerGroups'] ?? null;
         if (isset($cgUpdates) && is_array($cgUpdates)) {
             $cgStmt = $pdo->prepare("INSERT INTO `{$prefix}customer_groups` 

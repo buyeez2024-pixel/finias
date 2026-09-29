@@ -1020,7 +1020,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_categories`);
-    return saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCategories);
+    let list: Category[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCategories);
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialCategories;
+    } else {
+      // Ensure all standard initial categories exist alongside user-created categories
+      const existingNames = new Set(list.map((c) => (c.name || '').trim().toLowerCase()));
+      initialCategories.forEach((initCat) => {
+        if (!existingNames.has(initCat.name.toLowerCase())) {
+          list.push(initCat);
+        }
+      });
+    }
+    return list;
   });
 
   const [brands, setBrands] = useState<Brand[]>(() => {
@@ -3419,7 +3431,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: categoryData.status || 'active',
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    setCategories((prev) => [...prev, newCategory]);
+    const updated = [...categories, newCategory];
+    setCategories(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ categories: updated });
+    } catch {}
     return newCategory;
   };
 
@@ -3428,30 +3445,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const oldName = currentCat?.name;
     const newName = categoryData.name !== undefined ? categoryData.name.trim() : oldName;
 
-    setCategories((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) {
-          // If this category was parent of other category, update parentName
-          if (c.parentId === id && newName) {
-            return { ...c, parentName: newName };
-          }
-          return c;
+    const updated = categories.map((c) => {
+      if (c.id !== id) {
+        if (c.parentId === id && newName) {
+          return { ...c, parentName: newName };
         }
-        return {
-          ...c,
-          ...categoryData,
-          name: newName || c.name,
-          code: categoryData.code !== undefined ? categoryData.code.trim().toUpperCase() : c.code,
-          shortCode: categoryData.shortCode !== undefined ? categoryData.shortCode.trim().toUpperCase() : c.shortCode,
-          description: categoryData.description !== undefined ? categoryData.description.trim() : c.description,
-          parentId: categoryData.parentId !== undefined ? (categoryData.parentId || undefined) : c.parentId,
-          parentName: categoryData.parentName !== undefined ? (categoryData.parentName || undefined) : c.parentName,
-          color: categoryData.color !== undefined ? categoryData.color : c.color,
-          icon: categoryData.icon !== undefined ? categoryData.icon : c.icon,
-          status: categoryData.status !== undefined ? categoryData.status : c.status,
-        };
-      })
-    );
+        return c;
+      }
+      return {
+        ...c,
+        ...categoryData,
+        name: newName || c.name,
+        code: categoryData.code !== undefined ? categoryData.code.trim().toUpperCase() : c.code,
+        shortCode: categoryData.shortCode !== undefined ? categoryData.shortCode.trim().toUpperCase() : c.shortCode,
+        description: categoryData.description !== undefined ? categoryData.description.trim() : c.description,
+        parentId: categoryData.parentId !== undefined ? (categoryData.parentId || undefined) : c.parentId,
+        parentName: categoryData.parentName !== undefined ? (categoryData.parentName || undefined) : c.parentName,
+        color: categoryData.color !== undefined ? categoryData.color : c.color,
+        icon: categoryData.icon !== undefined ? categoryData.icon : c.icon,
+        status: categoryData.status !== undefined ? categoryData.status : c.status,
+      };
+    });
+
+    setCategories(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ categories: updated });
+    } catch {}
 
     // Synchronize category name in products if updated
     if (oldName && newName && oldName !== newName) {
@@ -3495,11 +3515,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Unlink child categories if any
-    setCategories((prev) =>
-      prev
-        .filter((c) => c.id !== id)
-        .map((c) => (c.parentId === id ? { ...c, parentId: undefined, parentName: undefined } : c))
-    );
+    const updated = categories
+      .filter((c) => c.id !== id)
+      .map((c) => (c.parentId === id ? { ...c, parentId: undefined, parentName: undefined } : c));
+
+    setCategories(updated);
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(updated));
+      triggerImmediateSyncPush({ categories: updated });
+    } catch {}
 
     return {
       success: true,
