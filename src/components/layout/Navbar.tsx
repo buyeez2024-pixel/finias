@@ -107,24 +107,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
     }`}>
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 max-w-full">
-        {/* Left Branding & Mobile Drawer Toggle & Location Switcher */}
+        {/* Left Branding & Location Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Mobile Navigation Drawer Toggle */}
-          <button
-            id="mobile-nav-toggle-btn"
-            type="button"
-            onClick={toggleMobileSidebar}
-            className={`lg:hidden p-2 rounded-xl border flex items-center justify-center transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer shadow-2xs ${
-              isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-            }`}
-            title="Open Navigation Menu"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 dark:text-indigo-400" />
-          </button>
-
           <div
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
@@ -259,10 +243,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 setShowNotifications(!showNotifications);
                 setShowProfileMenu(false);
               }}
-              className={`relative p-2 rounded-xl border transition shadow-2xs flex items-center justify-center active:scale-95 active:opacity-80 cursor-pointer ${
+              className={`relative transition active:scale-95 active:opacity-80 cursor-pointer ${
                 isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800'
-                  : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                  ? 'px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
+                  : 'p-2 rounded-xl border bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-2xs flex items-center justify-center'
               }`}
               title={
                 lockedUsers.length > 0
@@ -271,7 +255,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }
               aria-label="Security Notifications"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4 shrink-0" />
               {lockedUsers.length > 0 && (
                 <span
                   id="nav-security-alert-badge"
@@ -287,11 +271,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 py-2 z-50 text-xs animate-fadeIn text-slate-200">
-                <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+              <div className={`absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border py-2 z-50 text-xs animate-fadeIn ${
+                isLight
+                  ? 'bg-white border-slate-200 text-slate-800 shadow-slate-200/60'
+                  : 'bg-slate-900 border-slate-800 text-slate-200'
+              }`}>
+                <div className={`px-4 py-2.5 border-b flex items-center justify-between ${
+                  isLight ? 'border-slate-100' : 'border-slate-800'
+                }`}>
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                    <span className="font-bold text-white text-xs">Security & Lockout Notifications</span>
+                    <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                    <span className={`font-bold text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>Security & Lockout Notifications</span>
                   </div>
                   {lockedUsers.length > 0 && (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
@@ -300,20 +290,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-800/80">
+                <div className={`max-h-72 overflow-y-auto divide-y ${isLight ? 'divide-slate-100' : 'divide-slate-800/80'}`}>
                   {lockedUsers.length === 0 ? (
                     <div className="p-6 text-center text-slate-400">
                       <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                      <p className="font-semibold text-xs text-white">No Security Alerts</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">All staff accounts are in active standing.</p>
+                      <p className={`font-semibold text-xs ${isLight ? 'text-slate-800' : 'text-white'}`}>No Security Alerts</p>
+                      <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-500'} mt-0.5`}>All staff accounts are in active standing.</p>
                     </div>
                   ) : (
                     lockedUsers.map((u) => (
-                      <div key={u.id} className="p-3.5 hover:bg-slate-800/40 transition space-y-2">
+                      <div key={u.id} className={`p-3.5 transition space-y-2 ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40'}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="font-bold text-white text-xs">{u.name}</div>
-                            <div className="text-[11px] text-slate-400">{u.email}</div>
+                            <div className={`font-bold text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>{u.name}</div>
+                            <div className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{u.email}</div>
                           </div>
                           <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
                             Brute-Force

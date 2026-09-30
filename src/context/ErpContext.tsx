@@ -673,9 +673,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const isFreshFlag = parsed.isFreshInstallation === true || parsed.installationType === 'fresh' || (typeof localStorage !== 'undefined' && (localStorage.getItem('app_fresh_installed') === 'true' || localStorage.getItem('installation_type') === 'fresh'));
         const installType = parsed.installationType || (isFreshFlag ? 'fresh' : (isInstalledFlag ? 'demo' : 'fresh'));
 
+        // System update migration: check if stale build or app version is present
+        const isStaleBuild = !parsed.buildNumber || parsed.buildNumber === '2026-09-14-RELEASE' || parsed.buildNumber === '2026.08.30-STABLE';
+        const mergedReleaseNotes = Array.isArray(parsed.appReleaseNotes) ? [...parsed.appReleaseNotes] : [];
+        if (Array.isArray(initialSettings.appReleaseNotes)) {
+          initialSettings.appReleaseNotes.forEach((initNote) => {
+            if (!mergedReleaseNotes.some((n: any) => n.version === initNote.version)) {
+              mergedReleaseNotes.push(initNote);
+            }
+          });
+        }
+        mergedReleaseNotes.sort((a: any, b: any) => (b.version > a.version ? 1 : -1));
+
+        const activeVersion = isStaleBuild ? (initialSettings.appVersion || 'v2.5.4') : (parsed.appVersion || initialSettings.appVersion || 'v2.5.4');
+        const activeBuild = isStaleBuild ? (initialSettings.buildNumber || '2026.09.30-STABLE') : (parsed.buildNumber || initialSettings.buildNumber || '2026.09.30-STABLE');
+        const activeLastUpdated = isStaleBuild ? '2026-09-30 09:10' : (parsed.lastUpdatedDate || '2026-09-30 09:10');
+
         return {
           ...initialSettings,
           ...parsed,
+          appVersion: activeVersion,
+          buildNumber: activeBuild,
+          lastUpdatedDate: activeLastUpdated,
+          appReleaseNotes: mergedReleaseNotes,
           isInstalled: isInstalledFlag,
           installationCompleted: isInstalledFlag,
           isFreshInstallation: isFreshFlag,
@@ -1240,7 +1260,36 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Currencies State
   const [currencies, setCurrencies] = useState<Currency[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_currencies`);
-    return saved ? JSON.parse(saved) : initialCurrencies;
+    let list: Currency[] = saved ? JSON.parse(saved) : initialCurrencies;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = [...initialCurrencies];
+    } else {
+      const existingCodes = new Set(list.map((c: any) => (c.code || '').toUpperCase().trim()));
+      initialCurrencies.forEach((initCurr) => {
+        if (!existingCodes.has(initCurr.code.toUpperCase().trim())) {
+          list.push(initCurr);
+          existingCodes.add(initCurr.code.toUpperCase().trim());
+        }
+      });
+    }
+
+    // Ensure active currency from settings (e.g., INR) is guaranteed to exist in currencies list
+    const activeCode = (initialSettings.currencyCode || initialSettings.currency || 'INR').toUpperCase().trim();
+    const activeSymbol = initialSettings.currencySymbol || (activeCode === 'INR' ? '₹' : '$');
+    const hasActiveCurrency = list.some((c) => c.code.toUpperCase().trim() === activeCode);
+    if (!hasActiveCurrency) {
+      list.unshift({
+        id: `curr_${activeCode.toLowerCase()}`,
+        name: activeCode === 'INR' ? 'Indian Rupee' : `${activeCode} Currency`,
+        code: activeCode,
+        symbol: activeSymbol,
+        placement: initialSettings.currencyPlacement || 'prefix',
+        decimalPlaces: initialSettings.currencyDecimalPlaces ?? 2,
+        isDefault: true,
+      });
+    }
+
+    return list;
   });
 
   // Users & Authentication State
@@ -2605,6 +2654,41 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               sealCompanyName: primaryCompany,
             };
           }
+        }
+      }
+
+      // Automatic Version Incrementation & Build Identifier Update Engine
+      if (updated.autoIncrementVersionOnUpdate !== false && !newSettings.appVersion && !newSettings.buildNumber) {
+        const now = new Date();
+        const nowStr = now.toISOString().replace('T', ' ').slice(0, 16);
+        const dateTag = now.toISOString().slice(0, 10).replace(/-/g, '.');
+        const nextBuild = `${dateTag}-BUILD`;
+
+        const currentVer = prev.appVersion || 'v2.5.4';
+        const cleanVer = currentVer.replace(/^v/, '');
+        const parts = cleanVer.split('.').map((p) => parseInt(p, 10) || 0);
+        let [major, minor, patch] = parts.length === 3 ? parts : [2, 5, 4];
+        patch += 1;
+        const nextVer = `v${major}.${minor}.${patch}`;
+
+        const existingNotes = Array.isArray(prev.appReleaseNotes) ? [...prev.appReleaseNotes] : [];
+        const lastNote = existingNotes[0];
+
+        if (!lastNote || lastNote.version !== nextVer) {
+          const newLog = {
+            version: nextVer,
+            releaseDate: nowStr,
+            updatedBy: 'Admin (Settings Auto-Increment)',
+            type: 'patch',
+            description: 'Automated patch version update on system settings change.',
+          };
+          updated.appVersion = nextVer;
+          updated.buildNumber = nextBuild;
+          updated.lastUpdatedDate = nowStr;
+          updated.appReleaseNotes = [newLog, ...existingNotes];
+        } else {
+          updated.buildNumber = nextBuild;
+          updated.lastUpdatedDate = nowStr;
         }
       }
 

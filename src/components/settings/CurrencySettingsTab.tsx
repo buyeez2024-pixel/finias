@@ -36,6 +36,17 @@ export const CurrencySettingsTab: React.FC = () => {
     formatMoney,
   } = useErp();
 
+  // Auto-healing: Ensure active store currency (e.g. Indian Rupee / INR) is present in currencies table
+  React.useEffect(() => {
+    const activeCode = (settings.currencyCode || settings.currency || 'INR').toUpperCase().trim();
+    const activeSymbol = settings.currencySymbol || (activeCode === 'INR' ? '₹' : '$');
+    const exists = currencies.some((c) => c.code.toUpperCase().trim() === activeCode);
+    if (!exists && setStoreCurrency) {
+      const activeName = activeCode === 'INR' ? 'Indian Rupee' : `${activeCode} Currency`;
+      setStoreCurrency(activeCode, activeSymbol, activeName, settings.currencyPlacement || 'prefix', settings.currencyDecimalPlaces ?? 2);
+    }
+  }, [settings.currencyCode, settings.currency, settings.currencySymbol, currencies, setStoreCurrency]);
+
   // Modal State for Add / Edit Currency
   const [isModalOpen, setIsModalOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {

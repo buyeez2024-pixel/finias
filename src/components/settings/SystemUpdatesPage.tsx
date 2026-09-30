@@ -29,11 +29,29 @@ export const SystemUpdatesPage: React.FC = () => {
     });
   };
 
+  const handleSaveAllSettings = () => {
+    const now = new Date();
+    const nowStr = now.toISOString().replace('T', ' ').slice(0, 16);
+    const dateTag = now.toISOString().slice(0, 10).replace(/-/g, '.');
+    const defaultBuild = `${dateTag}-STABLE`;
+
+    const updatedForm = {
+      ...formData,
+      buildNumber: formData.buildNumber && formData.buildNumber !== '2026-09-14-RELEASE' ? formData.buildNumber : defaultBuild,
+      lastUpdatedDate: nowStr,
+    };
+
+    setFormData(updatedForm);
+    updateSettings(updatedForm);
+    setSaveToast(true);
+    setTimeout(() => setSaveToast(false), 3500);
+  };
+
   const handleTriggerVersionUpdate = (type: 'patch' | 'minor' | 'major') => {
-    const currentVer = formData.appVersion || 'v2.5.0';
+    const currentVer = formData.appVersion || 'v2.5.4';
     const cleanVer = currentVer.replace(/^v/, '');
     const parts = cleanVer.split('.').map((p) => parseInt(p, 10) || 0);
-    let [major, minor, patch] = parts.length === 3 ? parts : [2, 5, 0];
+    let [major, minor, patch] = parts.length === 3 ? parts : [2, 5, 4];
 
     if (type === 'major') {
       major += 1;
@@ -47,8 +65,10 @@ export const SystemUpdatesPage: React.FC = () => {
     }
 
     const nextVer = `v${major}.${minor}.${patch}`;
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    const nextBuild = `${nowStr.slice(0, 10)}-BUILD`;
+    const now = new Date();
+    const nowStr = now.toISOString().replace('T', ' ').slice(0, 16);
+    const dateTag = now.toISOString().slice(0, 10).replace(/-/g, '.');
+    const nextBuild = `${dateTag}-STABLE`;
 
     const typeDesc =
       type === 'major'
@@ -109,11 +129,22 @@ export const SystemUpdatesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shrink-0">
-          <span className="text-xs text-slate-400 font-medium">Active Release:</span>
-          <span className="font-mono font-black text-emerald-400 text-base">
-            {formData.appVersion || 'v2.5.0'}
-          </span>
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800">
+            <span className="text-xs text-slate-400 font-medium">Active Release:</span>
+            <span className="font-mono font-black text-emerald-400 text-base">
+              {formData.appVersion || 'v2.5.4'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveAllSettings}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+            <span>Save Version Settings</span>
+          </button>
         </div>
       </div>
 

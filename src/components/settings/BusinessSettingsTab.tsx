@@ -528,13 +528,16 @@ export const BusinessSettingsTab: React.FC = () => {
 
     // If auto-increment is enabled and settings saved
     if (formData.autoIncrementVersionOnUpdate !== false) {
-      const currentVer = formData.appVersion || 'v2.5.0';
+      const currentVer = formData.appVersion || 'v2.5.4';
       const cleanVer = currentVer.replace(/^v/, '');
       const parts = cleanVer.split('.').map((p) => parseInt(p, 10) || 0);
-      let [major, minor, patch] = parts.length === 3 ? parts : [2, 5, 0];
+      let [major, minor, patch] = parts.length === 3 ? parts : [2, 5, 4];
       patch += 1;
 
       const nextVer = `v${major}.${minor}.${patch}`;
+      const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
+      const nextBuild = `${dateTag}-BUILD`;
+
       const newLog = {
         version: nextVer,
         releaseDate: nowStr,
@@ -548,12 +551,15 @@ export const BusinessSettingsTab: React.FC = () => {
       finalForm = {
         ...formData,
         appVersion: nextVer,
+        buildNumber: nextBuild,
         lastUpdatedDate: nowStr,
         appReleaseNotes: [newLog, ...existingNotes],
       };
     } else {
+      const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
       finalForm = {
         ...formData,
+        buildNumber: formData.buildNumber && formData.buildNumber !== '2026-09-14-RELEASE' ? formData.buildNumber : `${dateTag}-BUILD`,
         lastUpdatedDate: nowStr,
       };
     }
@@ -2525,13 +2531,13 @@ export const BusinessSettingsTab: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2.5 rounded-xl border ${
+                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                      <div className={`p-2.5 rounded-xl border flex items-center justify-center shrink-0 ${
                         (formData.themeMode || 'dark') === 'dark'
                           ? 'bg-slate-950 border-slate-800'
-                          : 'bg-white border-slate-200 shadow-sm'
+                          : 'bg-white border-slate-200 shadow-xs'
                       }`}>
-                        <RoyalLogo size="sm" subtitle="Live Preview" badge="Preview" />
+                        <RoyalLogo size="sm" showText={false} />
                       </div>
 
                       <button

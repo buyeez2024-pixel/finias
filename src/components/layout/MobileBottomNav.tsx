@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Boxes,
+  Truck,
   Receipt,
   Menu,
 } from 'lucide-react';
@@ -38,7 +39,7 @@ export const MobileBottomNav: React.FC = () => {
           : 'bg-slate-950/95 border-t border-slate-800 text-slate-300 shadow-2xl backdrop-blur-md'
       } transition-colors duration-200 safe-bottom`}
     >
-      <div className="grid grid-cols-5 items-center justify-around h-14 max-w-lg mx-auto px-1">
+      <div className="grid grid-cols-6 items-center justify-around h-14 max-w-lg mx-auto px-1">
         {/* 1. Dashboard */}
         <button
           type="button"
@@ -55,7 +56,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1 rounded-lg transition-transform ${activeTab === 'dashboard' ? 'scale-110 bg-indigo-500/10' : ''}`}>
             <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5">Home</span>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Home</span>
         </button>
 
         {/* 2. POS Terminal */}
@@ -77,7 +78,7 @@ export const MobileBottomNav: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5">POS</span>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">POS</span>
         </button>
 
         {/* 3. Products / Inventory */}
@@ -102,10 +103,29 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1 rounded-lg transition-transform ${activeTab === 'inventory' || activeTab === 'products' ? 'scale-110 bg-indigo-500/10' : ''}`}>
             <Boxes className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5">Stock</span>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Stock</span>
         </button>
 
-        {/* 4. Sales Reports */}
+        {/* 4. Purchases */}
+        <button
+          type="button"
+          id="mobile-bottom-nav-purchases"
+          onClick={() => setActiveTab('purchases')}
+          className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer active:scale-95 active:opacity-80 ${
+            activeTab === 'purchases'
+              ? isLight
+                ? 'text-indigo-600 font-bold'
+                : 'text-indigo-400 font-bold'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <div className={`p-1 rounded-lg transition-transform ${activeTab === 'purchases' ? 'scale-110 bg-indigo-500/10' : ''}`}>
+            <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Purchases</span>
+        </button>
+
+        {/* 5. Sales Reports */}
         <button
           type="button"
           id="mobile-bottom-nav-sales"
@@ -121,10 +141,10 @@ export const MobileBottomNav: React.FC = () => {
           <div className={`p-1 rounded-lg transition-transform ${activeTab === 'sales' ? 'scale-110 bg-indigo-500/10' : ''}`}>
             <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5">Sales</span>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Sales</span>
         </button>
 
-        {/* 5. All Menus Drawer */}
+        {/* 6. All Menus Drawer */}
         <button
           type="button"
           id="mobile-bottom-nav-menu"
@@ -134,7 +154,7 @@ export const MobileBottomNav: React.FC = () => {
           <div className="p-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400">
             <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5">Menu</span>
+          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Menu</span>
         </button>
       </div>
     </nav>
