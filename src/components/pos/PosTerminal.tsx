@@ -756,11 +756,11 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       )}
 
       {/* Mobile/Tablet Screen View Switcher: Switch between Products Search & Cart */}
-      <div className="lg:hidden flex items-center p-2 bg-slate-900 border-b border-slate-800 gap-2 shrink-0 z-20">
+      <div className="lg:hidden flex items-center p-1.5 sm:p-2 bg-slate-900 border-b border-slate-800 gap-2 shrink-0 z-20">
         <button
           type="button"
           onClick={() => setMobileViewTab('catalog')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+          className={`flex-1 py-1.5 sm:py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
             mobileViewTab === 'catalog'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -772,7 +772,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         <button
           type="button"
           onClick={() => setMobileViewTab('cart')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+          className={`flex-1 py-1.5 sm:py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
             mobileViewTab === 'cart'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-400'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
@@ -793,17 +793,17 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         mobileViewTab === 'cart' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Top Controls: Search, Barcode Scan, Cashier Tools */}
-        <div className="p-2.5 sm:p-3 border-b border-slate-800 bg-slate-900/95 space-y-2 shrink-0">
+        <div className="p-2 sm:p-2.5 border-b border-slate-800 bg-slate-900/95 space-y-1.5 sm:space-y-2 shrink-0">
           {/* Dedicated Full-Width Search Input Bar - Always 100% visible and wide */}
           <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="pos-product-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Product by Name, SKU, or Barcode..."
-              className="w-full bg-slate-950 text-slate-100 pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium"
+              className="w-full bg-slate-950 text-slate-100 pl-9 pr-8 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium"
             />
             {searchQuery && (
               <button
@@ -835,10 +835,10 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           )}
 
           {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-1 shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-0.5 shrink-0 whitespace-nowrap">
             {/* Barcode Laser Input */}
-            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-700 flex-1 min-w-[170px] sm:flex-initial">
-              <Barcode className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-700 shrink-0">
+              <Barcode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <input
                 id="barcode-scanner-input"
                 type="text"
@@ -850,7 +850,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   }
                 }}
                 placeholder="Barcode Gun Input..."
-                className="bg-transparent text-xs text-slate-200 w-full sm:w-32 focus:outline-none placeholder:text-slate-500 font-mono"
+                className="bg-transparent text-xs text-slate-200 w-28 sm:w-32 focus:outline-none placeholder:text-slate-500 font-mono"
               />
               <button
                 id="simulate-barcode-btn"
@@ -858,7 +858,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   const randomProd = products[Math.floor(Math.random() * products.length)];
                   if (randomProd) handleBarcodeScan(randomProd.barcode || randomProd.sku);
                 }}
-                className="px-2 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold transition shrink-0"
+                className="px-1.5 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold transition shrink-0 whitespace-nowrap"
                 title="Test hardware scanner"
               >
                 Scan Demo
@@ -866,23 +866,23 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             </div>
 
             {/* Cashier Shift Drawer & Quick Actions Group */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               {/* Immediate Sale Return quick button */}
               <button
                 id="pos-sale-return-top-btn"
                 onClick={() => setShowSaleReturnModal(true)}
-                className="px-2.5 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 hover:border-rose-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                className="px-2.5 py-1 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 hover:border-rose-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
                 title="Immediate Sale Return & Refund (F7)"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                <span className="hidden sm:inline text-[11px]">Sale Return</span>
+                <RotateCcw className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span className="text-[11px]">Sale Return</span>
               </button>
 
               {/* Shift status button */}
               <button
                 id="pos-register-shift-quick-btn"
                 onClick={() => setShowRegisterModal(true)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition ${
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition shrink-0 whitespace-nowrap ${
                   cashRegister.status === 'open'
                     ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/60'
                     : 'bg-rose-950/70 border-rose-700/60 text-rose-300 hover:bg-rose-900/60'
@@ -890,7 +890,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                 title="Register shift and cash float drawer"
               >
                 <div
-                  className={`w-2 h-2 rounded-full ${
+                  className={`w-2 h-2 rounded-full shrink-0 ${
                     cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
                   }`}
                 />
@@ -909,10 +909,10 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               <button
                 id="pos-calculator-top-btn"
                 onClick={() => setShowCalculatorModal(true)}
-                className="px-2.5 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 hover:text-indigo-200 border border-indigo-500/40 hover:border-indigo-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                className="px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 hover:text-indigo-200 border border-indigo-500/40 hover:border-indigo-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
                 title="POS Calculator & Change/Discount Tool (F9)"
               >
-                <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+                <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="hidden md:inline text-[11px]">Calculator</span>
               </button>
 
@@ -920,7 +920,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               <button
                 id="pos-standby-screen-btn"
                 onClick={() => setIsStandbyMode(true)}
-                className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 rounded-xl text-xs border border-slate-700 transition"
+                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 rounded-xl text-xs border border-slate-700 transition shrink-0"
                 title="Idle / Lock Register"
               >
                 <Coffee className="w-3.5 h-3.5" />
@@ -930,7 +930,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               <button
                 id="pos-fullscreen-toggle-btn"
                 onClick={toggleFullscreen}
-                className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition"
+                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition shrink-0"
                 title="Toggle Fullscreen"
               >
                 {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
@@ -941,10 +941,10 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                 <button
                   id="pos-customer-display-btn"
                   onClick={() => setShowCustomerDisplayModal(true)}
-                  className="px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition"
+                  className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition shrink-0 whitespace-nowrap"
                   title="Customer Facing Secondary Screen"
                 >
-                  <Monitor className="w-3.5 h-3.5 text-indigo-400" />
+                  <Monitor className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                   <span className="hidden xl:inline text-[11px]">Customer Display</span>
                 </button>
               )}
@@ -959,10 +959,10 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               <button
                 id="pos-exit-terminal-btn"
                 onClick={handleRequestExit}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 flex items-center gap-1.5 transition shadow-sm"
+                className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 flex items-center gap-1.5 transition shadow-sm shrink-0 whitespace-nowrap"
                 title="Exit POS Terminal (Esc)"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                <LogOut className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                 <span className="hidden sm:inline">Exit</span>
               </button>
             </div>
@@ -970,12 +970,12 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
 
           {/* Category Filter Pills */}
           {(settings.showCategoryInPos !== false) && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin touch-pan-x whitespace-nowrap">
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-thin touch-pan-x whitespace-nowrap">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  className={`px-2.5 py-0.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition shrink-0 ${
                     selectedCategory === cat
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
@@ -989,7 +989,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 p-3.5 overflow-y-auto min-h-0 custom-scrollbar">
+        <div className="flex-1 p-2 sm:p-3.5 overflow-y-auto min-h-0 custom-scrollbar overscroll-contain">
           {filteredProducts.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400">
               <Package className="w-12 h-12 text-slate-600 mb-3" />
@@ -997,7 +997,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               <p className="text-xs text-slate-500 mt-1">Try another search query or category filter.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
               {filteredProducts.map((product) => {
                 const locStock = product.locationStocks?.[selectedLocationId] ?? product.currentStock;
                 const isOutOfStock = locStock <= 0;
@@ -1018,36 +1018,36 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                         }
                       }
                     }}
-                    className={`relative bg-slate-900 border rounded-xl p-2.5 flex flex-col justify-between transition-all select-none ${
+                    className={`relative bg-slate-900 border rounded-xl p-2 sm:p-2.5 flex flex-col justify-between transition-all select-none ${
                       !canAdd
                         ? 'opacity-50 border-slate-800 cursor-not-allowed'
                         : 'border-slate-800 hover:border-indigo-500 hover:bg-slate-850 hover:shadow-lg active:scale-95 active:opacity-80 cursor-pointer group'
                     }`}
                   >
                     {/* Stock badge */}
-                    <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+                    <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 flex flex-col items-end gap-1">
                       {isOutOfStock ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
+                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
                           Out of Stock
                         </span>
                       ) : isLowStock ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
+                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800">
                           {locStock} left
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
                           {locStock} {product.unit}
                         </span>
                       )}
                       {product.lots && product.lots.length > 1 && (
-                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-indigo-600 text-white border border-indigo-400 shadow-sm animate-pulse">
+                        <span className="text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-indigo-600 text-white border border-indigo-400 shadow-sm animate-pulse">
                           {product.lots.length} BATCHES
                         </span>
                       )}
                     </div>
 
                     {/* Image */}
-                    <div className="w-full h-24 rounded-lg bg-slate-950 overflow-hidden mb-2 relative">
+                    <div className="w-full h-16 sm:h-20 lg:h-24 rounded-lg bg-slate-950 overflow-hidden mb-1.5 sm:mb-2 relative">
                       {product.image ? (
                         <img
                           src={product.image}
@@ -1058,7 +1058,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-600">
-                          <Package className="w-8 h-8" />
+                          <Package className="w-6 h-6 sm:w-8 sm:h-8" />
                         </div>
                       )}
                     </div>
@@ -1233,7 +1233,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 p-3 overflow-y-auto space-y-2 min-h-0 custom-scrollbar">
+        <div className="flex-1 p-2.5 sm:p-3 overflow-y-auto space-y-2 min-h-0 custom-scrollbar overscroll-contain">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
               <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center mb-3 text-slate-600 shadow-inner">
@@ -1344,7 +1344,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Bottom: Calculations & Checkout Bar */}
-        <div className="p-3 sm:p-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2.5">
+        <div className="p-2.5 sm:p-3.5 pb-8 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 max-h-[62vh] overflow-y-auto custom-scrollbar">
           {/* Subtotals & Taxes Breakdown */}
           <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div className="flex justify-between items-center">
@@ -1395,14 +1395,14 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Grand Total Box */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-900/90 p-3 rounded-2xl border border-slate-700 flex items-center justify-between shadow-inner">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-900/90 p-2.5 sm:p-3 rounded-2xl border border-slate-700 flex items-center justify-between shadow-inner">
             <div>
               <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Total Payable
               </div>
               <div className="text-[10px] text-slate-500">Tax & Discount Incl.</div>
             </div>
-            <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
+            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight">
               {formatCurrency(grandTotal, settings)}
             </div>
           </div>
@@ -1462,13 +1462,13 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Checkout / Pay Triggers */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 pb-1">
             {!settings.disableExpressCheckout && (
               <button
                 id="pos-express-cash-btn"
                 disabled={cart.length === 0}
                 onClick={handleExpressCashCheckout}
-                className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Complete cash sale immediately with exact total"
               >
                 <Banknote className="w-4 h-4" />
@@ -1480,7 +1480,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               id="pos-checkout-btn"
               disabled={cart.length === 0}
               onClick={onOpenPaymentModal}
-              className={`py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 !settings.disableExpressCheckout ? 'flex-[1.5]' : 'w-full'
               }`}
             >
@@ -1489,8 +1489,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             </button>
           </div>
 
-          {/* Keyboard Shortcuts Strip */}
-          <div className="flex items-center justify-center gap-2.5 pt-0.5 text-[10px] text-slate-500 font-mono">
+          {/* Keyboard Shortcuts Strip - Hidden on mobile, visible on desktop */}
+          <div className="hidden lg:flex items-center justify-center gap-2.5 pt-0.5 text-[10px] text-slate-500 font-mono">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.2 bg-slate-900 text-slate-400 rounded border border-slate-800">F4</kbd> Pay
             </span>

@@ -704,7 +704,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 pb-24 overflow-x-hidden">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 pb-6 overflow-x-hidden">
       {/* Top Banner Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-sm">
         <div className="flex items-center gap-3">
@@ -1803,8 +1803,8 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       </div>
       )}
 
-      {/* STICKY BOTTOM BAR: Final Calculations & Action Trigger */}
-      <div className="sticky bottom-0 z-20 bg-slate-950/95 backdrop-blur border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
+      {/* FINAL CALCULATIONS & ACTION TRIGGER BAR */}
+      <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-md">
         <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
           <div>
             <span className="text-slate-400">Subtotal: </span>

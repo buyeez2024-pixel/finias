@@ -342,7 +342,7 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className={`h-screen w-full overflow-hidden ${isLight ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300`}>
+    <div className={`h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden ${isLight ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300`}>
       {/* Top Navigation */}
       <Navbar
         onOpenRegisterModal={() => setShowRegisterModal(true)}
