@@ -1093,7 +1093,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         mobileViewTab === 'catalog' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Cart Top: Customer selector & Header */}
-        <div className="p-3 sm:p-3.5 border-b border-slate-800 bg-slate-950/90 shrink-0 space-y-2.5 relative z-20">
+        <div className="p-2 sm:p-3.5 border-b border-slate-800 bg-slate-950/90 shrink-0 space-y-2 sm:space-y-2.5 relative z-20">
           {/* Mobile Back to Products Catalog Button */}
           <div className="lg:hidden flex items-center justify-between pb-1 border-b border-slate-800/80">
             <button
@@ -1154,7 +1154,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Customer & Rep Dropdowns */}
-          <div className="space-y-1.5 relative z-30">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 relative z-30">
             {/* Customer */}
             <div>
               <SearchableDropdown
@@ -1188,7 +1188,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   id="pos-sales-rep-select"
                   value={posCommissionAgentId || ''}
                   onChange={(e) => setPosCommissionAgentId(e.target.value || null)}
-                  className="w-full bg-slate-900 text-[11px] font-medium text-slate-100 pl-8 pr-8 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none"
+                  className="w-full bg-slate-900 text-[11px] font-medium text-slate-100 pl-8 pr-8 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none"
                   disabled={settings.salesCommissionAgent === 'logged_in_user'}
                 >
                   <option value="">
@@ -1327,7 +1327,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Bottom: Calculations & Checkout Bar */}
-        <div className="p-2.5 sm:p-3.5 pb-8 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 max-h-[62vh] overflow-y-auto custom-scrollbar">
+        <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 max-h-[45vh] landscape:max-h-[140px] overflow-y-auto custom-scrollbar">
           {/* Subtotals & Taxes Breakdown */}
           <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div className="flex justify-between items-center">
@@ -1445,7 +1445,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Checkout / Pay Triggers */}
-          <div className="flex gap-2 pb-1">
+          <div className="flex gap-2 pb-2 sm:pb-1 pb-[env(safe-area-inset-bottom,24px)]">
             {!settings.disableExpressCheckout && (
               <button
                 id="pos-express-cash-btn"
