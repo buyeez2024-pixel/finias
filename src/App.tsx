@@ -343,13 +343,15 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className={`h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden ${isLight ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300`}>
-      {/* Top Navigation */}
-      <Navbar
-        onOpenRegisterModal={() => setShowRegisterModal(true)}
-        onOpenQuickSale={() => setActiveTab('pos')}
-        onOpenQuickPurchase={() => setActiveTab('add_purchase')}
-        onOpenQuickProduct={openAddProductPage}
-      />
+      {/* Top Navigation - Maximizes workspace by hiding in POS Terminal */}
+      {activeTab !== 'pos' && (
+        <Navbar
+          onOpenRegisterModal={() => setShowRegisterModal(true)}
+          onOpenQuickSale={() => setActiveTab('pos')}
+          onOpenQuickPurchase={() => setActiveTab('add_purchase')}
+          onOpenQuickProduct={openAddProductPage}
+        />
+      )}
 
       {/* Admin Security & Account Unlock Banner - only visible after Admin login */}
       {isUserAdmin(currentUser) && (() => {

@@ -643,7 +643,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
   }
 
   return (
-    <div className="h-full flex-1 flex flex-col lg:flex-row bg-slate-900 overflow-hidden relative">
+    <div className="flex-1 flex flex-col lg:flex-row bg-slate-900 overflow-hidden min-h-0 w-full relative">
       {/* Lot Selection Modal */}
       {lotSelectionProduct && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -793,178 +793,161 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         mobileViewTab === 'cart' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Top Controls: Search, Barcode Scan, Cashier Tools */}
-        <div className="p-2 sm:p-2.5 border-b border-slate-800 bg-slate-900/95 space-y-1.5 sm:space-y-2 shrink-0">
-          {/* Dedicated Full-Width Search Input Bar - Always 100% visible and wide */}
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              id="pos-product-search-input"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Product by Name, SKU, or Barcode..."
-              className="w-full bg-slate-950 text-slate-100 pl-9 pr-8 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Offline Mode Alert Strip */}
-          {!isEffectiveOnline && (
-            <div className="p-2 rounded-xl bg-amber-950/60 border border-amber-800/70 flex items-center justify-between gap-3 text-xs text-amber-200">
-              <div className="flex items-center gap-2">
-                <WifiOff className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-                <span>
-                  <strong>Offline Mode:</strong> Invoices queue in local storage and sync automatically.
-                </span>
-              </div>
-              <button
-                id="pos-open-sync-manager-btn"
-                onClick={() => setShowSyncManager(true)}
-                className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold shrink-0 transition"
-              >
-                Queue ({offlineQueue.length})
-              </button>
-            </div>
-          )}
-
-          {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-0.5 shrink-0 whitespace-nowrap">
-            {/* Barcode Laser Input */}
-            <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-700 shrink-0">
-              <Barcode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <div className="p-1.5 sm:p-2.5 border-b border-slate-800 bg-slate-900/95 space-y-1.5 sm:space-y-2 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-1.5 sm:items-center w-full">
+            {/* Dedicated Search Input Bar - Always 100% visible and wide */}
+            <div className="relative flex-1 min-w-[200px] w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
-                id="barcode-scanner-input"
+                id="pos-product-search-input"
                 type="text"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && barcodeInput.trim()) {
-                    handleBarcodeScan(barcodeInput.trim());
-                  }
-                }}
-                placeholder="Barcode Gun Input..."
-                className="bg-transparent text-xs text-slate-200 w-28 sm:w-32 focus:outline-none placeholder:text-slate-500 font-mono"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Product by Name, SKU, or Barcode..."
+                className="w-full bg-slate-950 text-slate-100 pl-9 pr-8 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm border border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium"
               />
-              <button
-                id="simulate-barcode-btn"
-                onClick={() => {
-                  const randomProd = products[Math.floor(Math.random() * products.length)];
-                  if (randomProd) handleBarcodeScan(randomProd.barcode || randomProd.sku);
-                }}
-                className="px-1.5 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold transition shrink-0 whitespace-nowrap"
-                title="Test hardware scanner"
-              >
-                Scan Demo
-              </button>
-            </div>
-
-            {/* Cashier Shift Drawer & Quick Actions Group */}
-            <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-              {/* Immediate Sale Return quick button */}
-              <button
-                id="pos-sale-return-top-btn"
-                onClick={() => setShowSaleReturnModal(true)}
-                className="px-2.5 py-1 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 hover:border-rose-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
-                title="Immediate Sale Return & Refund (F7)"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span className="text-[11px]">Sale Return</span>
-              </button>
-
-              {/* Shift status button */}
-              <button
-                id="pos-register-shift-quick-btn"
-                onClick={() => setShowRegisterModal(true)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition shrink-0 whitespace-nowrap ${
-                  cashRegister.status === 'open'
-                    ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/60'
-                    : 'bg-rose-950/70 border-rose-700/60 text-rose-300 hover:bg-rose-900/60'
-                }`}
-                title="Register shift and cash float drawer"
-              >
-                <div
-                  className={`w-2 h-2 rounded-full shrink-0 ${
-                    cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-                  }`}
-                />
-                <span className="text-[11px] font-mono">
-                  {cashRegister.status === 'open'
-                    ? `Drawer: ${settings.currencySymbol}${(
-                        cashRegister.openingCash +
-                        cashRegister.cashSales -
-                        cashRegister.totalExpenses
-                      ).toFixed(2)}`
-                    : 'Shift Closed'}
-                </span>
-              </button>
-
-              {/* Calculator Quick Button */}
-              <button
-                id="pos-calculator-top-btn"
-                onClick={() => setShowCalculatorModal(true)}
-                className="px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 hover:text-indigo-200 border border-indigo-500/40 hover:border-indigo-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
-                title="POS Calculator & Change/Discount Tool (F9)"
-              >
-                <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden md:inline text-[11px]">Calculator</span>
-              </button>
-
-              {/* Standby */}
-              <button
-                id="pos-standby-screen-btn"
-                onClick={() => setIsStandbyMode(true)}
-                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 rounded-xl text-xs border border-slate-700 transition shrink-0"
-                title="Idle / Lock Register"
-              >
-                <Coffee className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Fullscreen */}
-              <button
-                id="pos-fullscreen-toggle-btn"
-                onClick={toggleFullscreen}
-                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition shrink-0"
-                title="Toggle Fullscreen"
-              >
-                {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* Customer Facing Display Screen Button */}
-              {settings.showCustomerDisplayScreen && (
+              {searchQuery && (
                 <button
-                  id="pos-customer-display-btn"
-                  onClick={() => setShowCustomerDisplayModal(true)}
-                  className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition shrink-0 whitespace-nowrap"
-                  title="Customer Facing Secondary Screen"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1"
                 >
-                  <Monitor className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  <span className="hidden xl:inline text-[11px]">Customer Display</span>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
+            </div>
 
-              {/* Network sync badge */}
-              <NetworkSyncStatusBadge
-                onClick={() => setShowSyncManager(true)}
-                variant="compact"
-              />
+            {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-0.5 shrink-0 whitespace-nowrap flex-1 sm:max-w-[65%]">
+              {/* Barcode Laser Input */}
+              <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-700 shrink-0">
+                <Barcode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <input
+                  id="barcode-scanner-input"
+                  type="text"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && barcodeInput.trim()) {
+                      handleBarcodeScan(barcodeInput.trim());
+                    }
+                  }}
+                  placeholder="Barcode Gun Input..."
+                  className="bg-transparent text-xs text-slate-200 w-28 sm:w-32 focus:outline-none placeholder:text-slate-500 font-mono"
+                />
+                <button
+                  id="simulate-barcode-btn"
+                  onClick={() => {
+                    const randomProd = products[Math.floor(Math.random() * products.length)];
+                    if (randomProd) handleBarcodeScan(randomProd.barcode || randomProd.sku);
+                  }}
+                  className="px-1.5 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold transition shrink-0 whitespace-nowrap"
+                  title="Test hardware scanner"
+                >
+                  Scan Demo
+                </button>
+              </div>
 
-              {/* Exit POS */}
-              <button
-                id="pos-exit-terminal-btn"
-                onClick={handleRequestExit}
-                className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 flex items-center gap-1.5 transition shadow-sm shrink-0 whitespace-nowrap"
-                title="Exit POS Terminal (Esc)"
-              >
-                <LogOut className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span className="hidden sm:inline">Exit</span>
-              </button>
+              {/* Cashier Shift Drawer & Quick Actions Group */}
+              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                {/* Immediate Sale Return quick button */}
+                <button
+                  id="pos-sale-return-top-btn"
+                  onClick={() => setShowSaleReturnModal(true)}
+                  className="px-2.5 py-1 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 hover:border-rose-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
+                  title="Immediate Sale Return & Refund (F7)"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span className="text-[11px]">Sale Return</span>
+                </button>
+
+                {/* Shift status button */}
+                <button
+                  id="pos-register-shift-quick-btn"
+                  onClick={() => setShowRegisterModal(true)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition shrink-0 whitespace-nowrap ${
+                    cashRegister.status === 'open'
+                      ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/60'
+                      : 'bg-rose-950/70 border-rose-700/60 text-rose-300 hover:bg-rose-900/60'
+                  }`}
+                  title="Register shift and cash float drawer"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      cashRegister.status === 'open' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                    }`}
+                  />
+                  <span className="text-[11px] font-mono">
+                    {cashRegister.status === 'open'
+                      ? `Drawer: ${settings.currencySymbol}${(
+                          cashRegister.openingCash +
+                          cashRegister.cashSales -
+                          cashRegister.totalExpenses
+                        ).toFixed(2)}`
+                      : 'Shift Closed'}
+                  </span>
+                </button>
+
+                {/* Calculator Quick Button */}
+                <button
+                  id="pos-calculator-top-btn"
+                  onClick={() => setShowCalculatorModal(true)}
+                  className="px-2 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 hover:text-indigo-200 border border-indigo-500/40 hover:border-indigo-500/60 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
+                  title="POS Calculator & Change/Discount Tool (F9)"
+                >
+                  <Calculator className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="hidden md:inline text-[11px]">Calculator</span>
+                </button>
+
+                {/* Standby */}
+                <button
+                  id="pos-standby-screen-btn"
+                  onClick={() => setIsStandbyMode(true)}
+                  className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 rounded-xl text-xs border border-slate-700 transition shrink-0"
+                  title="Idle / Lock Register"
+                >
+                  <Coffee className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Fullscreen */}
+                <button
+                  id="pos-fullscreen-toggle-btn"
+                  onClick={toggleFullscreen}
+                  className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition shrink-0"
+                  title="Toggle Fullscreen"
+                >
+                  {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+                </button>
+
+                {/* Customer Facing Display Screen Button */}
+                {settings.showCustomerDisplayScreen && (
+                  <button
+                    id="pos-customer-display-btn"
+                    onClick={() => setShowCustomerDisplayModal(true)}
+                    className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition shrink-0 whitespace-nowrap"
+                    title="Customer Facing Secondary Screen"
+                  >
+                    <Monitor className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="hidden xl:inline text-[11px]">Customer Display</span>
+                  </button>
+                )}
+
+                {/* Network sync badge */}
+                <NetworkSyncStatusBadge
+                  onClick={() => setShowSyncManager(true)}
+                  variant="compact"
+                />
+
+                {/* Exit POS */}
+                <button
+                  id="pos-exit-terminal-btn"
+                  onClick={handleRequestExit}
+                  className="px-2 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/60 flex items-center gap-1.5 transition shadow-sm shrink-0 whitespace-nowrap"
+                  title="Exit POS Terminal (Esc)"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span className="hidden sm:inline">Exit</span>
+                </button>
+              </div>
             </div>
           </div>
 
