@@ -1088,8 +1088,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
       </div>
 
-      {/* RIGHT: Active Cart & Billing Terminal - Docked viewport-constrained panel */}
-      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-auto flex-1 lg:h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl overflow-hidden ${
+      {/* RIGHT: Active Cart & Billing Terminal - Docked on portrait, unified single-scroll on landscape */}
+      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-auto flex-1 lg:h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl overflow-hidden landscape:overflow-y-auto landscape:h-full lg:overflow-hidden lg:h-full scroll-smooth ${
         mobileViewTab === 'catalog' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Cart Top: Customer selector & Header */}
@@ -1216,7 +1216,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-2 min-h-0 custom-scrollbar overscroll-contain flex flex-col shrink-0">
+        <div className="flex-1 overflow-y-auto landscape:overflow-visible p-2.5 sm:p-3 space-y-2 min-h-0 landscape:min-h-fit landscape:flex-none custom-scrollbar overscroll-contain flex flex-col shrink-0">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
               <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center mb-3 text-slate-600 shadow-inner">
@@ -1327,9 +1327,9 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Bottom: Calculations & Checkout Bar */}
-        <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 landscape:p-1.5 landscape:space-y-1 lg:max-h-[45vh] max-h-none overflow-visible custom-scrollbar">
+        <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 lg:max-h-[45vh] max-h-none overflow-visible custom-scrollbar">
           {/* Subtotals & Taxes Breakdown */}
-          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 landscape:hidden">
+          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div className="flex justify-between items-center">
               <span>Items Subtotal:</span>
               <span className="font-bold text-slate-200 font-mono">
@@ -1378,20 +1378,20 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Grand Total Box */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-900/90 p-2.5 sm:p-3 rounded-2xl border border-slate-700 flex items-center justify-between shadow-inner landscape:py-1 landscape:rounded-xl">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-900/90 p-2.5 sm:p-3 rounded-2xl border border-slate-700 flex items-center justify-between shadow-inner">
             <div>
-              <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider landscape:text-[9px]">
+              <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Total Payable
               </div>
-              <div className="text-[10px] text-slate-500 landscape:hidden">Tax & Discount Incl.</div>
+              <div className="text-[10px] text-slate-500">Tax & Discount Incl.</div>
             </div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight landscape:text-sm">
+            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight">
               {formatCurrency(grandTotal, settings)}
             </div>
           </div>
 
           {/* Action Button Grid */}
-          <div className="grid grid-cols-4 gap-1.5 landscape:hidden">
+          <div className="grid grid-cols-4 gap-1.5">
             {!settings.disableDraft && (
               <button
                 id="pos-hold-sale-btn"
@@ -1445,17 +1445,17 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Checkout / Pay Triggers */}
-          <div className="flex gap-2 pb-2 sm:pb-1 pb-[env(safe-area-inset-bottom,20px)] landscape:pb-0.5">
+          <div className="flex gap-2 pb-2 sm:pb-1 pb-[env(safe-area-inset-bottom,20px)]">
             {!settings.disableExpressCheckout && (
               <button
                 id="pos-express-cash-btn"
                 disabled={cart.length === 0}
                 onClick={handleExpressCashCheckout}
-                className="flex-1 py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed landscape:py-1.5 landscape:rounded-xl"
+                className="flex-1 py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-1.5 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Complete cash sale immediately with exact total"
               >
-                <Banknote className="w-4 h-4 landscape:w-3.5 landscape:h-3.5" />
-                <span className="landscape:text-[10px]">CASH</span>
+                <Banknote className="w-4 h-4" />
+                <span>EXPRESS CASH</span>
               </button>
             )}
 
@@ -1463,12 +1463,12 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               id="pos-checkout-btn"
               disabled={cart.length === 0}
               onClick={onOpenPaymentModal}
-              className={`py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed landscape:py-1.5 landscape:rounded-xl ${
+              className={`py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 !settings.disableExpressCheckout ? 'flex-[1.5]' : 'w-full'
               }`}
             >
-              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 landscape:w-3.5 landscape:h-3.5" />
-              <span className="landscape:text-[10px]">PAY — {formatCurrency(grandTotal, settings)}</span>
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>PAY / CHARGE — {formatCurrency(grandTotal, settings)}</span>
             </button>
           </div>
 
