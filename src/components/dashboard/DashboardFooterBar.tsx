@@ -96,7 +96,7 @@ export const DashboardFooterBar: React.FC<DashboardFooterBarProps> = () => {
   return (
     <>
       {/* Right-Hand Side Dashboard Footer Bar */}
-      <footer className={`mt-8 pt-4 pb-2 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs transition-colors ${
+      <footer className={`hidden md:flex mt-8 pt-4 pb-2 border-t flex-col sm:flex-row items-center justify-between gap-4 text-xs transition-colors ${
         isDark ? 'border-slate-800/80' : 'border-slate-200'
       }`}>
         {/* Left Side: System Health Status */}

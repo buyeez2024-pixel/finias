@@ -734,11 +734,7 @@ const MainAppContent: React.FC = () => {
           )}
 
           {activeTab !== 'pos' && inventorySubTab !== 'add_product' && inventorySubTab !== 'edit_product' && (
-            <div className={`max-w-7xl w-full mx-auto px-6 pb-2 mt-auto ${
-              ['sales', 'list_pos_sale', 'list_drafts', 'list_quotations', 'sale_returns'].includes(activeTab)
-                ? 'hidden md:block'
-                : ''
-            }`}>
+            <div className="hidden md:block max-w-7xl w-full mx-auto px-6 pb-2 mt-auto">
               <DashboardFooterBar />
             </div>
           )}
