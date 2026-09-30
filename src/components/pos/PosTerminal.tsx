@@ -835,7 +835,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           )}
 
           {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-1 shrink-0 whitespace-nowrap">
             {/* Barcode Laser Input */}
             <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-700 flex-1 min-w-[170px] sm:flex-initial">
               <Barcode className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -970,7 +970,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
 
           {/* Category Filter Pills */}
           {(settings.showCategoryInPos !== false) && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin touch-pan-x whitespace-nowrap">
               {categories.map((cat) => (
                 <button
                   key={cat}
