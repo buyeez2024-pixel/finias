@@ -398,7 +398,7 @@ const MainAppContent: React.FC = () => {
         {activeTab !== 'pos' && <Sidebar />}
 
         {/* Tab View Container */}
-        <main className={`flex-1 ${activeTab === 'pos' ? 'overflow-hidden p-0' : 'overflow-x-hidden overflow-y-auto scroll-smooth overscroll-y-contain pb-16 lg:pb-2'} ${isLight ? 'bg-slate-50' : 'bg-slate-950/60'} flex flex-col min-h-0 min-w-0 transition-colors duration-300`}>
+        <main className={`flex-1 ${activeTab === 'pos' ? 'overflow-hidden p-0' : 'overflow-x-hidden overflow-y-auto scroll-smooth overscroll-y-contain pb-20 lg:pb-4'} ${isLight ? 'bg-slate-50' : 'bg-slate-950/60'} flex flex-col min-h-0 min-w-0 transition-colors duration-300`}>
           {!hasModuleAccess(activeTab) ? (
             <AccessDeniedGuard
               moduleName={activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
@@ -734,7 +734,11 @@ const MainAppContent: React.FC = () => {
           )}
 
           {activeTab !== 'pos' && inventorySubTab !== 'add_product' && inventorySubTab !== 'edit_product' && (
-            <div className="max-w-7xl w-full mx-auto px-6 pb-2 mt-auto">
+            <div className={`max-w-7xl w-full mx-auto px-6 pb-2 mt-auto ${
+              ['sales', 'list_pos_sale', 'list_drafts', 'list_quotations', 'sale_returns'].includes(activeTab)
+                ? 'hidden md:block'
+                : ''
+            }`}>
               <DashboardFooterBar />
             </div>
           )}
