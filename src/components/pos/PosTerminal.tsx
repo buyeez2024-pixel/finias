@@ -1089,7 +1089,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       </div>
 
       {/* RIGHT: Active Cart & Billing Terminal */}
-      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl ${
+      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col flex-1 lg:h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl ${
         mobileViewTab === 'catalog' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Cart Top: Customer selector & Header */}
@@ -1329,7 +1329,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         {/* Cart Bottom: Calculations & Checkout Bar */}
         <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 max-h-[45vh] landscape:max-h-[140px] overflow-y-auto custom-scrollbar">
           {/* Subtotals & Taxes Breakdown */}
-          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 landscape:hidden">
             <div className="flex justify-between items-center">
               <span>Items Subtotal:</span>
               <span className="font-bold text-slate-200 font-mono">
@@ -1391,7 +1391,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Action Button Grid */}
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5 landscape:hidden">
             {!settings.disableDraft && (
               <button
                 id="pos-hold-sale-btn"
