@@ -1088,8 +1088,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
       </div>
 
-      {/* RIGHT: Active Cart & Billing Terminal */}
-      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col flex-1 lg:h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl ${
+      {/* RIGHT: Active Cart & Billing Terminal - Entire panel scrollable on mobile, list-scrollable on desktop */}
+      <div className={`w-full lg:w-[410px] xl:w-[450px] bg-slate-900 flex flex-col h-full lg:h-full border-t lg:border-t-0 lg:border-l border-slate-800 shrink-0 min-h-0 relative shadow-2xl overflow-y-auto lg:overflow-hidden scroll-smooth ${
         mobileViewTab === 'catalog' ? 'hidden lg:flex' : 'flex'
       }`}>
         {/* Cart Top: Customer selector & Header */}
@@ -1216,7 +1216,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 p-2.5 sm:p-3 overflow-y-auto space-y-2 min-h-0 custom-scrollbar overscroll-contain">
+        <div className="flex-1 lg:overflow-y-auto overflow-visible p-2.5 sm:p-3 space-y-2 lg:min-h-0 min-h-fit custom-scrollbar overscroll-contain flex flex-col shrink-0">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
               <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center mb-3 text-slate-600 shadow-inner">
@@ -1327,9 +1327,9 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
 
         {/* Cart Bottom: Calculations & Checkout Bar */}
-        <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 max-h-[45vh] landscape:max-h-[140px] overflow-y-auto custom-scrollbar">
+        <div className="p-2 sm:p-3.5 pb-4 sm:pb-3.5 bg-slate-950 border-t border-slate-800 shrink-0 space-y-2 sm:space-y-2.5 lg:max-h-[45vh] max-h-none lg:overflow-y-auto overflow-visible custom-scrollbar">
           {/* Subtotals & Taxes Breakdown */}
-          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 landscape:hidden">
+          <div className="space-y-1.5 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
             <div className="flex justify-between items-center">
               <span>Items Subtotal:</span>
               <span className="font-bold text-slate-200 font-mono">
@@ -1391,7 +1391,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           </div>
 
           {/* Action Button Grid */}
-          <div className="grid grid-cols-4 gap-1.5 landscape:hidden">
+          <div className="grid grid-cols-4 gap-1.5">
             {!settings.disableDraft && (
               <button
                 id="pos-hold-sale-btn"
