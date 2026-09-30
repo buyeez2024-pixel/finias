@@ -704,9 +704,9 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 pb-24">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 pb-24 overflow-x-hidden">
       {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveTab('sales')}
@@ -1166,7 +1166,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         )}
 
         {/* Line Items Table */}
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x rounded-xl border border-slate-800">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>

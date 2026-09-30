@@ -95,9 +95,9 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
   );
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -114,7 +114,7 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
           <button
             id="sales-add-sale-return-btn"
             onClick={onOpenNewSaleReturn}
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-2 transition"
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 flex items-center gap-2 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add Sale Return</span>
@@ -164,7 +164,7 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
       {/* Unified Attached Container for Filters & Sale Return Table (Zero Gap) */}
       <div className="shadow-sm">
         {/* Filter Bar (Attached to Table Top) */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 p-3.5 rounded-t-2xl border border-b-0 border-slate-800">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 p-3.5 rounded-t-2xl border border-b-0 border-slate-800 flex-wrap">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -176,7 +176,7 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
           {/* Page size filter (Light Mode Only) */}
           {isLight && (
             <select
@@ -215,7 +215,7 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
 
       {/* Sales Invoices Table (Attached Directly with Zero Gap) */}
       <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>

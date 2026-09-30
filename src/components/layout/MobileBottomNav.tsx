@@ -21,8 +21,10 @@ export const MobileBottomNav: React.FC = () => {
   const isLight = settings?.themeMode === 'light';
   const totalCartItems = (cart || []).reduce((a: number, b: any) => a + (Number(b?.quantity) || 0), 0);
 
-  // If in active fullscreen POS checkout or dialogs, hide or keep sleek
-  const isPos = activeTab === 'pos';
+  // If in active fullscreen POS checkout or dialogs, hide MobileBottomNav so it never underlaps POS buttons and Exit button
+  if (activeTab === 'pos') {
+    return null;
+  }
 
   return (
     <nav

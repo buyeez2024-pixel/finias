@@ -38,6 +38,8 @@ interface ParsedPurchaseRow {
   // Mandatory Fields
   supplierName: string;
   date: string;
+  productName: string;
+  productSku: string;
   productIdentifier: string;
   quantity: number;
   unitCostPrice: number;
@@ -114,7 +116,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
     const headers = [
       'Supplier Name*',
       'Purchase Date* (DD-MM-YYYY)',
-      'Product SKU or Name*',
+      'Product Name*',
+      'Product SKU',
       'Quantity*',
       'Unit Cost Price*',
       'PO / Invoice No',
@@ -138,6 +141,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         'Sri Vijaya Lakshmi Traders',
         todayDDMMYYYY,
         'Wireless Bluetooth Headphones',
+        'SKU-WBH-001',
         '25',
         '45.00',
         'PO-2026-8801',
@@ -156,6 +160,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         'EcoRoast Distributors',
         todayDDMMYYYY,
         'Organic Coffee Beans (500g)',
+        'SKU-OCB-500',
         '50',
         '8.50',
         'PO-2026-8802',
@@ -174,6 +179,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         'Apex Global Supplies',
         todayDDMMYYYY,
         'Ergonomic Desk Chair',
+        '', // Leaving SKU blank so user sees auto SKU allocation when left empty
         '15',
         '120.00',
         'PO-2026-8803',
@@ -186,7 +192,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         'partial',
         '1000.00',
         'credit_card',
-        'Advance shipment from Apex Global Supplies',
+        'Advance shipment from Apex Global Supplies (SKU auto-allocated)',
       ],
     ];
 
@@ -201,7 +207,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
     worksheet['!cols'] = [
       { wch: 30 }, // Supplier Name*
       { wch: 28 }, // Purchase Date* (DD-MM-YYYY)
-      { wch: 32 }, // Product SKU or Name*
+      { wch: 32 }, // Product Name*
+      { wch: 20 }, // Product SKU
       { wch: 12 }, // Quantity*
       { wch: 16 }, // Unit Cost Price*
       { wch: 18 }, // PO / Invoice No
@@ -273,10 +280,11 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         return '';
       };
 
-      // 1. Mandatory Fields
+      // 1. Mandatory & Product Fields
       const supplierName = findVal('Supplier Name', 'Supplier Name*', 'Supplier', 'Vendor Name', 'Vendor Name*', 'Vendor', 'Party Name');
       const dateRaw = findVal('Purchase Date (DD-MM-YYYY)', 'Purchase Date* (DD-MM-YYYY)', 'Purchase Date (YYYY-MM-DD)', 'Purchase Date* (YYYY-MM-DD)', 'Purchase Date', 'Purchase Date*', 'Date', 'Order Date', 'PO Date');
-      const productIdentifier = findVal('Product SKU or Name', 'Product SKU or Name*', 'Product Name', 'SKU', 'Item Name', 'Item', 'Product');
+      const productName = findVal('Product Name*', 'Product Name', 'Item Name', 'Item', 'Product SKU or Name*', 'Product SKU or Name', 'Product');
+      const productSku = findVal('Product SKU', 'Product SKU (Optional)', 'SKU', 'Item SKU', 'Barcode');
       const qtyStr = findVal('Quantity', 'Quantity*', 'Qty', 'Units', 'Quantity Ordered');
       const costStr = findVal('Unit Cost Price', 'Unit Cost Price*', 'Unit Cost', 'Cost Price', 'Purchase Price', 'Unit Price', 'Cost');
 
@@ -330,10 +338,14 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         }
       }
 
-      // Validate Product
-      if (!productIdentifier) {
-        errors.push('Product SKU or Name is required (Mandatory)');
+      // Validate Product Name (Mandatory)
+      if (!productName) {
+        errors.push('Product Name is required (Mandatory)');
       }
+
+      const productIdentifier = productName
+        ? (productSku ? `${productName} (SKU: ${productSku})` : productName)
+        : productSku || '';
 
       // Validate Quantity
       const quantity = parseFloat(qtyStr);
@@ -403,15 +415,27 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         warnings.push(`New supplier "${supplierName}" will be auto-created`);
       }
 
-      // Match Product
-      const matchedProduct = products?.find(
-        (p) =>
-          p.sku?.toLowerCase() === productIdentifier.toLowerCase() ||
-          p.barcode?.toLowerCase() === productIdentifier.toLowerCase() ||
-          p.name.toLowerCase() === productIdentifier.toLowerCase()
-      );
-      if (!matchedProduct && productIdentifier) {
-        warnings.push(`New product "${productIdentifier}" will be auto-created in inventory`);
+      // Match Product (First by SKU if provided, then by Product Name)
+      let matchedProduct = undefined;
+      if (productSku) {
+        matchedProduct = products?.find(
+          (p) =>
+            p.sku?.toLowerCase() === productSku.toLowerCase() ||
+            p.barcode?.toLowerCase() === productSku.toLowerCase()
+        );
+      }
+      if (!matchedProduct && productName) {
+        matchedProduct = products?.find(
+          (p) => p.name.toLowerCase() === productName.toLowerCase()
+        );
+      }
+
+      if (!matchedProduct && productName) {
+        if (productSku) {
+          warnings.push(`New product "${productName}" with SKU "${productSku}" will be auto-created in inventory`);
+        } else {
+          warnings.push(`New product "${productName}" will be auto-created with an auto-allocated SKU`);
+        }
       }
 
       // Match Location
@@ -435,6 +459,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         selected: isValid,
         supplierName,
         date: cleanDate,
+        productName,
+        productSku,
         productIdentifier,
         quantity: isNaN(quantity) ? 0 : quantity,
         unitCostPrice: isNaN(unitCostPrice) ? 0 : unitCostPrice,
@@ -588,17 +614,28 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       const handledNewProductKeys = new Set<string>();
 
       selectedRows.forEach((r) => {
-        const key = r.productIdentifier.toLowerCase();
-        if (!productMap.has(key) && !handledNewProductKeys.has(key)) {
-          handledNewProductKeys.add(key);
-          const generatedSku = `SKU-IMP-${Math.floor(10000 + Math.random() * 90000)}`;
+        const targetName = (r.productName || r.productIdentifier || '').trim();
+        const targetSku = r.productSku ? r.productSku.trim() : `SKU-IMP-${Math.floor(10000 + Math.random() * 90000)}`;
+        const keySku = targetSku.toLowerCase();
+        const keyName = targetName.toLowerCase();
+        const keyId = (r.productIdentifier || '').toLowerCase();
+
+        if (
+          !productMap.has(keySku) &&
+          !productMap.has(keyName) &&
+          !productMap.has(keyId) &&
+          !handledNewProductKeys.has(keySku) &&
+          !handledNewProductKeys.has(keyName)
+        ) {
+          handledNewProductKeys.add(keySku);
+          handledNewProductKeys.add(keyName);
           const cost = r.unitCostPrice || 10;
           const sellingPrice = Math.round(cost * 1.35 * 100) / 100;
 
           const itemLot = r.lotNumber ? r.lotNumber.trim() : undefined;
           newProductsToCreate.push({
-            name: r.productIdentifier,
-            sku: generatedSku,
+            name: targetName,
+            sku: targetSku,
             barcode: `${Date.now()}${Math.floor(Math.random() * 100)}`,
             category: 'General',
             unit: 'Pcs',
@@ -714,10 +751,17 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           ? `SUP_${suppId}__PO_${cleanInvoice}`
           : `ROW_${suppId}_${idx}_${Date.now()}`;
 
-        const prod = productMap.get(row.productIdentifier.toLowerCase());
+        const prodKeySku = row.productSku ? row.productSku.trim().toLowerCase() : '';
+        const prodKeyName = row.productName ? row.productName.trim().toLowerCase() : '';
+        const prodKeyId = row.productIdentifier ? row.productIdentifier.trim().toLowerCase() : '';
+
+        const prod = (prodKeySku ? productMap.get(prodKeySku) : undefined) ||
+                     (prodKeyName ? productMap.get(prodKeyName) : undefined) ||
+                     (prodKeyId ? productMap.get(prodKeyId) : undefined);
+
         const prodId = prod?.id || `prod_imp_${idx}`;
-        const prodName = prod?.name || row.productIdentifier;
-        const prodSku = prod?.sku || `SKU-${idx}`;
+        const prodName = prod?.name || row.productName || row.productIdentifier;
+        const prodSku = prod?.sku || row.productSku || `SKU-${idx}`;
         const prodUnit = prod?.unit || 'Pcs';
 
         const itemSubtotal = row.quantity * row.unitCostPrice;
@@ -961,18 +1005,32 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
                 <div className="text-[10px] text-slate-500 font-mono">Example: "26-09-2026"</div>
               </div>
 
-              {/* Mandatory 3: Product SKU or Name */}
+              {/* Mandatory 3: Product Name */}
               <div className="p-3 rounded-xl bg-slate-950/80 border border-rose-900/40 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white">Product SKU or Name*</span>
+                  <span className="font-bold text-white">Product Name*</span>
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
                     REQUIRED
                   </span>
                 </div>
                 <p className="text-slate-400 text-[11px]">
-                  Product SKU, barcode, or exact item title. Auto-links existing catalog item or auto-creates new inventory product.
+                  Exact title or item description. Auto-links existing catalog item or creates new inventory product.
                 </p>
-                <div className="text-[10px] text-slate-500 font-mono">Example: "SKU-BTH-01" or "Wireless Headphones"</div>
+                <div className="text-[10px] text-slate-500 font-mono">Example: "Wireless Headphones"</div>
+              </div>
+
+              {/* Optional: Product SKU */}
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200">Product SKU</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                    OPTIONAL
+                  </span>
+                </div>
+                <p className="text-slate-400 text-[11px]">
+                  Custom item SKU code. If filled, it will be used as product SKU; if left empty, an SKU is automatically allocated.
+                </p>
+                <div className="text-[10px] text-slate-500 font-mono">Example: "SKU-BTH-01" or empty</div>
               </div>
 
               {/* Mandatory 4: Quantity */}
@@ -1373,7 +1431,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
                   <th className="p-3">PO Invoice No</th>
                   <th className="p-3">Purchase Date* (DD-MM-YYYY)</th>
                   <th className="p-3">Supplier Name*</th>
-                  <th className="p-3">Product Name or SKU*</th>
+                  <th className="p-3">Product Name*</th>
+                  <th className="p-3">Product SKU</th>
                   <th className="p-3 text-right">Qty*</th>
                   <th className="p-3 text-right">Unit Cost*</th>
                   <th className="p-3 text-right">Total</th>
@@ -1450,12 +1509,22 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
                     </td>
 
                     <td className="p-3">
-                      <div className="font-semibold text-white">{row.productIdentifier || <span className="text-rose-400">Missing</span>}</div>
+                      <div className="font-semibold text-white">{row.productName || row.productIdentifier || <span className="text-rose-400">Missing</span>}</div>
                       {row.matchedProductId ? (
                         <span className="text-[10px] text-emerald-400">Matched: {row.matchedProductName}</span>
-                      ) : row.productIdentifier ? (
+                      ) : (row.productName || row.productIdentifier) ? (
                         <span className="text-[10px] text-amber-400">New Product</span>
                       ) : null}
+                    </td>
+
+                    <td className="p-3 font-mono text-[11px]">
+                      {row.productSku ? (
+                        <span className="text-indigo-300 font-bold bg-indigo-950/60 border border-indigo-800/60 px-1.5 py-0.5 rounded">
+                          {row.productSku}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 italic text-[10px]">(Auto-allocated)</span>
+                      )}
                     </td>
 
                     <td className="p-3 text-right font-mono font-bold text-white">
