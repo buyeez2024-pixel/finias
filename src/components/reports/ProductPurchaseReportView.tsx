@@ -606,9 +606,9 @@ export const ProductPurchaseReportView: React.FC = () => {
   };
 
   return (
-    <div id="product-purchase-report-container" className="p-4 sm:p-6 space-y-6 w-full max-w-7xl mx-auto pb-12">
+    <div id="product-purchase-report-container" className="p-3 sm:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-6 w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Top Header & Quick Action Ribbon */}
-      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border transition-colors ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800 shadow-xl'}`}>
+      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl border transition-colors w-full max-w-full min-w-0 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800 shadow-xl'}`}>
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl border border-indigo-500/20">
@@ -687,7 +687,7 @@ export const ProductPurchaseReportView: React.FC = () => {
       </div>
 
       {/* Primary KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-full min-w-0">
         {/* KPI 1: Total Purchase Qty */}
         <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
           <div className="text-xs font-semibold text-slate-400 flex items-center justify-between">
@@ -758,7 +758,7 @@ export const ProductPurchaseReportView: React.FC = () => {
       </div>
 
       {/* Advanced Filters Panel */}
-      <div className={`rounded-2xl border p-5 space-y-4 transition-colors ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800 shadow-md'}`}>
+      <div className={`rounded-2xl border p-4 sm:p-5 space-y-4 transition-colors w-full max-w-full min-w-0 overflow-hidden ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800 shadow-md'}`}>
         <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b pb-3 ${isLight ? 'border-slate-100' : 'border-slate-800'}`}>
           <div className={`flex items-center gap-2 font-bold text-xs ${isLight ? 'text-slate-800' : 'text-white'}`}>
             <Filter className="w-4 h-4 text-indigo-500" />
@@ -992,16 +992,18 @@ export const ProductPurchaseReportView: React.FC = () => {
       </div>
 
       {/* Main Table & Perspective Views */}
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4 shadow-xl">
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 sm:p-5 space-y-4 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
         {/* Sub Tabs Selector & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3 w-full min-w-0">
+          {/* Scrollable Tabs on Mobile */}
+          <div className="overflow-x-auto scrollbar-none flex items-center gap-2 w-full sm:w-auto max-w-full min-w-0 pb-1 -mx-0.5 px-0.5" style={{ WebkitOverflowScrolling: 'touch' }}>
             <button
+              type="button"
               onClick={() => {
                 setActiveSubTab('ledger');
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeSubTab === 'ledger'
                   ? isLight
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
@@ -1016,11 +1018,12 @@ export const ProductPurchaseReportView: React.FC = () => {
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setActiveSubTab('by_product');
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeSubTab === 'by_product'
                   ? isLight
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
@@ -1035,11 +1038,12 @@ export const ProductPurchaseReportView: React.FC = () => {
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setActiveSubTab('by_supplier');
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeSubTab === 'by_supplier'
                   ? isLight
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
@@ -1054,8 +1058,8 @@ export const ProductPurchaseReportView: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative min-w-[200px]">
+          <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+            <div className="relative w-full sm:w-64 min-w-0">
               <input
                 type="text"
                 placeholder="Search in table..."
@@ -1064,9 +1068,9 @@ export const ProductPurchaseReportView: React.FC = () => {
                   setTableSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500 transition"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2 sm:py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500 transition"
               />
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" />
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 sm:top-2" />
             </div>
           </div>
         </div>
@@ -1165,8 +1169,8 @@ export const ProductPurchaseReportView: React.FC = () => {
 
         {/* TAB 1: Detailed Line-Item Ledger Table */}
         {activeSubTab === 'ledger' && (
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-thin overscroll-x-contain rounded-xl border border-slate-800 w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[1100px] text-left text-xs">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold select-none">
                 <tr>
                   {colVisibility.product && <th className="p-3">Product Name</th>}
@@ -1280,8 +1284,8 @@ export const ProductPurchaseReportView: React.FC = () => {
 
         {/* TAB 2: Grouped By Product */}
         {activeSubTab === 'by_product' && (
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-thin overscroll-x-contain rounded-xl border border-slate-800 w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[750px] text-left text-xs">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold select-none">
                 <tr>
                   <th className="p-3">Product</th>
@@ -1316,8 +1320,8 @@ export const ProductPurchaseReportView: React.FC = () => {
 
         {/* TAB 3: Grouped By Supplier */}
         {activeSubTab === 'by_supplier' && (
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto scrollbar-thin overscroll-x-contain rounded-xl border border-slate-800 w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[750px] text-left text-xs">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold select-none">
                 <tr>
                   <th className="p-3">Supplier Name</th>

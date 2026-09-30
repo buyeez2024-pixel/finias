@@ -292,7 +292,7 @@ export const ExpensesView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full max-w-full min-w-0 flex-shrink-0">
       {viewMode === 'create' ? (
         <div className="space-y-6">
           {/* Breadcrumbs & Navigation */}
@@ -303,7 +303,7 @@ export const ExpensesView: React.FC = () => {
           </div>
 
           {/* Header section with back button */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 w-full min-w-0">
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-rose-400" />
@@ -323,7 +323,7 @@ export const ExpensesView: React.FC = () => {
           </div>
 
           {/* Creation Form */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-6 w-full min-w-0 max-w-full overflow-hidden">
             <form onSubmit={handleCreateExpense} className="space-y-6 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* LEFT COL: Core Classification */}
@@ -697,11 +697,11 @@ export const ExpensesView: React.FC = () => {
       ) : (
         <>
           {/* Top Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
-            <div>
-              <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-rose-400" />
-                <span>Operating Expenses & Financial Accounts</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 w-full min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-rose-400 shrink-0" />
+                <span className="truncate">Operating Expenses & Financial Accounts</span>
               </h1>
               <p className="text-xs text-slate-400 mt-1">
                 Track store overheads, logistics rent, employee outlays, and multi-currency payment accounts.
@@ -729,19 +729,19 @@ export const ExpensesView: React.FC = () => {
                 }
                 setViewMode('create');
               }}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-950 flex items-center gap-2 transition"
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-950 flex items-center justify-center gap-2 transition w-full sm:w-auto shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Record POS Expense</span>
+              <span>Record POS Expense</span>
             </button>
           </div>
 
           {/* Payment Accounts Balance Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0">
             {paymentAccounts.map((acc) => (
               <div
                 key={acc.id}
-                className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between"
+                className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between min-w-0"
               >
                 <div>
                   <div className="text-[11px] text-slate-400 font-semibold">{acc.name}</div>
@@ -759,41 +759,43 @@ export const ExpensesView: React.FC = () => {
           </div>
 
           {/* Expense History Table */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm space-y-4 p-5">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div>
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm space-y-4 p-4 sm:p-5 w-full max-w-full min-w-0 overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full min-w-0">
+              <div className="min-w-0">
                 <h3 className="font-bold text-white text-sm">Operating Expense Ledger</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Showing categorized expenses with related tax rates, employee assignments and attachment metadata.</p>
               </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <ExportButtons
-                  headers={[
-                    'Reference No',
-                    'Date',
-                    'Category',
-                    'Sub-Category',
-                    'Location',
-                    'Payment Account',
-                    'Amount',
-                    'Payment Method',
-                    'Note',
-                  ]}
-                  keys={[
-                    'referenceNo',
-                    'date',
-                    'category',
-                    'subCategory',
-                    'locationName',
-                    'paymentAccountName',
-                    'amount',
-                    'paymentMethod',
-                    'note',
-                  ]}
-                  data={expensesExportData}
-                  filename="expenses_list"
-                  title="Operating Expense Ledger"
-                  isLight={isLight}
-                />
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto min-w-0">
+                <div className="overflow-x-auto max-w-full pb-1 sm:pb-0">
+                  <ExportButtons
+                    headers={[
+                      'Reference No',
+                      'Date',
+                      'Category',
+                      'Sub-Category',
+                      'Location',
+                      'Payment Account',
+                      'Amount',
+                      'Payment Method',
+                      'Note',
+                    ]}
+                    keys={[
+                      'referenceNo',
+                      'date',
+                      'category',
+                      'subCategory',
+                      'locationName',
+                      'paymentAccountName',
+                      'amount',
+                      'paymentMethod',
+                      'note',
+                    ]}
+                    data={expensesExportData}
+                    filename="expenses_list"
+                    title="Operating Expense Ledger"
+                    isLight={isLight}
+                  />
+                </div>
 
                 {/* Page size filter (Light Mode Only) */}
                 {isLight && (
@@ -808,7 +810,7 @@ export const ExpensesView: React.FC = () => {
                   </select>
                 )}
 
-                <div className="relative w-full sm:w-72">
+                <div className="relative flex-1 sm:flex-none sm:w-72 min-w-[200px]">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
@@ -821,8 +823,9 @@ export const ExpensesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            {/* Smooth Touch-Swipe Horizontal Scroll Container */}
+            <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="w-full min-w-[950px] text-left text-xs">
                 <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-y border-slate-800 font-bold">
                   <tr>
                     <th className="py-3 px-3">Ref No.</th>
@@ -986,7 +989,7 @@ export const ExpensesView: React.FC = () => {
 
             {/* Pagination Footer (Light Mode Only) */}
             {isLight && totalPages > 1 && (
-              <div className="flex items-center justify-between bg-slate-900 px-4 py-3 border-t border-slate-800 rounded-b-2xl shadow-sm">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 px-4 py-3 border-t border-slate-800 rounded-b-2xl shadow-sm">
                 <div className="text-xs text-slate-400 font-medium">
                   Showing <span className="font-bold text-white">{Math.min((currentPage - 1) * pageSize + 1, filteredExpenses.length)}</span> to <span className="font-bold text-white">{Math.min(currentPage * pageSize, filteredExpenses.length)}</span> of <span className="font-bold text-white">{filteredExpenses.length}</span> entries
                 </div>

@@ -210,9 +210,9 @@ export const SalesRepresentativeReportView: React.FC = () => {
   }, [paymentEntries, paymentsPage, paymentsRows]);
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 w-full max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-6 w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-full min-w-0">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
             <UserCheck className="w-6 h-6" />
@@ -235,7 +235,7 @@ export const SalesRepresentativeReportView: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg space-y-4">
+      <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-lg space-y-4 w-full max-w-full min-w-0 overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Location Filter */}
           <div>
@@ -333,7 +333,7 @@ export const SalesRepresentativeReportView: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-full min-w-0">
         <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
@@ -397,63 +397,70 @@ export const SalesRepresentativeReportView: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs Header */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      {/* Tabs Header - Smooth Touch-Swipe Horizontal Scroll for Mobile */}
+      <div
+        className="overflow-x-auto scrollbar-none flex items-center gap-2 border-b border-slate-800 pb-2 w-full max-w-full min-w-0 -mx-0.5 px-0.5"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button
+          type="button"
           onClick={() => setActiveTab('sales')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'sales'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          <Receipt className="w-4 h-4" />
+          <Receipt className="w-4 h-4 shrink-0" />
           <span>Sales Added ({filteredTransactions.length})</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('commission')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'commission'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          <DollarSign className="w-4 h-4" />
+          <DollarSign className="w-4 h-4 shrink-0" />
           <span>Sales With Commission</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('expenses')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'expenses'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          <Wallet className="w-4 h-4" />
+          <Wallet className="w-4 h-4 shrink-0" />
           <span>Expenses ({filteredExpenses.length})</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('payments')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'payments'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          <Calendar className="w-4 h-4" />
+          <Calendar className="w-4 h-4 shrink-0" />
           <span>Payments ({paymentEntries.length})</span>
         </button>
       </div>
 
       {/* Tab Contents */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden w-full max-w-full min-w-0">
         {activeTab === 'sales' && (
           <>
-            <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[850px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Date</th>
@@ -562,8 +569,8 @@ export const SalesRepresentativeReportView: React.FC = () => {
 
         {activeTab === 'commission' && (
           <>
-            <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[800px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Date</th>
@@ -659,8 +666,8 @@ export const SalesRepresentativeReportView: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <>
-            <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[750px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Date</th>
@@ -756,8 +763,8 @@ export const SalesRepresentativeReportView: React.FC = () => {
 
         {activeTab === 'payments' && (
           <>
-            <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[750px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Date</th>
