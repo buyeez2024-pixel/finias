@@ -674,7 +674,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const installType = parsed.installationType || (isFreshFlag ? 'fresh' : (isInstalledFlag ? 'demo' : 'fresh'));
 
         // System update migration: check if stale build or app version is present
-        const isStaleBuild = !parsed.buildNumber || parsed.buildNumber === '2026-09-14-RELEASE' || parsed.buildNumber === '2026.08.30-STABLE';
+        const isStaleBuild =
+          !parsed.buildNumber ||
+          parsed.buildNumber === '2026-09-14-RELEASE' ||
+          parsed.buildNumber === '2026.08.30-STABLE' ||
+          String(parsed.buildNumber).includes('14-9-2026') ||
+          String(parsed.buildNumber).includes('2026-09-14') ||
+          String(parsed.buildNumber).includes('2026.09.14') ||
+          parsed.appVersion === 'v2.5.0' ||
+          parsed.appVersion === 'v2.5.1';
         const mergedReleaseNotes = Array.isArray(parsed.appReleaseNotes) ? [...parsed.appReleaseNotes] : [];
         if (Array.isArray(initialSettings.appReleaseNotes)) {
           initialSettings.appReleaseNotes.forEach((initNote) => {

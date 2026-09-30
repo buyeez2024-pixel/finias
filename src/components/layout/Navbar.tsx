@@ -109,6 +109,23 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 max-w-full">
         {/* Left Branding & Location Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Mobile & Tablet Toggle Menu Button */}
+          <button
+            id="mobile-nav-toggle-btn"
+            type="button"
+            onClick={toggleMobileSidebar}
+            className={`lg:hidden transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer ${
+              isLight
+                ? 'px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
+                : 'p-2 rounded-xl border bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-2xs flex items-center justify-center'
+            }`}
+            title="Open Navigation Menu"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="text-xs font-bold">Menu</span>
+          </button>
+
           <div
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
@@ -232,6 +249,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {cart.reduce((a, b) => a + (Number(b.quantity) || 0), 0)}
                 </span>
               </span>
+            )}
+          </button>
+
+          {/* Theme Mode Toggle (Light & Dark) */}
+          <button
+            id="nav-theme-toggle-btn"
+            type="button"
+            onClick={() => updateSettings({ themeMode: isLight ? 'dark' : 'light' })}
+            className={`p-2 sm:px-2.5 sm:py-2 rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              isLight
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 shadow-amber-100/20'
+                : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border-slate-700'
+            }`}
+            title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            aria-label="Toggle Theme Mode"
+          >
+            {isLight ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="text-xs font-bold hidden xl:inline">Light</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="text-xs font-bold hidden xl:inline">Dark</span>
+              </>
             )}
           </button>
 

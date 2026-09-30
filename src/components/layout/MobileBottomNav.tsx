@@ -149,12 +149,16 @@ export const MobileBottomNav: React.FC = () => {
           type="button"
           id="mobile-bottom-nav-menu"
           onClick={toggleMobileSidebar}
-          className="flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-900 dark:hover:text-white active:scale-95 active:opacity-80"
+          className={`flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95 active:opacity-80 ${
+            isLight
+              ? 'px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold transition'
+              : 'py-1 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
         >
-          <div className="p-1 rounded-lg bg-indigo-600/10 text-indigo-500 dark:text-indigo-400">
+          <div className={`p-0.5 rounded-lg ${isLight ? 'text-indigo-700' : 'bg-indigo-600/10 text-indigo-500 dark:text-indigo-400'}`}>
             <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-[9px] sm:text-[10px] font-medium leading-tight mt-0.5 truncate max-w-full">Menu</span>
+          <span className="text-[9px] sm:text-[10px] font-bold leading-tight mt-0.5 truncate max-w-full">Menu</span>
         </button>
       </div>
     </nav>
