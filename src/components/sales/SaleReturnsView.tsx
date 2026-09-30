@@ -83,10 +83,9 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
   const totalPages = Math.ceil(filteredSales.length / pageSize);
 
   const paginatedSales = useMemo(() => {
-    if (!isLight) return filteredSales;
     const startIndex = (currentPage - 1) * pageSize;
     return filteredSales.slice(startIndex, startIndex + pageSize);
-  }, [filteredSales, isLight, currentPage, pageSize]);
+  }, [filteredSales, currentPage, pageSize]);
 
   const totalSalesRevenue = salesList.reduce((sum, s) => sum + s.totalAmount, 0);
   const totalDueReceivables = salesList.reduce(
@@ -215,8 +214,8 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
 
       {/* Sales Invoices Table (Attached Directly with Zero Gap) */}
       <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto scrollbar-thin touch-pan-x">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x overscroll-x-contain select-none">
+          <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>
                 <th className="py-3 px-3">Date</th>
@@ -333,13 +332,13 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
       </div>
       </div>
 
-      {/* Pagination Footer (Light Mode Only) */}
-      {isLight && totalPages > 1 && (
-        <div className="flex items-center justify-between bg-slate-900 px-4 py-3 border border-slate-800 rounded-2xl shadow-sm">
-          <div className="text-xs text-slate-400 font-medium">
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 px-4 py-3 border border-slate-800 rounded-2xl shadow-sm">
+          <div className="text-xs text-slate-400 font-medium text-center sm:text-left">
             Showing <span className="font-bold text-white">{Math.min((currentPage - 1) * pageSize + 1, filteredSales.length)}</span> to <span className="font-bold text-white">{Math.min(currentPage * pageSize, filteredSales.length)}</span> of <span className="font-bold text-white">{filteredSales.length}</span> entries
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
