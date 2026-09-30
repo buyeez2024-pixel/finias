@@ -352,36 +352,36 @@ export const SecurityGuardView: React.FC = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 pb-12 animate-fadeIn max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-6 animate-fadeIn w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Top Main Banner & Master Switch */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden w-full max-w-full min-w-0">
         <div className="absolute -right-16 -top-16 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-3xl">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative z-10 w-full min-w-0">
+          <div className="space-y-2 max-w-full md:max-w-3xl min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 sm:px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5 shrink-0">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                 <span>Anti-Fake User & Auth Shield</span>
               </span>
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700 shrink-0">
                 Bot & Spam Guard v3.8
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Security & Anti-Fake User Protection</span>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight break-words min-w-0">
+              Security & Anti-Fake User Protection
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed break-words">
               Detect, restrict, and automatically block fake user signups, disposable email services, automated registration bots, honeypot spam luring, and brute-force login attempts in real time.
             </p>
           </div>
 
           {/* Master Enable/Disable Control */}
-          <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 px-4 py-3 rounded-2xl shadow-inner">
-              <div className="text-right hidden sm:block">
+          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 w-full md:w-auto min-w-0">
+            <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 px-4 py-2.5 sm:py-3 rounded-2xl shadow-inner w-full sm:w-auto min-w-0">
+              <div className="text-left sm:text-right">
                 <p className="text-xs font-black text-white">Security Guard State</p>
                 <p className="text-[10px] text-slate-400">
                   {enableSecurityGuard ? 'Active Protection' : 'Shield Paused'}
@@ -390,7 +390,7 @@ export const SecurityGuardView: React.FC = () => {
 
               <div
                 onClick={() => setEnableSecurityGuard(!enableSecurityGuard)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors cursor-pointer ${
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
                   enableSecurityGuard ? 'bg-rose-500' : 'bg-slate-700'
                 }`}
               >
@@ -404,7 +404,7 @@ export const SecurityGuardView: React.FC = () => {
 
             <button
               onClick={handleSaveSettings}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 self-stretch md:self-auto justify-center"
+              className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 text-center"
             >
               {savedSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
               <span>{savedSuccess ? 'Settings Saved!' : 'Save Security Shield Config'}</span>
@@ -424,75 +424,79 @@ export const SecurityGuardView: React.FC = () => {
       </div>
 
       {/* Security Metrics & Pulse Highlights */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-full min-w-0">
         {/* Metric 1 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-md min-w-0 overflow-hidden">
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl shrink-0">
             <UserX className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">Fake Signups Blocked</p>
-            <h3 className="text-xl font-black text-white mt-0.5">142 Accounts</h3>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider truncate">Fake Signups Blocked</p>
+            <h3 className="text-xl font-black text-white mt-0.5 truncate">142 Accounts</h3>
             <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-0.5">
-              <CheckCircle2 className="w-3 h-3" />
+              <CheckCircle2 className="w-3 h-3 shrink-0" />
               <span>100% Filtered</span>
             </span>
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-md min-w-0 overflow-hidden">
           <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl shrink-0">
             <Cpu className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">Bot CAPTCHA Rate</p>
-            <h3 className="text-xl font-black text-white mt-0.5">98.6% Humans</h3>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider truncate">Bot CAPTCHA Rate</p>
+            <h3 className="text-xl font-black text-white mt-0.5 truncate">98.6% Humans</h3>
             <span className="text-[10px] text-indigo-300 font-bold flex items-center gap-1 mt-0.5">
-              <Zap className="w-3 h-3" />
+              <Zap className="w-3 h-3 shrink-0" />
               <span>Math & Turnstile</span>
             </span>
           </div>
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-md min-w-0 overflow-hidden">
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl shrink-0">
             <Mail className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">Disposable Domains</p>
-            <h3 className="text-xl font-black text-white mt-0.5">{blockedDomains.length} Blacklisted</h3>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider truncate">Disposable Domains</p>
+            <h3 className="text-xl font-black text-white mt-0.5 truncate">{blockedDomains.length} Blacklisted</h3>
             <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1 mt-0.5">
-              <ShieldCheck className="w-3 h-3" />
+              <ShieldCheck className="w-3 h-3 shrink-0" />
               <span>Mailinator / TempMail</span>
             </span>
           </div>
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4 shadow-md min-w-0 overflow-hidden">
           <div className="p-3 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl shrink-0">
             <Ban className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">IP Blacklist & Locks</p>
-            <h3 className="text-xl font-black text-white mt-0.5">{blacklistedIps.length} Banned IPs</h3>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider truncate">IP Blacklist & Locks</p>
+            <h3 className="text-xl font-black text-white mt-0.5 truncate">{blacklistedIps.length} Banned IPs</h3>
             <span className="text-[10px] text-purple-300 font-bold flex items-center gap-1 mt-0.5">
-              <Lock className="w-3 h-3" />
+              <Lock className="w-3 h-3 shrink-0" />
               <span>Brute Force Lock</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs Bar */}
-      <div className={`p-2 rounded-2xl shadow-md overflow-x-auto scrollbar-thin flex gap-2 border ${
-        isLight ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'
-      }`}>
+      {/* Navigation Sub-Tabs Bar - Horizontal Touch-Swipe */}
+      <div
+        className={`p-1.5 sm:p-2 rounded-2xl shadow-md overflow-x-auto scrollbar-none flex gap-2 border w-full max-w-full min-w-0 -mx-0.5 px-0.5 ${
+          isLight ? 'bg-white border-slate-200' : 'bg-slate-900/80 border-slate-800'
+        }`}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button
+          type="button"
           onClick={() => setActiveTab('emails')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'emails'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -502,13 +506,14 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Mail className="w-4 h-4" />
+          <Mail className="w-4 h-4 shrink-0" />
           <span>Disposable Email Blocker</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('captcha')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'captcha'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -518,13 +523,14 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Cpu className="w-4 h-4" />
+          <Cpu className="w-4 h-4 shrink-0" />
           <span>Bot & CAPTCHA Trap</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('brute_force')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'brute_force'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -534,13 +540,14 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Lock className="w-4 h-4" />
+          <Lock className="w-4 h-4 shrink-0" />
           <span>Brute-Force & Lockouts</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('sessions')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'sessions'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -550,13 +557,14 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>Active User Sessions & Devices</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('logs')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'logs'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -566,13 +574,14 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <ShieldAlert className="w-4 h-4" />
+          <ShieldAlert className="w-4 h-4 shrink-0" />
           <span>Flagged Signups Log ({flaggedLogs.length})</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('ip_filter')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             isLight
               ? activeTab === 'ip_filter'
                 ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm'
@@ -582,7 +591,7 @@ export const SecurityGuardView: React.FC = () => {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <SlidersHorizontal className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4 shrink-0" />
           <span>IP Filter & Risk Simulator</span>
         </button>
       </div>
@@ -592,11 +601,11 @@ export const SecurityGuardView: React.FC = () => {
 
       {/* TAB 1: DISPOSABLE & FAKE EMAIL BLOCKER */}
       {activeTab === 'emails' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                <Mail className="w-5 h-5 text-indigo-400 shrink-0" />
                 <span>Disposable & Temporary Email Domain Rules</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -605,7 +614,7 @@ export const SecurityGuardView: React.FC = () => {
             </div>
             <button
               onClick={handleSaveSettings}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 shrink-0"
             >
               <Save className="w-4 h-4" />
               <span>Save Rules</span>
@@ -677,17 +686,17 @@ export const SecurityGuardView: React.FC = () => {
             {/* Custom Blacklisted Domain Input */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-white block">Custom Blacklisted Email Domains</label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newBlockedDomainInput}
                   onChange={(e) => setNewBlockedDomainInput(e.target.value)}
                   placeholder="e.g. spamdomain.com or fakebox.org"
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white text-xs focus:outline-none focus:border-indigo-500 min-w-0"
                 />
                 <button
                   onClick={() => handleAddBlockedDomain()}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1"
+                  className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Block Domain</span>
@@ -695,7 +704,7 @@ export const SecurityGuardView: React.FC = () => {
               </div>
 
               {/* Tag Cloud of Blocked Domains */}
-              <div className="flex flex-wrap gap-2 pt-2 max-h-48 overflow-y-auto p-3 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="flex flex-wrap gap-2 pt-2 max-h-48 overflow-y-auto p-3 rounded-2xl bg-slate-950 border border-slate-800 min-w-0">
                 {blockedDomains.map((domain) => (
                   <span
                     key={domain}
@@ -719,11 +728,11 @@ export const SecurityGuardView: React.FC = () => {
 
       {/* TAB 2: BOT & CAPTCHA TRAP */}
       {activeTab === 'captcha' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-indigo-400 shrink-0" />
                 <span>Automated Bot & CAPTCHA Verification Engine</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -732,7 +741,7 @@ export const SecurityGuardView: React.FC = () => {
             </div>
             <button
               onClick={handleSaveSettings}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 shrink-0"
             >
               <Save className="w-4 h-4" />
               <span>Save Bot Config</span>
@@ -875,11 +884,11 @@ export const SecurityGuardView: React.FC = () => {
 
       {/* TAB 3: BRUTE FORCE & LOCKOUTS */}
       {activeTab === 'brute_force' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-indigo-400 shrink-0" />
                 <span>Brute-Force Login & Rate Limiting Protection</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -888,14 +897,14 @@ export const SecurityGuardView: React.FC = () => {
             </div>
             <button
               onClick={handleSaveSettings}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 shrink-0"
             >
               <Save className="w-4 h-4" />
               <span>Save Lockout Rules</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 text-xs">
             {/* Failed Login Lockout */}
             <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
               <label className="font-bold text-white block">Max Failed Logins Before Account Lock</label>
@@ -1004,7 +1013,7 @@ export const SecurityGuardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Locked Users List */}
+            {/* Locked Users List with Smooth Touch-Swipe Scrolling */}
             {(() => {
               const lockedUsers = users.filter((u) => u.status === 'locked');
               if (lockedUsers.length === 0) {
@@ -1018,67 +1027,83 @@ export const SecurityGuardView: React.FC = () => {
               }
 
               return (
-                <div className="overflow-x-auto rounded-xl border border-slate-800">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-950 text-slate-400 font-bold border-b border-slate-800 text-[10px] uppercase">
-                      <tr>
-                        <th className="py-2.5 px-3">User / Email</th>
-                        <th className="py-2.5 px-3">Failed Attempts</th>
-                        <th className="py-2.5 px-3">Freeze Status</th>
-                        <th className="py-2.5 px-3">Unlock Request Mail</th>
-                        <th className="py-2.5 px-3 text-right">Admin Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
-                      {lockedUsers.map((u) => {
-                        const remainingSecs = u.lockedUntil ? Math.max(0, Math.ceil((u.lockedUntil - Date.now()) / 1000)) : 0;
-                        const remainingMins = Math.ceil(remainingSecs / 60);
+                <div className="space-y-2 w-full max-w-full min-w-0">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 sm:hidden">
+                    <span className="flex items-center gap-1 font-medium text-indigo-400">
+                      <span>⇄ Swipe table horizontally to view all columns</span>
+                    </span>
+                    <span className="font-mono text-[10px]">{lockedUsers.length} accounts</span>
+                  </div>
 
-                        return (
-                          <tr key={u.id} className="hover:bg-slate-800/30 transition">
-                            <td className="py-3 px-3">
-                              <div className="font-bold text-white">{u.name}</div>
-                              <div className="text-[11px] text-slate-400">{u.email}</div>
-                            </td>
-                            <td className="py-3 px-3">
-                              <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold text-[11px]">
-                                {u.failedLogins || maxFailedLogins} failures
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-1.5 text-amber-400 font-mono text-xs">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>{remainingMins > 0 ? `${remainingMins} min remaining` : 'Expiring soon'}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3">
-                              {u.unlockRequested ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold animate-pulse">
-                                  <Mail className="w-3 h-3" />
-                                  <span>Unlock Request Mail Received</span>
+                  <div
+                    className="overflow-x-auto scrollbar-thin rounded-xl border border-slate-800 w-full max-w-full min-w-0"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-x pan-y',
+                      overscrollBehaviorX: 'contain'
+                    }}
+                  >
+                    <table className="w-full min-w-[700px] text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 font-bold border-b border-slate-800 text-[10px] uppercase">
+                        <tr>
+                          <th className="py-2.5 px-3">User / Email</th>
+                          <th className="py-2.5 px-3">Failed Attempts</th>
+                          <th className="py-2.5 px-3">Freeze Status</th>
+                          <th className="py-2.5 px-3">Unlock Request Mail</th>
+                          <th className="py-2.5 px-3 text-right">Admin Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                        {lockedUsers.map((u) => {
+                          const remainingSecs = u.lockedUntil ? Math.max(0, Math.ceil((u.lockedUntil - Date.now()) / 1000)) : 0;
+                          const remainingMins = Math.ceil(remainingSecs / 60);
+
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-800/30 transition">
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-white">{u.name}</div>
+                                <div className="text-[11px] text-slate-400">{u.email}</div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold text-[11px]">
+                                  {u.failedLogins || maxFailedLogins} failures
                                 </span>
-                              ) : (
-                                <span className="text-[10px] text-slate-500">
-                                  No request mail sent (Waiting for freeze time)
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3 px-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => unlockUser(u.id)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1 transition shadow-xs"
-                                title="Unlock immediately without waiting for freeze duration"
-                              >
-                                <Unlock className="w-3 h-3" />
-                                <span>Unlock Immediately</span>
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-1.5 text-amber-400 font-mono text-xs">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>{remainingMins > 0 ? `${remainingMins} min remaining` : 'Expiring soon'}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3">
+                                {u.unlockRequested ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold animate-pulse">
+                                    <Mail className="w-3 h-3" />
+                                    <span>Unlock Request Mail Received</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-500">
+                                    No request mail sent (Waiting for freeze time)
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => unlockUser(u.id)}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1 transition shadow-xs"
+                                  title="Unlock immediately without waiting for freeze duration"
+                                >
+                                  <Unlock className="w-3 h-3" />
+                                  <span>Unlock Immediately</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               );
             })()}
@@ -1088,11 +1113,11 @@ export const SecurityGuardView: React.FC = () => {
 
       {/* TAB 4: FLAGGED LOGS */}
       {activeTab === 'logs' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-xl">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-rose-500" />
+              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0" />
                 <span>Flagged & Blocked Registrations Log</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -1118,7 +1143,7 @@ export const SecurityGuardView: React.FC = () => {
                 ];
                 setFlaggedLogs(updated);
               }}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-1.5 shrink-0"
+              className="w-full sm:w-auto px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 shrink-0"
             >
               <Plus className="w-4 h-4 text-indigo-400" />
               <span>Simulate Test Bot Incident</span>
@@ -1127,21 +1152,21 @@ export const SecurityGuardView: React.FC = () => {
 
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={logSearchQuery}
                 onChange={(e) => setLogSearchQuery(e.target.value)}
                 placeholder="Search email, IP address, or location..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-white text-xs focus:outline-none focus:border-indigo-500 min-w-0"
               />
             </div>
 
             <select
               value={logReasonFilter}
               onChange={(e) => setLogReasonFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+              className="bg-slate-950 border border-slate-800 text-white text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 w-full sm:w-auto"
             >
               <option value="ALL">All Detection Reasons</option>
               <option value="DISPOSABLE_EMAIL">Disposable Emails</option>
@@ -1151,93 +1176,109 @@ export const SecurityGuardView: React.FC = () => {
             </select>
           </div>
 
-          {/* Log Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] font-extrabold border-b border-slate-800">
-                <tr>
-                  <th className="p-3.5">Timestamp</th>
-                  <th className="p-3.5">Attempted User Email</th>
-                  <th className="p-3.5">IP & Origin</th>
-                  <th className="p-3.5">Detection Reason</th>
-                  <th className="p-3.5 text-center">Risk Score</th>
-                  <th className="p-3.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 bg-slate-900/60 font-medium text-slate-300">
-                {filteredLogs.length === 0 ? (
+          {/* Log Table with Smooth Touch-Swipe Scrolling */}
+          <div className="space-y-2 w-full max-w-full min-w-0">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 sm:hidden">
+              <span className="flex items-center gap-1 font-medium text-indigo-400">
+                <span>⇄ Swipe table horizontally to view full audit trail</span>
+              </span>
+              <span className="font-mono text-[10px]">{filteredLogs.length} logs</span>
+            </div>
+
+            <div
+              className="overflow-x-auto scrollbar-thin rounded-2xl border border-slate-800 w-full max-w-full min-w-0"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x pan-y',
+                overscrollBehaviorX: 'contain'
+              }}
+            >
+              <table className="w-full min-w-[800px] text-left text-xs">
+                <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] font-extrabold border-b border-slate-800">
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-500">
-                      No security incidents match the current filter.
-                    </td>
+                    <th className="p-3.5">Timestamp</th>
+                    <th className="p-3.5">Attempted User Email</th>
+                    <th className="p-3.5">IP & Origin</th>
+                    <th className="p-3.5">Detection Reason</th>
+                    <th className="p-3.5 text-center">Risk Score</th>
+                    <th className="p-3.5 text-right">Action</th>
                   </tr>
-                ) : (
-                  filteredLogs.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-800/50 transition">
-                      <td className="p-3.5 whitespace-nowrap text-slate-400 font-mono text-[11px]">{item.timestamp}</td>
-                      <td className="p-3.5 font-bold text-white">
-                        <div className="flex flex-col">
-                          <span>{item.email}</span>
-                          {item.name && <span className="text-[10px] text-slate-400 font-normal">{item.name}</span>}
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        <div className="flex flex-col font-mono text-[11px]">
-                          <span className="text-indigo-300">{item.ipAddress}</span>
-                          <span className="text-[10px] text-slate-400 font-sans">{item.location || 'Unknown'}</span>
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-slate-800 text-rose-300 border border-slate-700">
-                          {item.reason.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                          {item.riskScore}% Critical
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <button
-                          onClick={() => handleUnblockLogEmail(item.id, item.email)}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-bold border border-slate-700 transition"
-                        >
-                          Unblock & Allow
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80 bg-slate-900/60 font-medium text-slate-300">
+                  {filteredLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-slate-500">
+                        No security incidents match the current filter.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredLogs.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-800/50 transition">
+                        <td className="p-3.5 whitespace-nowrap text-slate-400 font-mono text-[11px]">{item.timestamp}</td>
+                        <td className="p-3.5 font-bold text-white">
+                          <div className="flex flex-col">
+                            <span>{item.email}</span>
+                            {item.name && <span className="text-[10px] text-slate-400 font-normal">{item.name}</span>}
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex flex-col font-mono text-[11px]">
+                            <span className="text-indigo-300">{item.ipAddress}</span>
+                            <span className="text-[10px] text-slate-400 font-sans">{item.location || 'Unknown'}</span>
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-slate-800 text-rose-300 border border-slate-700">
+                            {item.reason.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            {item.riskScore}% Critical
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => handleUnblockLogEmail(item.id, item.email)}
+                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-bold border border-slate-700 transition"
+                          >
+                            Unblock & Allow
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
       {/* TAB 5: IP FILTER & RISK SIMULATOR */}
       {activeTab === 'ip_filter' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full min-w-0">
           {/* Blacklisted IPs List */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Ban className="w-5 h-5 text-rose-500" />
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+            <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+              <Ban className="w-5 h-5 text-rose-500 shrink-0" />
               <span>Network IP Address Blacklist</span>
             </h3>
             <p className="text-xs text-slate-400">
               IP addresses manually or automatically banned from registering accounts or attempting logins.
             </p>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <input
                 type="text"
                 value={newIpInput}
                 onChange={(e) => setNewIpInput(e.target.value)}
                 placeholder="e.g. 185.220.101.5"
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white text-xs font-mono focus:outline-none focus:border-indigo-500 min-w-0"
               />
               <button
                 onClick={handleAddIp}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1"
+                className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ban IP</span>
@@ -1266,9 +1307,9 @@ export const SecurityGuardView: React.FC = () => {
           </div>
 
           {/* Interactive Risk Simulator */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-400" />
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+            <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" />
               <span>Real-Time Fake Risk Score Simulator</span>
             </h3>
             <p className="text-xs text-slate-400">

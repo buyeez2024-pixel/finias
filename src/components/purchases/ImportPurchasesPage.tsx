@@ -668,14 +668,12 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       });
 
       if (autoCreateProducts && newProductsToCreate.length > 0) {
-        const createdProds = addProducts(newProductsToCreate);
-        if (createdProds && Array.isArray(createdProds)) {
-          createdProds.forEach((mappedProd) => {
-            productMap.set(mappedProd.name.toLowerCase(), mappedProd);
-            if (mappedProd.sku) productMap.set(mappedProd.sku.toLowerCase(), mappedProd);
-            if (mappedProd.barcode) productMap.set(mappedProd.barcode.toLowerCase(), mappedProd);
-          });
-        }
+        addProducts(newProductsToCreate);
+        newProductsToCreate.forEach((mappedProd: any) => {
+          productMap.set(mappedProd.name.toLowerCase(), mappedProd);
+          if (mappedProd.sku) productMap.set(mappedProd.sku.toLowerCase(), mappedProd);
+          if (mappedProd.barcode) productMap.set(mappedProd.barcode.toLowerCase(), mappedProd);
+        });
       }
 
       // 3. Group rows by Supplier & PO / Invoice No

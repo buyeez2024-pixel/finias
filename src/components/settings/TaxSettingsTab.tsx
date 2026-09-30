@@ -304,31 +304,31 @@ export const TaxSettingsTab: React.FC = () => {
   const selectedGroup = taxGroups.find((g) => g.id === simSelectedGroupId);
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-4 sm:space-y-8 animate-fadeIn w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Master Configuration & Presets Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-6 border-b border-slate-800">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden w-full max-w-full min-w-0 shadow-sm dark:shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-4 sm:pb-6 border-b border-slate-800 w-full min-w-0">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5 shrink-0">
                 <Globe className="w-3.5 h-3.5" />
                 Tax Engine & GST Configuration
               </span>
-              <span className="text-[11px] text-slate-400">Compliant with Indian GST & Global Regimes</span>
+              <span className="text-[11px] text-slate-400 shrink-0">Compliant with Indian GST & Global Regimes</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2 break-words min-w-0">
               <span>Tax Rates, Tax Groups & Regional Compliance</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl break-words">
               Configure CGST, SGST, IGST split rules for India, item HSN codes, tax calculation modes (Inclusive vs. Exclusive), or disable taxes altogether.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
             <button
               onClick={() => handleSaveMasterTax()}
               id="save-tax-settings-btn"
-              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 text-center"
             >
               {saveSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
               <span>{saveSuccess ? 'Settings Saved!' : 'Save Tax Settings'}</span>
@@ -337,12 +337,12 @@ export const TaxSettingsTab: React.FC = () => {
         </div>
 
         {/* Quick Country Presets Switcher */}
-        <div className="pt-6">
+        <div className="pt-4 sm:pt-6">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Instant Country Tax System Presets</span>
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
             <button
               type="button"
               id="preset-india-gst"
@@ -487,11 +487,11 @@ export const TaxSettingsTab: React.FC = () => {
       </div>
 
       {/* Core Tax Rules & Controls Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 w-full max-w-full min-w-0">
         {/* Left Column: Master Settings & Toggles */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-4 sm:space-y-6 w-full min-w-0">
           {/* Master Toggles Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
             <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
               <Sliders className="w-4 h-4 text-indigo-400" />
               <span>Tax System Controls</span>
@@ -792,8 +792,8 @@ export const TaxSettingsTab: React.FC = () => {
         </div>
 
         {/* Right Column: Live Tax Breakdown Simulator */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className={`border rounded-3xl p-6 space-y-5 shadow-sm transition-all ${isLight ? 'bg-slate-50/50 border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+        <div className="lg:col-span-5 space-y-4 sm:space-y-6 w-full min-w-0">
+          <div className={`border rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm transition-all w-full max-w-full min-w-0 overflow-hidden ${isLight ? 'bg-slate-50/50 border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
             <div className={`flex items-center justify-between pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
               <div className="flex items-center gap-2">
                 <Calculator className={`w-5 h-5 ${isLight ? 'text-indigo-600' : 'text-emerald-400'}`} />
@@ -899,14 +899,14 @@ export const TaxSettingsTab: React.FC = () => {
       </div>
 
       {/* Tax Groups Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
-          <div>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-800 w-full min-w-0">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-400" />
+              <Layers className="w-5 h-5 text-indigo-400 shrink-0" />
               <h3 className="text-base font-black text-white">Tax Groups (Compound / Component Taxes)</h3>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5 break-words">
               Combine component tax rates into tax groups (e.g. GST 18% = CGST 9% + SGST 9%) for assignment to products.
             </p>
           </div>
@@ -915,14 +915,14 @@ export const TaxSettingsTab: React.FC = () => {
             type="button"
             id="add-tax-group-btn"
             onClick={() => handleOpenGroupModal()}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 self-start sm:self-auto"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 self-start sm:self-auto shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Add Tax Group</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0">
           {taxGroups.map((group) => {
             const subRates = group.subTaxIds
               .map((id) => taxRates.find((r) => r.id === id))
@@ -1015,14 +1015,14 @@ export const TaxSettingsTab: React.FC = () => {
       </div>
 
       {/* Individual Tax Rates Master Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
-          <div>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-800 w-full min-w-0">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Percent className="w-5 h-5 text-indigo-400" />
+              <Percent className="w-5 h-5 text-indigo-400 shrink-0" />
               <h3 className="text-base font-black text-white">Component Tax Rates</h3>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5 break-words">
               Individual tax components (e.g. CGST 9%, SGST 9%, IGST 18%, Cess 12%, VAT 5%) used to formulate Tax Groups.
             </p>
           </div>
@@ -1031,50 +1031,65 @@ export const TaxSettingsTab: React.FC = () => {
             type="button"
             id="add-tax-rate-btn"
             onClick={() => handleOpenRateModal()}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 self-start sm:self-auto"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 self-start sm:self-auto shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Add Tax Rate</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {/* Mobile Swipe Hint */}
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+          <span>⇄ Swipe table horizontally to view all tax rate columns & actions</span>
+        </div>
+
+        {/* Dedicated Smooth Touch-Swipe Scroll Container */}
+        <div
+          className="overflow-x-auto scrollbar-thin rounded-xl border border-slate-800 w-full max-w-full min-w-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
+            overscrollBehaviorX: 'contain',
+          }}
+        >
+          <table className="w-full text-left text-xs min-w-[640px] sm:min-w-[700px] border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                <th className="pb-3">Tax Name</th>
-                <th className="pb-3">Tax Code</th>
-                <th className="pb-3">Tax Rate (%)</th>
-                <th className="pb-3">Type</th>
-                <th className="pb-3">Description</th>
-                <th className="pb-3 text-right">Actions</th>
+              <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <th className="py-3 px-3">Tax Name</th>
+                <th className="py-3 px-3">Tax Code</th>
+                <th className="py-3 px-3 text-center">Tax Rate (%)</th>
+                <th className="py-3 px-3">Type</th>
+                <th className="py-3 px-3">Description</th>
+                <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
               {taxRates.map((rate) => (
                 <tr key={rate.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 text-white font-bold flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                    <span>{rate.name}</span>
+                  <td className="py-3 px-3 text-white font-bold whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></span>
+                      <span>{rate.name}</span>
+                    </div>
                   </td>
-                  <td className="py-3.5 font-mono text-indigo-300">{rate.code || '—'}</td>
-                  <td className="py-3.5 font-mono font-bold text-emerald-400 text-sm">
+                  <td className="py-3 px-3 font-mono text-indigo-300 whitespace-nowrap">{rate.code || '—'}</td>
+                  <td className="py-3 px-3 font-mono font-bold text-emerald-400 text-sm text-center whitespace-nowrap">
                     {rate.rate}%
                   </td>
-                  <td className="py-3.5">
+                  <td className="py-3 px-3 whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-800 text-slate-300 border border-slate-700">
                       {rate.type || 'standard'}
                     </span>
                   </td>
-                  <td className="py-3.5 text-slate-400 max-w-xs truncate">
+                  <td className="py-3 px-3 text-slate-400 max-w-xs whitespace-nowrap">
                     {rate.description || '—'}
                   </td>
-                  <td className="py-3.5 text-right">
+                  <td className="py-3 px-3 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
                         onClick={() => handleOpenRateModal(rate)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                         title="Edit Rate"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -1083,7 +1098,7 @@ export const TaxSettingsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => deleteTaxRate(rate.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
                           title="Delete Rate"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1100,8 +1115,8 @@ export const TaxSettingsTab: React.FC = () => {
 
       {/* MODAL: Add / Edit Tax Rate */}
       {isRateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Percent className="w-5 h-5 text-indigo-400" />
@@ -1206,8 +1221,8 @@ export const TaxSettingsTab: React.FC = () => {
 
       {/* MODAL: Add / Edit Tax Group */}
       {isGroupModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <Layers className="w-5 h-5 text-indigo-400" />

@@ -1358,7 +1358,7 @@ export const Sidebar: React.FC = () => {
             <div className={`px-4 py-3 border-b flex items-center justify-between shrink-0 ${
               isLight ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/60'
             }`}>
-              <RoyalLogo size="sm" showText={true} />
+              <RoyalLogo size="sm" showText={false} />
               <button
                 type="button"
                 onClick={() => setIsMobileSidebarOpen(false)}

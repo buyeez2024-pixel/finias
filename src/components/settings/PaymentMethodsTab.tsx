@@ -96,10 +96,10 @@ export const PaymentMethodsTab: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-lg">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 bg-slate-900/90 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-lg w-full min-w-0">
+        <div className="relative flex-1 max-w-md w-full">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
@@ -112,7 +112,7 @@ export const PaymentMethodsTab: React.FC = () => {
 
         <button
           onClick={handleOpenAddModal}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/25 transition-all text-sm shrink-0"
+          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/25 transition-all text-sm shrink-0 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add Payment Method</span>
@@ -120,17 +120,29 @@ export const PaymentMethodsTab: React.FC = () => {
       </div>
 
       {/* Payment Methods Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl w-full max-w-full min-w-0">
+        {/* Mobile Swipe Hint */}
+        <div className="px-4 pt-3 pb-1 flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+          <span>⇄ Swipe table horizontally to view all method details & actions</span>
+        </div>
+
+        <div
+          className="overflow-x-auto scrollbar-thin w-full max-w-full min-w-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
+            overscrollBehaviorX: 'contain',
+          }}
+        >
+          <table className="w-full text-left border-collapse min-w-[640px] sm:min-w-[700px]">
             <thead>
               <tr className="bg-slate-950/80 border-b border-slate-800 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                <th className="py-4 px-6">Payment Method Name</th>
-                <th className="py-4 px-6">Code / Key</th>
-                <th className="py-4 px-6">Description</th>
-                <th className="py-4 px-6 text-center">Status</th>
-                <th className="py-4 px-6 text-center">Type</th>
-                <th className="py-4 px-6 text-right">Actions</th>
+                <th className="py-4 px-4 sm:px-6 whitespace-nowrap">Payment Method Name</th>
+                <th className="py-4 px-4 whitespace-nowrap">Code / Key</th>
+                <th className="py-4 px-4 whitespace-nowrap">Description</th>
+                <th className="py-4 px-4 text-center whitespace-nowrap">Status</th>
+                <th className="py-4 px-4 text-center whitespace-nowrap">Type</th>
+                <th className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-sm">
@@ -146,7 +158,7 @@ export const PaymentMethodsTab: React.FC = () => {
               ) : (
                 filteredMethods.map((method) => (
                   <tr key={method.id} className="hover:bg-slate-800/40 transition-colors group">
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">
                           <CreditCard className="w-4 h-4" />
@@ -158,13 +170,15 @@ export const PaymentMethodsTab: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-mono text-xs text-indigo-300 bg-slate-950/40 rounded-lg px-2 py-1 inline-block my-auto">
-                      {method.code}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span className="font-mono text-xs text-indigo-300 bg-slate-950/60 rounded-lg px-2 py-1 border border-slate-800/80 inline-block font-bold">
+                        {method.code}
+                      </span>
                     </td>
-                    <td className="py-4 px-6 text-xs text-slate-400 max-w-xs truncate">
+                    <td className="py-4 px-4 text-xs text-slate-400 max-w-xs truncate whitespace-nowrap">
                       {method.description || '—'}
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 text-center whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                           method.enabled
@@ -183,7 +197,7 @@ export const PaymentMethodsTab: React.FC = () => {
                         )}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 text-center whitespace-nowrap">
                       {method.isDefault ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
                           <Shield className="w-3 h-3" /> System Default
@@ -194,11 +208,11 @@ export const PaymentMethodsTab: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEditModal(method)}
-                          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all shadow-sm"
+                          className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all shadow-sm cursor-pointer"
                           title="Edit Payment Method"
                         >
                           <Edit className="w-4 h-4" />
@@ -206,7 +220,7 @@ export const PaymentMethodsTab: React.FC = () => {
                         {!method.isDefault ? (
                           <button
                             onClick={() => handleDelete(method.id, method.isDefault)}
-                            className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all shadow-sm"
+                            className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all shadow-sm cursor-pointer"
                             title="Delete Payment Method"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -226,8 +240,8 @@ export const PaymentMethodsTab: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-6 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">

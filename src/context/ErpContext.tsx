@@ -1202,7 +1202,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_payment_methods`);
-    return saved ? JSON.parse(saved) : initialPaymentMethods;
+    let list: PaymentMethodItem[] = saved ? JSON.parse(saved) : initialPaymentMethods;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = initialPaymentMethods;
+    } else {
+      const existingCodes = new Set(list.map((m: any) => (m.code || '').toLowerCase().trim()));
+      initialPaymentMethods.forEach((initMethod) => {
+        if (!existingCodes.has(initMethod.code.toLowerCase().trim())) {
+          list.push(initMethod);
+        }
+      });
+    }
+    return list;
   });
 
   const [purchaseRequisitions, setPurchaseRequisitions] = useState<PurchaseRequisition[]>(() => {
@@ -6546,15 +6557,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...methodData,
       id: `pm_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
     };
-    setPaymentMethods((prev) => [...prev, newMethod]);
+    setPaymentMethods((prev) => {
+      const updated = [...(Array.isArray(prev) ? prev : []), newMethod];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_payment_methods`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showFlashNotification(`Payment method "${newMethod.name}" created successfully.`, 'success');
     return newMethod;
   };
 
   const updatePaymentMethod = (id: string, methodData: Partial<PaymentMethodItem>) => {
-    setPaymentMethods((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...methodData } : m))
-    );
+    setPaymentMethods((prev) => {
+      const updated = (Array.isArray(prev) ? prev : []).map((m) => (m.id === id ? { ...m, ...methodData } : m));
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_payment_methods`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showFlashNotification('Payment method updated successfully.', 'success');
   };
 
@@ -6566,7 +6587,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (pm.isDefault) {
       return { success: false, message: 'Default system payment methods cannot be deleted.' };
     }
-    setPaymentMethods((prev) => prev.filter((m) => m.id !== id));
+    setPaymentMethods((prev) => {
+      const updated = (Array.isArray(prev) ? prev : []).filter((m) => m.id !== id);
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_payment_methods`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     showFlashNotification('Payment method deleted successfully.', 'info');
     return { success: true, message: 'Payment method deleted successfully.' };
   };

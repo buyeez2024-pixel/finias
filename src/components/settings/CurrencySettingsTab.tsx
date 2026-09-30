@@ -230,37 +230,37 @@ export const CurrencySettingsTab: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl animate-fadeIn">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0 flex-shrink-0 mx-auto animate-fadeIn">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-bold text-xs animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-4 sm:px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-bold text-xs animate-bounce max-w-[90vw]">
           <CheckCircle2 className="w-5 h-5 text-emerald-100 shrink-0" />
-          <span>{toastMessage}</span>
+          <span className="truncate">{toastMessage}</span>
         </div>
       )}
 
       {/* Primary Spotlight: Current Active Store Currency & Display Controls */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full min-w-0">
         {/* Active Currency Display Card */}
-        <div className="lg:col-span-2 bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 relative overflow-hidden shadow-xl shadow-indigo-950/30 flex flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div>
+        <div className="lg:col-span-2 bg-slate-900/90 border border-indigo-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden shadow-xl shadow-indigo-950/30 flex flex-col justify-between w-full max-w-full min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div className="min-w-0">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black uppercase tracking-wider">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Active Store Currency
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white mt-3 flex items-center gap-3">
-                <span className="px-3 py-1 bg-indigo-600/30 border border-indigo-500/40 rounded-2xl text-indigo-300 font-mono text-3xl">
+              <h3 className="text-xl sm:text-3xl font-black text-white mt-3 flex items-center gap-2 sm:gap-3 flex-wrap break-words">
+                <span className="px-2.5 sm:px-3 py-1 bg-indigo-600/30 border border-indigo-500/40 rounded-2xl text-indigo-300 font-mono text-2xl sm:text-3xl shrink-0">
                   {settings.currencySymbol || activeCurrency.symbol}
                 </span>
                 <span>{settings.currencyCode || settings.currency || activeCurrency.code}</span>
-                <span className="text-slate-400 text-sm font-semibold">({activeCurrency.name})</span>
+                <span className="text-slate-400 text-xs sm:text-sm font-semibold">({activeCurrency.name})</span>
               </h3>
             </div>
 
             <button
               onClick={() => handleOpenEdit(activeCurrency)}
-              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 self-start sm:self-auto shrink-0"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>Edit Details</span>
@@ -268,27 +268,27 @@ export const CurrencySettingsTab: React.FC = () => {
           </div>
 
           {/* Live Preview Box */}
-          <div className="mt-6 p-4 rounded-2xl bg-slate-950 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <div className="mt-5 sm:mt-6 p-3.5 sm:p-4 rounded-2xl bg-slate-950 border border-slate-800 w-full min-w-0 overflow-hidden">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between flex-wrap gap-1">
               <span>Live Formatted Store Preview</span>
               <span className="text-indigo-400 lowercase text-[10px]">applies across entire ERP & POS</span>
             </div>
-            <div className="flex flex-wrap items-baseline gap-4">
-              <div>
-                <span className="text-xs text-slate-500 block font-medium">Standard Amount:</span>
-                <span className="text-2xl font-black text-white font-mono">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60 min-w-0">
+                <span className="text-[11px] text-slate-500 block font-medium">Standard Amount:</span>
+                <span className="text-lg sm:text-2xl font-black text-white font-mono truncate block">
                   {formatMoney(testAmount)}
                 </span>
               </div>
-              <div className="border-l border-slate-800 pl-4">
-                <span className="text-xs text-slate-500 block font-medium">Zero Decimal / Large:</span>
-                <span className="text-2xl font-black text-emerald-400 font-mono">
+              <div className="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60 min-w-0">
+                <span className="text-[11px] text-slate-500 block font-medium">Zero Decimal / Large:</span>
+                <span className="text-lg sm:text-2xl font-black text-emerald-400 font-mono truncate block">
                   {formatMoney(105400)}
                 </span>
               </div>
-              <div className="border-l border-slate-800 pl-4">
-                <span className="text-xs text-slate-500 block font-medium">Discounted / Small:</span>
-                <span className="text-2xl font-black text-amber-400 font-mono">
+              <div className="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60 min-w-0">
+                <span className="text-[11px] text-slate-500 block font-medium">Discounted / Small:</span>
+                <span className="text-lg sm:text-2xl font-black text-amber-400 font-mono truncate block">
                   {formatMoney(9.99)}
                 </span>
               </div>
@@ -355,7 +355,7 @@ export const CurrencySettingsTab: React.FC = () => {
         </div>
 
         {/* Live Simulator & Where Used Card */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between w-full max-w-full min-w-0 shadow-sm dark:shadow-xl">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Sliders className="w-5 h-5 text-indigo-400" />
@@ -414,20 +414,20 @@ export const CurrencySettingsTab: React.FC = () => {
       </div>
 
       {/* Quick 1-Click Preset Switcher */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 w-full max-w-full min-w-0 shadow-sm dark:shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <div className="min-w-0">
             <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wider">
-              <Globe className="w-4 h-4 text-indigo-400" />
+              <Globe className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>1-Click Global Currency Presets</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5 break-words">
               Click any global currency to immediately configure and adopt its ISO code, symbol, and standard formatting for the entire store.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 w-full min-w-0">
           {popularPresets.map((preset) => {
             const isActive =
               (settings.currencyCode || settings.currency)?.toUpperCase() === preset.code.toUpperCase() &&
@@ -465,39 +465,52 @@ export const CurrencySettingsTab: React.FC = () => {
       </div>
 
       {/* Configured Store Currencies Master Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden">
-        <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden w-full max-w-full min-w-0 shadow-sm dark:shadow-xl">
+        <div className="p-4 sm:p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0">
+          <div className="min-w-0">
             <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Coins className="w-5 h-5 text-indigo-400" />
+              <Coins className="w-5 h-5 text-indigo-400 shrink-0" />
               <span>Configured Store Currencies Catalog</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5 break-words">
               Manage custom currencies, modify symbols, symbol positions, or switch the active currency used by cashiers and managers.
             </p>
           </div>
 
           <button
             onClick={handleOpenAdd}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 self-start sm:self-auto"
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 self-start sm:self-auto shrink-0 w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Currency</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {/* Mobile Swipe Hint */}
+        <div className="px-4 sm:px-6 pt-3 pb-1 flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+          <span>⇄ Swipe table horizontally to view all currency parameters & actions</span>
+        </div>
+
+        {/* Dedicated Smooth Touch-Swipe Scroll Container */}
+        <div
+          className="overflow-x-auto scrollbar-thin w-full max-w-full min-w-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
+            overscrollBehaviorX: 'contain',
+          }}
+        >
+          <table className="w-full text-left text-xs min-w-[700px] sm:min-w-[760px] border-collapse">
             <thead className="bg-slate-950/80 text-slate-400 uppercase tracking-wider font-extrabold border-b border-slate-800">
               <tr>
-                <th className="py-3.5 px-6">Currency Name</th>
-                <th className="py-3.5 px-4">ISO Code</th>
-                <th className="py-3.5 px-4 text-center">Symbol</th>
-                <th className="py-3.5 px-4">Placement</th>
-                <th className="py-3.5 px-4">Decimals</th>
-                <th className="py-3.5 px-4">Preview ($1,250)</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-6 text-right">Actions</th>
+                <th className="py-3.5 px-4 sm:px-6 whitespace-nowrap">Currency Name</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">ISO Code</th>
+                <th className="py-3.5 px-4 text-center whitespace-nowrap">Symbol</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Placement</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Decimals</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Preview ($1,250)</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
@@ -519,33 +532,33 @@ export const CurrencySettingsTab: React.FC = () => {
                       isActive ? 'bg-indigo-950/20' : ''
                     }`}
                   >
-                    <td className="py-3.5 px-6">
+                    <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                       <div className="font-bold text-white flex items-center gap-2">
                         <span>{curr.name}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className="font-mono font-bold text-indigo-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
                         {curr.code}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
                       <span className="font-mono font-black text-white text-sm px-2.5 py-1 bg-slate-950 rounded-lg border border-slate-800 inline-block min-w-[36px]">
                         {curr.symbol}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className="text-slate-300 capitalize">
                         {curr.placement || 'prefix'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className="text-slate-300">{curr.decimalPlaces ?? 2} digits</span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-200">
+                    <td className="py-3.5 px-4 font-mono font-bold text-slate-200 whitespace-nowrap">
                       {formattedPreview}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       {isActive ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider">
                           <Check className="w-3 h-3" />
@@ -555,7 +568,7 @@ export const CurrencySettingsTab: React.FC = () => {
                         <span className="text-slate-500 text-[11px]">Available</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-6 text-right">
+                    <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         {!isActive ? (
                           <button
@@ -564,7 +577,7 @@ export const CurrencySettingsTab: React.FC = () => {
                               setActiveCurrency(curr.id);
                               showToast(`Store currency set to ${curr.code} (${curr.symbol})`);
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white font-bold text-[11px] transition border border-indigo-500/40"
+                            className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white font-bold text-[11px] transition border border-indigo-500/40 cursor-pointer"
                           >
                             Set Active
                           </button>
@@ -576,7 +589,7 @@ export const CurrencySettingsTab: React.FC = () => {
                           type="button"
                           onClick={() => handleOpenEdit(curr)}
                           title="Edit Currency"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -591,7 +604,7 @@ export const CurrencySettingsTab: React.FC = () => {
                               }
                             }}
                             title="Delete Currency"
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition"
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -608,8 +621,8 @@ export const CurrencySettingsTab: React.FC = () => {
 
       {/* Add / Edit Currency Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl relative">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">

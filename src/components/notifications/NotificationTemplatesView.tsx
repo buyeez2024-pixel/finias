@@ -384,23 +384,23 @@ export const NotificationTemplatesView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 min-h-0 overflow-y-auto">
+    <div className="w-full max-w-full min-w-0 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl text-slate-100">
       {/* Header Bar */}
-      <div className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-5 sticky top-0 z-20">
+      <div className="bg-slate-900/95 border-b border-slate-800 p-4 sm:p-6 w-full max-w-full min-w-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
-                <Mail className="w-6 h-6" />
+              <div className="p-2 sm:p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400 shrink-0">
+                <Mail className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2.5">
-                  Notification Templates
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2 flex-wrap">
+                  <span>Notification Templates</span>
+                  <span className="text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
                     finias POS Live Engine
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
                   Configure automated transactional Email, SMS & WhatsApp notifications for Customers & Suppliers
                 </p>
               </div>
@@ -408,13 +408,13 @@ export const NotificationTemplatesView: React.FC = () => {
           </div>
 
           {/* Quick Header Actions */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
             <button
               onClick={() => setActiveMainTab('simulator')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600/15 text-indigo-300 hover:bg-indigo-600/25 border border-indigo-500/30 transition"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-600/15 text-indigo-300 hover:bg-indigo-600/25 border border-indigo-500/30 transition"
             >
               <Send className="w-3.5 h-3.5" />
-              Live Simulator
+              <span>Simulator</span>
             </button>
             <button
               onClick={() => {
@@ -422,92 +422,92 @@ export const NotificationTemplatesView: React.FC = () => {
                   resetAllNotificationTemplates();
                 }
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition"
               title="Reset all templates to initial defaults"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Reset Defaults
+              <span>Reset</span>
             </button>
             <button
               onClick={() => {
                 showFlashNotification('All notification templates synchronized and saved', 'success');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition"
             >
               <Save className="w-3.5 h-3.5" />
-              Save All Templates
+              <span>Save All</span>
             </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-5 border-b border-slate-800/80 -mb-5 overflow-x-auto pb-0.5">
+        {/* Tab Navigation with Smooth Touch-Swipe Scrolling */}
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-4 pt-2 border-t border-slate-800 overflow-x-auto pb-1 scrollbar-thin touch-pan-x overscroll-x-contain w-full min-w-0">
           <button
             onClick={() => setActiveMainTab('customer')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl transition whitespace-nowrap shrink-0 border ${
               activeMainTab === 'customer'
-                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-600/20 shadow-sm'
+                : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <UserCheck className="w-4 h-4" />
-            Customer Notifications
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+            <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+            <span>Customer Notifications</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
               {notificationTemplates.filter((t) => t.category === 'customer_notifications').length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('supplier')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl transition whitespace-nowrap shrink-0 border ${
               activeMainTab === 'supplier'
-                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-600/20 shadow-sm'
+                : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <Truck className="w-4 h-4" />
-            Supplier Notifications
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+            <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+            <span>Supplier Notifications</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
               {notificationTemplates.filter((t) => t.category === 'supplier_notifications').length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('simulator')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl transition whitespace-nowrap shrink-0 border ${
               activeMainTab === 'simulator'
-                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-600/20 shadow-sm'
+                : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            Interactive Simulator
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+            <span>Simulator</span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('gateways')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl transition whitespace-nowrap shrink-0 border ${
               activeMainTab === 'gateways'
-                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-600/20 shadow-sm'
+                : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <Settings className="w-4 h-4" />
-            Gateway & SMTP Settings
+            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+            <span>Gateways & SMTP</span>
           </button>
 
           <button
             onClick={() => setActiveMainTab('logs')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs font-semibold rounded-xl transition whitespace-nowrap shrink-0 border ${
               activeMainTab === 'logs'
-                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                ? 'border-indigo-500 text-indigo-300 bg-indigo-600/20 shadow-sm'
+                : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <History className="w-4 h-4" />
-            Delivery Logs
+            <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+            <span>Delivery Logs</span>
             {notificationLogs.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 font-mono">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 font-mono">
                 {notificationLogs.length}
               </span>
             )}
@@ -516,7 +516,7 @@ export const NotificationTemplatesView: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="p-6 max-w-7xl w-full mx-auto space-y-6">
+      <div className="p-3 sm:p-6 w-full max-w-full min-w-0 space-y-4 sm:space-y-6">
         {/* ==================================================== */}
         {/* TAB 1 & 2: CUSTOMER OR SUPPLIER TEMPLATES ACCORDION  */}
         {/* ==================================================== */}
@@ -561,35 +561,35 @@ export const NotificationTemplatesView: React.FC = () => {
                       {/* Template Header / Accordion Bar */}
                       <div
                         onClick={() => toggleAccordion(tmpl.id)}
-                        className="px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900 hover:bg-slate-850 cursor-pointer select-none transition border-b border-slate-800/60"
+                        className="p-3 sm:px-5 sm:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900 hover:bg-slate-850 cursor-pointer select-none transition border-b border-slate-800/60 w-full max-w-full min-w-0"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="p-1 text-slate-400 hover:text-slate-200">
+                        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="p-1 text-slate-400 hover:text-slate-200 shrink-0 mt-0.5 sm:mt-0">
                             {isExpanded ? (
-                              <ChevronDown className="w-5 h-5 text-indigo-400" />
+                              <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />
                             ) : (
-                              <ChevronRight className="w-5 h-5 text-slate-500" />
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
                             )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                              <h3 className="font-semibold text-sm text-slate-100">{tmpl.name}</h3>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-xs sm:text-sm text-slate-100">{tmpl.name}</h3>
+                              <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
                                 {tmpl.templateType}
                               </span>
                               {tmpl.attachPdf && (
-                                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                <span className="text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                                   PDF Attached
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-slate-400 mt-0.5">{tmpl.description}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-relaxed">{tmpl.description}</p>
                           </div>
                         </div>
 
                         {/* Quick Auto-Send Toggles in Bar */}
                         <div
-                          className="flex items-center gap-3 self-end md:self-center"
+                          className="flex items-center gap-2.5 sm:gap-3 flex-wrap self-start sm:self-auto"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium cursor-pointer">
@@ -642,28 +642,28 @@ export const NotificationTemplatesView: React.FC = () => {
                               setTestModalTemplate(tmpl);
                               setTestModalChannel('email');
                             }}
-                            className="p-1.5 text-xs rounded bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 transition flex items-center gap-1 ml-1"
+                            className="p-1 sm:p-1.5 text-xs rounded bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 transition flex items-center gap-1 ml-1"
                             title="Quick Test Send"
                           >
                             <Send className="w-3 h-3" />
-                            <span className="hidden sm:inline text-[11px]">Test</span>
+                            <span className="text-[11px]">Test</span>
                           </button>
                         </div>
                       </div>
 
                       {/* Template Body Editor Expanded */}
                       {isExpanded && (
-                        <div className="p-5 bg-slate-950/70 border-t border-slate-850 space-y-5">
+                        <div className="p-3 sm:p-5 bg-slate-950/70 border-t border-slate-850 space-y-4 sm:space-y-5 w-full max-w-full min-w-0">
                           {/* Channel Selector Header */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 p-3 rounded-lg border border-slate-800">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-800 w-full max-w-full min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto min-w-0">
+                              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                                 Edit Channel:
                               </span>
-                              <div className="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+                              <div className="flex items-center gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800 overflow-x-auto max-w-full scrollbar-thin touch-pan-x overscroll-x-contain">
                                 <button
                                   onClick={() => setTemplateChannel(tmpl.id, 'email')}
-                                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition ${
+                                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium rounded-lg transition whitespace-nowrap shrink-0 ${
                                     channel === 'email'
                                       ? 'bg-indigo-600 text-white shadow-sm'
                                       : 'text-slate-400 hover:text-slate-200'
@@ -674,7 +674,7 @@ export const NotificationTemplatesView: React.FC = () => {
                                 </button>
                                 <button
                                   onClick={() => setTemplateChannel(tmpl.id, 'sms')}
-                                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition ${
+                                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium rounded-lg transition whitespace-nowrap shrink-0 ${
                                     channel === 'sms'
                                       ? 'bg-amber-600 text-white shadow-sm'
                                       : 'text-slate-400 hover:text-slate-200'
@@ -685,7 +685,7 @@ export const NotificationTemplatesView: React.FC = () => {
                                 </button>
                                 <button
                                   onClick={() => setTemplateChannel(tmpl.id, 'whatsapp')}
-                                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition ${
+                                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium rounded-lg transition whitespace-nowrap shrink-0 ${
                                     channel === 'whatsapp'
                                       ? 'bg-emerald-600 text-white shadow-sm'
                                       : 'text-slate-400 hover:text-slate-200'
@@ -697,8 +697,8 @@ export const NotificationTemplatesView: React.FC = () => {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                            <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+                              <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={tmpl.attachPdf || false}
@@ -709,7 +709,7 @@ export const NotificationTemplatesView: React.FC = () => {
                                   }
                                   className="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
                                 />
-                                <span>Auto-Attach PDF Invoice / Receipt</span>
+                                <span className="text-xs">Auto-Attach PDF</span>
                               </label>
 
                               <button
@@ -1887,31 +1887,31 @@ export const NotificationTemplatesView: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm w-full max-w-full min-w-0">
+                <div className="overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-thin w-full max-w-full min-w-0">
+                  <table className="w-full text-left text-xs min-w-[680px] sm:min-w-[740px] border-collapse">
                     <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
                       <tr>
-                        <th className="p-3.5">Timestamp</th>
-                        <th className="p-3.5">Template</th>
-                        <th className="p-3.5">Channel</th>
-                        <th className="p-3.5">Recipient</th>
-                        <th className="p-3.5">Contact Target</th>
-                        <th className="p-3.5">Status</th>
-                        <th className="p-3.5 text-right">Actions</th>
+                        <th className="p-3.5 whitespace-nowrap">Timestamp</th>
+                        <th className="p-3.5 whitespace-nowrap">Template</th>
+                        <th className="p-3.5 whitespace-nowrap">Channel</th>
+                        <th className="p-3.5 whitespace-nowrap">Recipient</th>
+                        <th className="p-3.5 whitespace-nowrap">Contact Target</th>
+                        <th className="p-3.5 whitespace-nowrap">Status</th>
+                        <th className="p-3.5 text-right whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
                       {notificationLogs.map((log) => (
                         <tr key={log.id} className="hover:bg-slate-850 transition">
-                          <td className="p-3.5 text-slate-400 font-mono">
+                          <td className="p-3.5 text-slate-400 font-mono whitespace-nowrap">
                             {new Date(log.timestamp).toLocaleTimeString()} &middot;{' '}
                             {new Date(log.timestamp).toLocaleDateString()}
                           </td>
-                          <td className="p-3.5 font-semibold text-slate-200">
+                          <td className="p-3.5 font-semibold text-slate-200 whitespace-nowrap">
                             {log.templateType.replace(/_/g, ' ').toUpperCase()}
                           </td>
-                          <td className="p-3.5">
+                          <td className="p-3.5 whitespace-nowrap">
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
                                 log.channel === 'email'
@@ -1924,9 +1924,9 @@ export const NotificationTemplatesView: React.FC = () => {
                               {log.channel}
                             </span>
                           </td>
-                          <td className="p-3.5 text-slate-200">{log.recipientName}</td>
-                          <td className="p-3.5 font-mono text-slate-400">{log.recipientContact}</td>
-                          <td className="p-3.5">
+                          <td className="p-3.5 text-slate-200 whitespace-nowrap">{log.recipientName}</td>
+                          <td className="p-3.5 font-mono text-slate-400 whitespace-nowrap">{log.recipientContact}</td>
+                          <td className="p-3.5 whitespace-nowrap">
                             {log.status === 'sent' ? (
                               <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1944,7 +1944,7 @@ export const NotificationTemplatesView: React.FC = () => {
                               </span>
                             )}
                           </td>
-                          <td className="p-3.5 text-right">
+                          <td className="p-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {log.directUrl && (
                                 <a
@@ -1975,6 +1975,9 @@ export const NotificationTemplatesView: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+                <div className="p-2.5 sm:hidden text-center text-[10px] font-medium text-slate-400 bg-slate-950/70 border-t border-slate-800">
+                  ⇄ Swipe table horizontally to view all delivery log details & actions
                 </div>
               </div>
             )}

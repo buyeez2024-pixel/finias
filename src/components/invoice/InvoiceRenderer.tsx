@@ -211,89 +211,93 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
     if (!hasSealsOrSigs) return null;
 
     return (
-      <div className="flex flex-col sm:flex-row items-end justify-end gap-4 flex-wrap print:break-inside-avoid">
+      <div className="w-full max-w-full min-w-0 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-3 sm:gap-4 print:break-inside-avoid">
         {/* Seals Row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {showCompanySeal && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-indigo-600/50 p-1 flex flex-col items-center justify-center text-center bg-indigo-50/40 rotate-[-4deg]">
-              {sigConfig.companySealUrl ? (
-                <img src={sigConfig.companySealUrl} alt="Seal" className="w-full h-full object-contain rounded-full" />
-              ) : (
-                <>
-                  <span className="text-[6px] font-black uppercase text-indigo-800 leading-none">
-                    {sigConfig.sealCompanyName || settings.name}
-                  </span>
-                  <div className="w-10 h-[1px] bg-indigo-400 my-0.5"></div>
-                  <span className="text-[4px] text-slate-500 leading-none">
-                    {sigConfig.sealAddress || settings.address || ''}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+        {(showCompanySeal || showRoundSeal) && (
+          <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap shrink-0">
+            {showCompanySeal && (
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full border-2 border-dashed border-indigo-600/50 p-1 flex flex-col items-center justify-center text-center bg-indigo-50/40 rotate-[-4deg] shrink-0">
+                {sigConfig.companySealUrl ? (
+                  <img src={sigConfig.companySealUrl} alt="Seal" className="w-full h-full object-contain rounded-full" />
+                ) : (
+                  <>
+                    <span className="text-[6px] font-black uppercase text-indigo-800 leading-none truncate max-w-full">
+                      {sigConfig.sealCompanyName || settings.name}
+                    </span>
+                    <div className="w-8 h-[1px] bg-indigo-400 my-0.5"></div>
+                    <span className="text-[4px] text-slate-500 leading-none truncate max-w-full">
+                      {sigConfig.sealAddress || settings.address || ''}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
 
-          {showRoundSeal && (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-double border-cyan-700 p-1 flex flex-col items-center justify-center text-center bg-cyan-50/40 rotate-[5deg]">
-              {sigConfig.roundSealUrl ? (
-                <img src={sigConfig.roundSealUrl} alt="Round Seal" className="w-full h-full object-contain rounded-full" />
-              ) : (
-                <>
-                  <span className="text-[5px] font-black uppercase text-cyan-900 leading-tight">★ {settings?.name} ★</span>
-                  <span className="text-[4px] font-mono text-cyan-700 uppercase">
-                    {sigConfig.roundSealText || 'VERIFIED'}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+            {showRoundSeal && (
+              <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full border-4 border-double border-cyan-700 p-1 flex flex-col items-center justify-center text-center bg-cyan-50/40 rotate-[5deg] shrink-0">
+                {sigConfig.roundSealUrl ? (
+                  <img src={sigConfig.roundSealUrl} alt="Round Seal" className="w-full h-full object-contain rounded-full" />
+                ) : (
+                  <>
+                    <span className="text-[5px] font-black uppercase text-cyan-900 leading-tight truncate max-w-full">★ {settings?.name} ★</span>
+                    <span className="text-[4px] font-mono text-cyan-700 uppercase">
+                      {sigConfig.roundSealText || 'VERIFIED'}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Signatures Row */}
-        <div className="flex items-end gap-6 justify-end">
-          {showProprietorSeal && (
-            <div className="w-36 text-center flex flex-col items-center space-y-1">
-              <div className="h-10 flex items-center justify-center">
-                {sigConfig.proprietorSignatureUrl ? (
-                  <img src={sigConfig.proprietorSignatureUrl} alt="Proprietor Sig" className="h-10 max-w-[90px] object-contain" />
-                ) : (
-                  <span className={`${getProprietorSignatureClass(sigConfig.proprietorSignatureStyle)} text-base leading-none select-none`}>
-                    {sigConfig.proprietorName || 'Arthur'}
+        {(showProprietorSeal || showSignature) && (
+          <div className="w-full sm:w-auto flex items-end justify-center sm:justify-end gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
+            {showProprietorSeal && (
+              <div className="flex-1 sm:flex-none min-w-[100px] max-w-[135px] sm:w-36 text-center flex flex-col items-center space-y-1">
+                <div className="h-9 sm:h-10 flex items-center justify-center max-w-full overflow-hidden">
+                  {sigConfig.proprietorSignatureUrl ? (
+                    <img src={sigConfig.proprietorSignatureUrl} alt="Proprietor Sig" className="h-8 sm:h-10 max-w-[85px] object-contain" />
+                  ) : (
+                    <span className={`${getProprietorSignatureClass(sigConfig.proprietorSignatureStyle)} text-sm sm:text-base leading-none select-none truncate block max-w-full`}>
+                      {sigConfig.proprietorName || 'Arthur'}
+                    </span>
+                  )}
+                </div>
+                <div className="w-full pt-1 border-t border-slate-300">
+                  <span className="text-[8px] sm:text-[9px] font-black uppercase text-slate-800 block truncate">
+                    {sigConfig.proprietorName || 'Proprietor'}
                   </span>
-                )}
+                  <span className="text-[7px] font-bold text-amber-700 block truncate">
+                    {sigConfig.proprietorDesignation || 'Managing Director'}
+                  </span>
+                </div>
               </div>
-              <div className="w-full pt-1 border-t border-slate-200">
-                <span className="text-[9px] font-black uppercase text-slate-800 block">
-                  {sigConfig.proprietorName || 'Proprietor'}
-                </span>
-                <span className="text-[7px] font-bold text-amber-700 block">
-                  {sigConfig.proprietorDesignation || 'Managing Director'}
-                </span>
-              </div>
-            </div>
-          )}
+            )}
 
-          {showSignature && (
-            <div className="w-36 text-center flex flex-col items-center space-y-1">
-              <div className="h-10 flex items-center justify-center">
-                {sigConfig.signatureUrl ? (
-                  <img src={sigConfig.signatureUrl} alt="Signature" className="h-10 max-w-[90px] object-contain" />
-                ) : (
-                  <span className={`${getSignatureClass(sigConfig.signatureStyle)} text-base leading-none select-none`}>
-                    {sigConfig.adminName || 'Admin'}
+            {showSignature && (
+              <div className="flex-1 sm:flex-none min-w-[100px] max-w-[135px] sm:w-36 text-center flex flex-col items-center space-y-1">
+                <div className="h-9 sm:h-10 flex items-center justify-center max-w-full overflow-hidden">
+                  {sigConfig.signatureUrl ? (
+                    <img src={sigConfig.signatureUrl} alt="Signature" className="h-8 sm:h-10 max-w-[85px] object-contain" />
+                  ) : (
+                    <span className={`${getSignatureClass(sigConfig.signatureStyle)} text-sm sm:text-base leading-none select-none truncate block max-w-full`}>
+                      {sigConfig.adminName || 'Admin'}
+                    </span>
+                  )}
+                </div>
+                <div className="w-full pt-1 border-t border-slate-300">
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase text-slate-700 block truncate">
+                    {mergedConfig.signatureLabel}
                   </span>
-                )}
+                  <span className="text-[7px] font-bold text-indigo-700 block truncate">
+                    {sigConfig.adminName || 'Admin Executive'}
+                  </span>
+                </div>
               </div>
-              <div className="w-full pt-1 border-t border-slate-200">
-                <span className="text-[9px] font-bold uppercase text-slate-700 block">
-                  {mergedConfig.signatureLabel}
-                </span>
-                <span className="text-[7px] font-bold text-indigo-700 block">
-                  {sigConfig.adminName || 'Admin Executive'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -302,7 +306,7 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
     const content = renderSealsAndSignaturesContent();
     if (!content) return null;
     return (
-      <div className="flex flex-col sm:flex-row items-end justify-between gap-4 pt-4 border-t border-slate-200 mt-4 print:break-inside-avoid">
+      <div className="w-full max-w-full min-w-0 pt-3 sm:pt-4 border-t border-slate-200 mt-3 sm:mt-4 print:break-inside-avoid">
         {content}
       </div>
     );
@@ -376,12 +380,12 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
       {/* Surface Paper Container */}
       <div
         id={printId}
-        className={`bg-white text-slate-900 mx-auto select-text shadow-xl transition-all duration-200 ${
+        className={`bg-white text-slate-900 mx-auto select-text shadow-xl transition-all duration-200 w-full max-w-full min-w-0 box-border overflow-hidden ${
           settings.fontPreset === 'serif' ? 'font-serif' : settings.fontPreset === 'mono' ? 'font-mono' : 'font-sans'
         } ${
           layoutType === 'slim' || layoutType === 'slim2'
-            ? 'max-w-[340px] p-4 text-[11px] font-mono border-t-8 border-indigo-600 rounded-2xl'
-            : 'max-w-[850px] p-6 sm:p-8 text-xs font-sans rounded-2xl border border-slate-200'
+            ? 'max-w-[340px] p-3 sm:p-4 text-[11px] font-mono border-t-8 border-indigo-600 rounded-2xl'
+            : 'max-w-[850px] p-3.5 sm:p-8 text-xs font-sans rounded-2xl border border-slate-200'
         }`}
       >
         {/* ========================================================================= */}
@@ -1137,14 +1141,14 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
             )}
 
             {/* Footer with Signatures */}
-            <div className="pt-6 border-t border-slate-300 grid grid-cols-2 gap-4 text-xs mt-2">
+            <div className="pt-6 border-t border-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mt-2">
               <div className="space-y-1">
                 <span className="font-bold text-[10px] uppercase text-slate-500 tracking-wider block mb-1">Declaration & Terms:</span>
                 <p className="text-[10px] text-slate-600 leading-relaxed whitespace-pre-line">
                   {mergedConfig.termsAndConditions}
                 </p>
               </div>
-              <div className="flex flex-col items-end justify-end">
+              <div className="flex flex-col items-center sm:items-end justify-end">
                 {renderSealsAndSignaturesContent()}
               </div>
             </div>

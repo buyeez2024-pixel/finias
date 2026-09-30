@@ -253,33 +253,33 @@ export const SettingsView: React.FC = () => {
   const TabIcon = currentTabMeta.icon;
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 pb-12 animate-fadeIn max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 pb-24 sm:pb-12 animate-fadeIn w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
       {/* Top Header & Breadcrumb Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl transition-colors duration-300">
-        <div className="space-y-1.5">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm dark:shadow-xl transition-colors duration-300 w-full max-w-full min-w-0">
+        <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
-              <SettingsIcon className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 shrink-0">
+              <SettingsIcon className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
               <span>Settings & Permissions</span>
             </span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
-              <TabIcon className="w-3.5 h-3.5 text-indigo-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800 shrink-0">
+              <TabIcon className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
               <span>{currentTabMeta.label}</span>
             </span>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5 pt-1">
-            <span>{currentTabMeta.label}</span>
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight break-words min-w-0 pt-1">
+            {currentTabMeta.label}
           </h1>
 
-          <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
+          <p className="text-xs text-slate-400 max-w-3xl leading-relaxed break-words">
             {currentTabMeta.description}
           </p>
         </div>
 
         {settingsSubTab === 'currency' && (
-          <div className="shrink-0">
+          <div className="shrink-0 w-full sm:w-auto">
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') {
@@ -288,7 +288,7 @@ export const SettingsView: React.FC = () => {
                 }
               }}
               id="btn-add-new-currency"
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 text-center"
             >
               <Plus className="w-4 h-4" />
               <span>Add Currency</span>
@@ -298,7 +298,7 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Tab Content Panel */}
-      <div className="transition-all duration-200 max-w-full overflow-hidden">
+      <div className="transition-all duration-200 w-full max-w-full min-w-0 overflow-hidden">
         {(settingsSubTab === 'business_settings' || settingsSubTab === 'profile' || !settingsSubTab) && (
           <BusinessSettingsTab />
         )}

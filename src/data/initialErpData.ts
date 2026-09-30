@@ -401,7 +401,48 @@ export const initialLocations = [
 ];
 export const initialWarranties = [];
 export const initialPurchaseRequisitions = [];
-export const initialPaymentMethods = [];
+export const initialPaymentMethods = [
+  {
+    id: 'pm_cash',
+    name: 'Cash',
+    code: 'cash',
+    description: 'Physical cash payments at point of sale checkout',
+    enabled: true,
+    isDefault: true,
+  },
+  {
+    id: 'pm_card',
+    name: 'Card / Debit & Credit',
+    code: 'card',
+    description: 'Credit and debit card payments via terminal / swipe machine',
+    enabled: true,
+    isDefault: true,
+  },
+  {
+    id: 'pm_bank_transfer',
+    name: 'Bank Transfer / Wire',
+    code: 'bank_transfer',
+    description: 'Direct wire / NEFT / RTGS / ACH bank account transfer',
+    enabled: true,
+    isDefault: true,
+  },
+  {
+    id: 'pm_upi',
+    name: 'UPI / QR Code',
+    code: 'upi',
+    description: 'Unified Payments Interface and instant mobile QR code scan',
+    enabled: true,
+    isDefault: false,
+  },
+  {
+    id: 'pm_cheque',
+    name: 'Cheque / Check',
+    code: 'cheque',
+    description: 'Bank cheque payment with cheque number and clearing tracking',
+    enabled: true,
+    isDefault: false,
+  },
+];
 export const initialAccounts = [];
 export const initialCashRegister = {
   id: 'reg_default',

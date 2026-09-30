@@ -84,7 +84,7 @@ const AdvanceToggleCard: React.FC<AdvanceToggleCardProps> = ({
           onChange(!checked);
         }
       }}
-      className={`group relative p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between gap-3 ${
+      className={`group relative p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between gap-3 min-w-0 overflow-hidden ${
         checked
           ? 'bg-slate-950/90 border-indigo-500/60 shadow-md shadow-indigo-950/40 ring-1 ring-indigo-500/20'
           : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700/90 hover:bg-slate-900/50'
@@ -664,23 +664,23 @@ export const InvoiceLayoutsTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0 flex-shrink-0">
       {/* Top Action & Sub-Navigation Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm dark:shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full max-w-full min-w-0">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
               6 Built-In finias POS Layouts
             </span>
-            <span className="text-[11px] font-bold text-slate-400">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0">
               Active: <strong className="text-white uppercase font-mono">{settings.defaultInvoiceLayout}</strong>
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 break-words min-w-0">
+            <FileSpreadsheet className="w-5 h-5 text-indigo-400 shrink-0" />
             <span>Invoice Layouts & Receipt Schemes</span>
           </h2>
-          <p className="text-xs text-slate-400 max-w-2xl">
+          <p className="text-xs text-slate-400 max-w-2xl break-words">
             Configure full A4, A5, and 80mm POS thermal roll receipt layouts. Customize product columns, statutory GST summaries, bank remittance details, and numbering prefixes.
           </p>
         </div>
@@ -688,7 +688,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
         {/* Global Save Button */}
         <button
           onClick={handleSaveAll}
-          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 shrink-0 self-start md:self-center"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 shrink-0 self-stretch sm:self-auto text-center"
         >
           {savedAlert ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
           <span>{savedAlert ? 'Settings Saved!' : 'Save Invoice Configuration'}</span>
@@ -696,38 +696,48 @@ export const InvoiceLayoutsTab: React.FC = () => {
       </div>
 
       {/* Sub-Tabs: Layouts Gallery vs Field Customizer vs Numbering Schemes */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+      <div
+        className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto scrollbar-thin w-full max-w-full min-w-0 -mx-0.5 px-0.5"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x',
+          overscrollBehaviorX: 'contain'
+        }}
+      >
         <button
+          type="button"
           onClick={() => setActiveTabSubSection('layouts')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTabSubSection === 'layouts'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
+          <Layers className="w-3.5 h-3.5 shrink-0" />
           <span>1. Layout Templates & Live Preview</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTabSubSection('fields')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTabSubSection === 'fields'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <Settings2 className="w-3.5 h-3.5" />
+          <Settings2 className="w-3.5 h-3.5 shrink-0" />
           <span>2. Columns & Data Customizer</span>
         </button>
         <button
+          type="button"
           onClick={() => setActiveTabSubSection('schemes')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTabSubSection === 'schemes'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
               : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
           }`}
         >
-          <FileText className="w-3.5 h-3.5" />
+          <FileText className="w-3.5 h-3.5 shrink-0" />
           <span>3. Numbering Schemes & Prefixes</span>
         </button>
       </div>
@@ -736,9 +746,9 @@ export const InvoiceLayoutsTab: React.FC = () => {
       {/* SUB-SECTION 1: LAYOUT TEMPLATES GALLERY & LIVE STUDIO                     */}
       {/* ========================================================================= */}
       {activeTabSubSection === 'layouts' && (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 w-full max-w-full min-w-0">
           {/* Left Column: 6 Layout Cards Selection */}
-          <div className="xl:col-span-6 space-y-4">
+          <div className="xl:col-span-6 space-y-4 w-full min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-300">
                 Choose Invoice Template
@@ -755,7 +765,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
                   <div
                     key={layout.id}
                     onClick={() => setSelectedLayout(layout.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 min-w-0 overflow-hidden ${
                       isSelected
                         ? 'bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/30 shadow-lg'
                         : 'bg-slate-900 border-slate-800 hover:border-indigo-300 dark:hover:border-slate-700 hover:bg-slate-800'
@@ -799,7 +809,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
                             e.stopPropagation();
                             handleSetDefaultLayout(layout.id);
                           }}
-                          className={`w-full py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                          className={`w-full py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                             isDefault
                               ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
                               : 'bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300'
@@ -819,19 +829,19 @@ export const InvoiceLayoutsTab: React.FC = () => {
             <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 text-xs text-indigo-200 flex items-start gap-3">
               <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-indigo-900  block">Cashier Layout Switching:</strong>
+                <strong className="text-indigo-900 block">Cashier Layout Switching:</strong>
                 Cashiers can also toggle between all 6 invoice formats on the fly directly inside the POS checkout and receipt modal!
               </div>
             </div>
           </div>
 
           {/* Right Column: Live Interactive Preview Studio */}
-          <div className="xl:col-span-6 space-y-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+          <div className="xl:col-span-6 space-y-4 w-full min-w-0">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-4 w-full max-w-full min-w-0 overflow-hidden">
               {/* Preview Studio Toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
                     Live Rendering Studio
                   </span>
@@ -840,13 +850,13 @@ export const InvoiceLayoutsTab: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Gift Receipt Toggle */}
                   {(selectedLayout === 'slim2' || selectedLayout === 'slim') && (
                     <button
                       type="button"
                       onClick={() => setIsGiftPreview(!isGiftPreview)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                         isGiftPreview
                           ? 'bg-rose-600 text-white'
                           : 'bg-slate-800 text-slate-300 hover:text-white'
@@ -861,7 +871,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => printElement('printable-invoice-surface', `Test-Invoice-${selectedLayout}`)}
-                    className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition border border-slate-700"
+                    className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
                     title="Print Live Invoice"
                   >
                     <Printer className="w-3.5 h-3.5 text-indigo-400" />
@@ -870,8 +880,20 @@ export const InvoiceLayoutsTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Surface Container */}
-              <div className="max-h-[620px] overflow-y-auto p-2 bg-slate-950/60 rounded-2xl border border-slate-800">
+              {/* Mobile swipe hint */}
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+                <span>⇄ Swipe invoice horizontally to view full paper layout</span>
+              </div>
+
+              {/* Surface Container with Smooth Touch-Swipe Scrolling for mobile */}
+              <div
+                className="max-h-[620px] overflow-y-auto overflow-x-auto scrollbar-thin p-2 sm:p-3 bg-slate-950/60 rounded-2xl border border-slate-800 w-full max-w-full min-w-0"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-x pan-y',
+                  overscrollBehaviorX: 'contain'
+                }}
+              >
                 <InvoiceRenderer
                   transaction={SAMPLE_TRANSACTION}
                   settings={settings}
@@ -891,10 +913,10 @@ export const InvoiceLayoutsTab: React.FC = () => {
       {/* SUB-SECTION 2: PRODUCT TABLE COLUMNS & DATA CUSTOMIZER                    */}
       {/* ========================================================================= */}
       {activeTabSubSection === 'fields' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 w-full max-w-full min-w-0">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6 w-full min-w-0">
             {/* Header & Titles */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
                   <div className="flex items-center gap-2">
@@ -1058,7 +1080,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
             </div>
 
             {/* Product Table Column Toggles */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
                   <div className="flex items-center gap-2">
@@ -1224,7 +1246,7 @@ export const InvoiceLayoutsTab: React.FC = () => {
             </div>
 
             {/* Bank Details & Terms */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
                   <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
@@ -1358,13 +1380,24 @@ export const InvoiceLayoutsTab: React.FC = () => {
           </div>
 
           {/* Right Preview Column */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3 sticky top-4">
+          <div className="lg:col-span-5 space-y-4 w-full min-w-0">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3 sticky top-4 w-full max-w-full min-w-0 overflow-hidden">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-xs font-bold text-white">Live Config Preview</span>
                 <span className="text-[10px] font-mono text-indigo-400 uppercase">{selectedLayout}</span>
               </div>
-              <div className="max-h-[580px] overflow-y-auto p-1 bg-slate-950/60 rounded-2xl border border-slate-800">
+              {/* Mobile swipe hint */}
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+                <span>⇄ Swipe preview horizontally to view full invoice</span>
+              </div>
+              <div
+                className="max-h-[580px] overflow-y-auto overflow-x-auto scrollbar-thin p-1 bg-slate-950/60 rounded-2xl border border-slate-800 w-full max-w-full min-w-0"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-x pan-y',
+                  overscrollBehaviorX: 'contain'
+                }}
+              >
                 <InvoiceRenderer
                   transaction={SAMPLE_TRANSACTION}
                   settings={settings}
@@ -1383,14 +1416,14 @@ export const InvoiceLayoutsTab: React.FC = () => {
       {/* SUB-SECTION 3: INVOICE SCHEMES & NUMBERING PREFIXES                       */}
       {/* ========================================================================= */}
       {activeTabSubSection === 'schemes' && (
-        <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-800">
-              <div>
+        <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-sm dark:shadow-xl w-full max-w-full min-w-0 overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-800 w-full min-w-0">
+              <div className="min-w-0">
                 <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
                   Invoice Numbering Schemes
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5 break-words">
                   Define numbering formats, prefixes, and digit padding for retail receipts, B2B invoices, and thermal slips.
                 </p>
               </div>
@@ -1398,28 +1431,40 @@ export const InvoiceLayoutsTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowAddSchemeModal(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition self-start sm:self-auto"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30 transition self-start sm:self-auto shrink-0 cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add New Scheme</span>
               </button>
             </div>
 
-            {/* Schemes List Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            {/* Mobile swipe indicator */}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+              <span>⇄ Swipe table horizontally to view all scheme parameters & actions</span>
+            </div>
+
+            {/* Schemes List Table with Smooth Touch-Swipe Scrolling */}
+            <div
+              className="overflow-x-auto scrollbar-thin rounded-xl border border-slate-800 w-full max-w-full min-w-0"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x pan-y',
+                overscrollBehaviorX: 'contain'
+              }}
+            >
+              <table className="w-full text-left text-xs min-w-[650px] sm:min-w-[700px] border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-extrabold uppercase text-[10px]">
-                    <th className="pb-3">Scheme Name</th>
-                    <th className="pb-3">Prefix</th>
-                    <th className="pb-3 text-center">Start #</th>
-                    <th className="pb-3 text-center">Total Digits</th>
-                    <th className="pb-3">Sample Preview</th>
-                    <th className="pb-3 text-center">Status</th>
-                    <th className="pb-3 text-right">Actions</th>
+                  <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 font-extrabold uppercase text-[10px]">
+                    <th className="py-3 px-3">Scheme Name</th>
+                    <th className="py-3 px-3">Prefix</th>
+                    <th className="py-3 px-3 text-center">Start #</th>
+                    <th className="py-3 px-3 text-center">Total Digits</th>
+                    <th className="py-3 px-3">Sample Preview</th>
+                    <th className="py-3 px-3 text-center">Status</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
+                <tbody className="divide-y divide-slate-800/60">
                   {schemes.map((sch) => {
                     const padded = String(sch.startNumber).padStart(sch.numberOfDigits, '0');
                     const sample =
@@ -1429,12 +1474,12 @@ export const InvoiceLayoutsTab: React.FC = () => {
 
                     return (
                       <tr key={sch.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 font-bold text-white">{sch.name}</td>
-                        <td className="py-3 font-mono text-indigo-300 font-bold">{sch.prefix}</td>
-                        <td className="py-3 text-center font-mono text-slate-300">{sch.startNumber}</td>
-                        <td className="py-3 text-center font-mono text-slate-300">{sch.numberOfDigits}</td>
-                        <td className="py-3 font-mono font-bold text-emerald-400">{sample}</td>
-                        <td className="py-3 text-center">
+                        <td className="py-3 px-3 font-bold text-white whitespace-nowrap">{sch.name}</td>
+                        <td className="py-3 px-3 font-mono text-indigo-300 font-bold whitespace-nowrap">{sch.prefix}</td>
+                        <td className="py-3 px-3 text-center font-mono text-slate-300 whitespace-nowrap">{sch.startNumber}</td>
+                        <td className="py-3 px-3 text-center font-mono text-slate-300 whitespace-nowrap">{sch.numberOfDigits}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-emerald-400 whitespace-nowrap">{sample}</td>
+                        <td className="py-3 px-3 text-center whitespace-nowrap">
                           {sch.isDefault ? (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                               Default
@@ -1443,31 +1488,33 @@ export const InvoiceLayoutsTab: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleSetDefaultScheme(sch.id)}
-                              className="text-[10px] text-slate-400 hover:text-indigo-300 underline"
+                              className="text-[10px] text-slate-400 hover:text-indigo-300 underline cursor-pointer"
                             >
                               Set Default
                             </button>
                           )}
                         </td>
-                        <td className="py-3 text-right flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(sch)}
-                            className="text-indigo-300 hover:text-indigo-200 p-1 rounded hover:bg-indigo-500/10"
-                            title="Edit Scheme"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          {!sch.isDefault && schemes.length > 1 && (
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
-                              onClick={() => handleDeleteScheme(sch.id)}
-                              className="text-rose-400 hover:text-rose-300 p-1 rounded hover:bg-rose-500/10"
-                              title="Delete Scheme"
+                              onClick={() => handleStartEdit(sch)}
+                              className="text-indigo-300 hover:text-indigo-200 p-1 rounded hover:bg-indigo-500/10 cursor-pointer"
+                              title="Edit Scheme"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Pencil className="w-4 h-4" />
                             </button>
-                          )}
+                            {!sch.isDefault && schemes.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteScheme(sch.id)}
+                                className="text-rose-400 hover:text-rose-300 p-1 rounded hover:bg-rose-500/10 cursor-pointer"
+                                title="Delete Scheme"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1479,8 +1526,8 @@ export const InvoiceLayoutsTab: React.FC = () => {
 
           {/* Add Scheme Modal */}
           {showAddSchemeModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-fadeIn">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="font-black text-white text-base">Add Invoice Numbering Scheme</h3>
                   <button
@@ -1575,8 +1622,8 @@ export const InvoiceLayoutsTab: React.FC = () => {
 
           {/* Edit Scheme Modal */}
           {editingScheme && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-fadeIn">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl animate-fadeIn">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="font-black text-white text-base">Edit Invoice Numbering Scheme</h3>
                   <button

@@ -705,7 +705,7 @@ export const BusinessSettingsTab: React.FC = () => {
       )}
 
       {/* Active Section Form Panel - Full Width */}
-      <div className={`w-full ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-slate-100/30 theme-light-hq' : 'bg-slate-900/90 border-slate-800 text-white'} border rounded-3xl p-6 shadow-xl space-y-6`}>
+      <div className={`w-full max-w-full min-w-0 ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-slate-100/30 theme-light-hq' : 'bg-slate-900/90 border-slate-800 text-white'} border rounded-3xl p-3.5 sm:p-6 shadow-xl space-y-6 overflow-x-hidden`}>
           {/* Section Header */}
           <div className={`flex items-start justify-between gap-4 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'} pb-5`}>
             <div className="flex items-center gap-3.5">
@@ -2879,20 +2879,20 @@ export const BusinessSettingsTab: React.FC = () => {
             {/* 14. MODULES MANAGER TAB */}
             {/* ========================================================================= */}
             {activeSection === 'modules' && (
-              <div className="space-y-6">
-                <div className="bg-slate-950/60 border border-indigo-500/20 p-4 rounded-2xl flex items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Advanced Enterprise Module Controller</h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+              <div className="space-y-6 w-full max-w-full min-w-0">
+                <div className="bg-slate-950/60 border border-indigo-500/20 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full max-w-full min-w-0">
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider break-words">Advanced Enterprise Module Controller</h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed break-words">
                       Toggle high-level business modules to instantly activate or conceal system features across navigation and workspace panels.
                     </p>
                   </div>
-                  <div className="px-3 py-1.5 bg-indigo-600/10 border border-indigo-500/30 rounded-xl text-indigo-400 text-xs font-bold shrink-0">
+                  <div className="px-3 py-1.5 bg-indigo-600/10 border border-indigo-500/30 rounded-xl text-indigo-400 text-xs font-bold shrink-0 self-start sm:self-auto">
                     {Object.values(formData.enabledModules || {}).filter(v => v !== false).length} / 8 Modules Active
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full max-w-full min-w-0">
                   {[
                     { key: 'purchases', name: 'Purchases & Supplier Inward', desc: 'Manage vendor procurement, purchase orders, and stock receipts', icon: ShoppingCart },
                     { key: 'stockAdjustments', name: 'Stock Adjustments & Damage Audit', desc: 'Audit shrinkage, expiry, product damage, and stock write-offs', icon: Boxes },
@@ -2909,24 +2909,24 @@ export const BusinessSettingsTab: React.FC = () => {
                       <div
                         key={m.key}
                         onClick={() => handleModuleToggle(m.key, !isEnabled)}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 group ${
+                        className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-4 group w-full max-w-full min-w-0 ${
                           isEnabled
                             ? 'bg-slate-950 border-indigo-500/40 shadow-lg shadow-indigo-500/5'
                             : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700 opacity-75'
                         }`}
                       >
-                        <div className="flex items-start gap-3.5">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition ${
+                        <div className="flex items-start gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+                          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition ${
                             isEnabled
                               ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-400'
                               : 'bg-slate-900 border border-slate-800 text-slate-500'
                           }`}>
-                            <Icon className="w-5 h-5" />
+                            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-xs font-bold text-white group-hover:text-indigo-300 transition">{m.name}</h4>
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                              <h4 className="text-xs font-bold text-white group-hover:text-indigo-300 transition break-words">{m.name}</h4>
+                              <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 ${
                                 isEnabled
                                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                   : 'bg-slate-800 text-slate-400 border border-slate-700'
@@ -2934,17 +2934,17 @@ export const BusinessSettingsTab: React.FC = () => {
                                 {isEnabled ? 'Active' : 'Disabled'}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 leading-relaxed">{m.desc}</p>
+                            <p className="text-[11px] text-slate-400 leading-relaxed break-words">{m.desc}</p>
                           </div>
                         </div>
 
                         {/* Advanced Slide Toggle Switch */}
-                        <div className="shrink-0">
-                          <div className={`w-12 h-6 rounded-full transition-colors duration-200 relative p-0.5 ${
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-11 sm:w-12 h-6 rounded-full transition-colors duration-200 relative p-0.5 ${
                             isEnabled ? 'bg-indigo-600' : 'bg-slate-800'
                           }`}>
                             <div className={`w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 transform flex items-center justify-center ${
-                              isEnabled ? 'translate-x-6' : 'translate-x-0'
+                              isEnabled ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'
                             }`}>
                               {isEnabled ? (
                                 <Check className="w-3 h-3 text-indigo-600 stroke-[3]" />

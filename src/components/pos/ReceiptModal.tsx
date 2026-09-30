@@ -193,7 +193,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, onClose }) => 
           </div>
 
           {/* Scrollable Receipt Surface Paper Container */}
-          <div className="overflow-y-auto p-1.5 sm:p-3 bg-slate-950/40 rounded-xl border border-slate-800 flex-1 min-h-0 custom-scrollbar">
+          <div className="overflow-y-auto overflow-x-hidden p-1 sm:p-3 bg-slate-950/40 rounded-xl border border-slate-800 flex-1 min-h-0 custom-scrollbar w-full max-w-full min-w-0">
             <InvoiceRenderer
               transaction={sale}
               settings={settings || {}}

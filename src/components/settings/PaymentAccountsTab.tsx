@@ -113,20 +113,20 @@ export const PaymentAccountsTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn w-full max-w-full min-w-0 flex-shrink-0 mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0">
+        <div className="min-w-0">
           <h2 className="text-sm font-black uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-            <Landmark className="w-5 h-5" />
+            <Landmark className="w-5 h-5 shrink-0" />
             <span>Financial Payment Accounts</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1 break-words">
             Manage your business bank accounts, cash registers, and credit lines for incoming and outgoing payments.
           </p>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 shrink-0"
+          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add Account</span>
@@ -134,7 +134,7 @@ export const PaymentAccountsTab: React.FC = () => {
       </div>
 
       {accounts.length === 0 ? (
-        <div className={`border-2 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center ${isLight ? 'border-slate-300 bg-slate-50' : 'border-slate-800 bg-slate-900/50'}`}>
+        <div className={`border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center justify-center w-full min-w-0 ${isLight ? 'border-slate-300 bg-slate-50' : 'border-slate-800 bg-slate-900/50'}`}>
           <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mb-4">
             <Landmark className="w-8 h-8 text-indigo-400" />
           </div>
@@ -151,30 +151,42 @@ export const PaymentAccountsTab: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className={`rounded-2xl border overflow-hidden ${isLight ? 'bg-slate-900 border-slate-800 shadow-xl' : 'border-slate-800 bg-slate-900/50'}`}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className={`text-xs uppercase font-bold ${isLight ? 'bg-slate-950 text-slate-400' : 'bg-slate-800/80 text-slate-400'}`}>
+        <div className={`rounded-2xl sm:rounded-3xl border overflow-hidden w-full max-w-full min-w-0 shadow-sm dark:shadow-xl ${isLight ? 'bg-slate-900 border-slate-800 shadow-xl' : 'border-slate-800 bg-slate-900/50'}`}>
+          {/* Mobile Swipe Hint */}
+          <div className="px-4 pt-3 pb-1 flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 sm:hidden">
+            <span>⇄ Swipe table horizontally to view all account details & actions</span>
+          </div>
+
+          <div
+            className="overflow-x-auto scrollbar-thin w-full max-w-full min-w-0"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-x pan-y',
+              overscrollBehaviorX: 'contain',
+            }}
+          >
+            <table className="w-full text-left text-xs min-w-[620px] sm:min-w-[680px] border-collapse">
+              <thead className={`text-xs uppercase font-bold border-b border-slate-800 ${isLight ? 'bg-slate-950 text-slate-400' : 'bg-slate-800/80 text-slate-400'}`}>
                 <tr>
-                  <th className="px-4 py-3">Account Name</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Account Number</th>
-                  <th className="px-4 py-3 text-right">Current Balance</th>
-                  <th className="px-4 py-3 text-center">Default</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Account Name</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Type</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap">Account Number</th>
+                  <th className="px-4 py-3.5 text-right whitespace-nowrap">Current Balance</th>
+                  <th className="px-4 py-3.5 text-center whitespace-nowrap">Default</th>
+                  <th className="px-4 py-3.5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {accounts.map((account) => (
                   <tr key={account.id} className={`transition-colors ${isLight ? 'hover:bg-slate-800/30' : 'hover:bg-slate-800/30'}`}>
-                    <td className={`px-4 py-3 font-bold ${isLight ? 'text-white' : 'text-white'}`}>
-                      {account.name}
+                    <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${isLight ? 'text-white' : 'text-white'}`}>
+                      <div>{account.name}</div>
                       {account.note && (
                         <p className="text-[10px] font-normal text-slate-400 mt-0.5 max-w-[200px] truncate">{account.note}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide flex items-center gap-1.5 w-max ${
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide inline-flex items-center gap-1.5 ${
                         account.accountType === 'Bank Account' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
                         account.accountType === 'Credit Card' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                         account.accountType === 'E-Wallet' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
@@ -187,11 +199,11 @@ export const PaymentAccountsTab: React.FC = () => {
                         {account.accountType}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-400">{account.accountNumber || '--'}</td>
-                    <td className={`px-4 py-3 text-right font-black ${account.balance < 0 ? 'text-rose-500' : (isLight ? 'text-emerald-400' : 'text-emerald-400')}`}>
-                      ${account.balance.toFixed(2)}
+                    <td className="px-4 py-3.5 font-mono text-slate-400 whitespace-nowrap">{account.accountNumber || '--'}</td>
+                    <td className={`px-4 py-3.5 text-right font-mono font-black whitespace-nowrap ${account.balance < 0 ? 'text-rose-500' : (isLight ? 'text-emerald-400' : 'text-emerald-400')}`}>
+                      {settings.currencySymbol || '$'}{account.balance.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3.5 text-center whitespace-nowrap">
                       {account.isDefault ? (
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                           <ShieldCheck className="w-3.5 h-3.5" />
@@ -200,18 +212,18 @@ export const PaymentAccountsTab: React.FC = () => {
                         <span className="text-slate-500">--</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEdit(account)}
-                          className={`p-1.5 rounded-lg transition-colors ${isLight ? 'text-indigo-400 hover:bg-indigo-500/20' : 'text-indigo-400 hover:bg-indigo-500/20'}`}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isLight ? 'text-indigo-400 hover:bg-indigo-500/20' : 'text-indigo-400 hover:bg-indigo-500/20'}`}
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(account.id)}
-                          className={`p-1.5 rounded-lg transition-colors ${isLight ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-400 hover:bg-rose-500/20'}`}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isLight ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-400 hover:bg-rose-500/20'}`}
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -228,11 +240,11 @@ export const PaymentAccountsTab: React.FC = () => {
 
       {/* CREATE/EDIT ACCOUNT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
-          <div className={`w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-full ${isLight ? 'bg-white' : 'bg-slate-900 border border-slate-700'}`}>
-            <div className={`flex items-center justify-between p-5 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-              <h2 className={`text-lg font-black flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                <Landmark className="w-5 h-5 text-indigo-500" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] ${isLight ? 'bg-white' : 'bg-slate-900 border border-slate-700'}`}>
+            <div className={`flex items-center justify-between p-4 sm:p-5 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <h2 className={`text-base sm:text-lg font-black flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <Landmark className="w-5 h-5 text-indigo-500 shrink-0" />
                 <span>{editingAccount ? 'Edit Payment Account' : 'Add Payment Account'}</span>
               </h2>
               <button
@@ -243,8 +255,8 @@ export const PaymentAccountsTab: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="sm:col-span-2">
                   <label className={`block text-xs font-bold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                     Account Name <span className="text-rose-500">*</span>
@@ -293,13 +305,13 @@ export const PaymentAccountsTab: React.FC = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <span className="text-slate-400 font-bold">$</span>
+                      <span className="text-slate-400 font-bold">{settings.currencySymbol || '$'}</span>
                     </div>
                     <input
                       type="number"
                       value={formData.balance || 0}
                       onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
-                      disabled={!!editingAccount} // Cannot change initial balance after creation easily here for simplicity
+                      disabled={!!editingAccount}
                       className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isLight ? 'bg-white border border-slate-300 text-slate-900 disabled:bg-slate-100 disabled:text-slate-500' : 'bg-slate-950 border border-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-600'}`}
                     />
                   </div>
@@ -344,17 +356,17 @@ export const PaymentAccountsTab: React.FC = () => {
               </div>
             </div>
 
-            <div className={`p-5 border-t flex items-center justify-end gap-3 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/80'}`}>
+            <div className={`p-4 sm:p-5 border-t flex items-center justify-end gap-3 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-900/80'}`}>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+                className="px-4 sm:px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Close</span>
               </button>
               <button
                 onClick={handleSave}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+                className="px-4 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Save Account</span>
