@@ -275,7 +275,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const finalAddAction = onAddBtnClick || openAddSalePage;
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full max-w-full overflow-hidden min-w-0">
+    <div className="p-3 sm:p-6 pb-12 sm:pb-16 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full max-w-full overflow-hidden min-w-0">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 transition-colors duration-300 shadow-sm">
         <div>
