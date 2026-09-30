@@ -275,7 +275,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const finalAddAction = onAddBtnClick || openAddSalePage;
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full max-w-full overflow-hidden min-w-0">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 transition-colors duration-300 shadow-sm">
         <div>
@@ -612,8 +612,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
       </div>
 
       {/* Sales Invoices Table (Attached Directly with Zero Gap) */}
-      <div className="bg-slate-900 rounded-b-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors duration-300">
-        <div className="overflow-x-auto scrollbar-thin touch-pan-x overscroll-x-contain select-none">
+      <div className="bg-slate-900 rounded-b-2xl border border-slate-800 w-full max-w-full overflow-hidden min-w-0 shadow-sm transition-colors duration-300">
+        <div className="overflow-x-auto scrollbar-thin touch-pan-x overscroll-x-contain select-none w-full max-w-full">
           <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>
