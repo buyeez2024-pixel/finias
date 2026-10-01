@@ -951,6 +951,8 @@ export const Sidebar: React.FC = () => {
           id: 'settings',
           label: 'Business Settings',
           icon: SettingsIcon,
+          isExpandable: true,
+          subItems: businessSettingsSubItems,
           iconColor: 'text-slate-400',
           iconBg: 'bg-slate-500/10 border-slate-500/20',
         },

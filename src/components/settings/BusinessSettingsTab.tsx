@@ -63,6 +63,7 @@ import {
   Upload,
   Image,
   Database,
+  Printer,
 } from 'lucide-react';
 import { DatabaseSetupTab } from './DatabaseSetupTab';
 
@@ -77,8 +78,10 @@ type SettingsSectionId =
   | 'purchases'
   | 'payment'
   | 'app_updates'
-  | 'system' | 'system_security' | 'printers'
-  | 'prefixes' | 'printers'
+  | 'system'
+  | 'system_security'
+  | 'printers'
+  | 'prefixes'
   | 'reward_points'
   | 'modules'
   | 'custom_labels';
@@ -95,7 +98,7 @@ interface SectionMeta {
 const SECTIONS: SectionMeta[] = [
   {
     id: 'business',
-    label: 'Business Settings',
+    label: 'Business Details',
     shortLabel: 'Business',
     icon: Building2,
     description: 'Core company profile, HQ contact details, trading entity, start date, default profit margin, currency, financial year & timezone.',
@@ -143,6 +146,13 @@ const SECTIONS: SectionMeta[] = [
     description: 'Cash register controls, strict shift lockouts, and default double-entry chart accounts.',
   },
   {
+    id: 'app_updates',
+    label: 'System Updates',
+    shortLabel: 'Updates',
+    icon: Sparkles,
+    description: 'Software release parameters, copyright notice, automated version incrementation, and changelog history.',
+  },
+  {
     id: 'system',
     label: 'Themes',
     shortLabel: 'Themes',
@@ -152,21 +162,21 @@ const SECTIONS: SectionMeta[] = [
   {
     id: 'system_security',
     label: 'System Security Shield',
-    shortLabel: 'System Security Shield',
+    shortLabel: 'Security Shield',
     icon: Shield,
     description: 'Ransomware & Anti-Hacking Protection (Helmet, Rate Limiting, HPP, CORS anti-injection shield).',
   },
   {
     id: 'prefixes',
     label: 'Document Prefix',
-    shortLabel: 'Document Prefix',
+    shortLabel: 'Prefixes',
     icon: Hash,
     description: 'Custom numbering prefixes for Invoices, POs, Transfers, Adjustments, and Contacts.',
   },
   {
     id: 'reward_points',
     label: 'Reward Settings',
-    shortLabel: 'Reward Settings',
+    shortLabel: 'Rewards',
     icon: Gift,
     description: 'Customer loyalty point earning rates, point values, redemption limits, and expiration rules.',
   },
@@ -180,9 +190,23 @@ const SECTIONS: SectionMeta[] = [
   {
     id: 'custom_labels',
     label: 'Custom Field Labels',
-    shortLabel: 'Custom Labels',
+    shortLabel: 'Custom Fields',
     icon: Tag,
     description: 'Define up to 20 custom metadata fields for Products, Contacts, Purchases, Sales, and Locations.',
+  },
+  {
+    id: 'printers',
+    label: 'Printer Configuration',
+    shortLabel: 'Printers',
+    icon: Printer,
+    description: 'Configure thermal ESC/POS receipt printers, IP print servers, and silent auto-printing on checkout.',
+  },
+  {
+    id: 'database',
+    label: 'Database Setup & Health',
+    shortLabel: 'Database',
+    icon: Database,
+    description: 'Configure Hostinger MySQL database credentials, verify table schemas, and manage live cloud synchronization.',
   },
 ];
 
@@ -709,6 +733,43 @@ export const BusinessSettingsTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Settings Navigation Section Tab Bar */}
+      <div className={`p-2.5 sm:p-3 rounded-2xl border ${isLight ? 'bg-slate-50/90 border-slate-200 shadow-xs' : 'bg-slate-950/80 border-slate-800'} overflow-x-auto custom-scrollbar`}>
+        <div className="flex items-center gap-1.5 min-w-max">
+          {SECTIONS.map((s) => {
+            const SectionIcon = s.icon;
+            const isSelected = activeSection === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                id={`settings-section-tab-${s.id}`}
+                onClick={() => setActiveSection(s.id)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shrink-0 ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold ring-1 ring-indigo-400'
+                    : isLight
+                    ? 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 hover:text-indigo-600'
+                    : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:text-white'
+                }`}
+              >
+                <SectionIcon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : isLight ? 'text-indigo-500' : 'text-indigo-400'}`} />
+                <span>{s.label}</span>
+                {s.badge && (
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                  }`}>
+                    {s.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Active Section Form Panel - Full Width */}
       <div className={`w-full max-w-full min-w-0 ${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-slate-100/30 theme-light-hq' : 'bg-slate-900/90 border-slate-800 text-white'} border rounded-3xl p-3.5 sm:p-6 shadow-xl space-y-6 overflow-x-hidden`}>
