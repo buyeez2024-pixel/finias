@@ -109,23 +109,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 max-w-full">
         {/* Left Branding & Location Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Mobile & Tablet Toggle Menu Button */}
-          <button
-            id="mobile-nav-toggle-btn"
-            type="button"
-            onClick={toggleMobileSidebar}
-            className={`lg:hidden transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer ${
-              isLight
-                ? 'px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
-                : 'p-2 rounded-xl border bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-2xs flex items-center justify-center'
-            }`}
-            title="Open Navigation Menu"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span className="text-xs font-bold">Menu</span>
-          </button>
-
           <div
             id="brand-logo-btn"
             onClick={() => setActiveTab('dashboard')}
@@ -141,17 +124,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className={`h-5 w-px hidden md:block ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`} />
 
           {/* Location / Warehouse Selector */}
-          <div className={`relative hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
-            isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-800/80 border-slate-700/70'
+          <div className={`relative hidden md:flex items-center gap-1.5 ${
+            isLight
+              ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+              : 'px-2.5 py-1.5 rounded-lg border bg-slate-800/80 border-slate-700/70'
           }`}>
-            <Building2 className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-            <span className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Branch:</span>
+            <Building2 className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-indigo-600' : 'text-indigo-400'}`} />
+            <span className={`text-xs font-bold ${isLight ? 'text-indigo-700' : 'text-slate-400'}`}>Branch:</span>
             <select
               id="branch-location-select"
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className={`bg-transparent text-xs font-semibold focus:outline-none cursor-pointer pr-2 max-w-[160px] lg:max-w-[200px] truncate ${
-                isLight ? 'text-slate-900' : 'text-white'
+              className={`bg-transparent text-xs font-bold focus:outline-none cursor-pointer pr-2 max-w-[160px] lg:max-w-[200px] truncate ${
+                isLight ? 'text-indigo-700' : 'text-white'
               }`}
             >
               {(locations || []).map((loc) => (
@@ -388,11 +373,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       setShowNotifications(false);
-                      navigateToSettings('permissions');
+                      setActiveTab('user_menu');
                     }}
                     className="text-indigo-400 hover:underline font-semibold"
                   >
-                    Manage in Staff & Permissions →
+                    Manage Users & Roles →
                   </button>
                   <button
                     onClick={() => setShowNotifications(false)}

@@ -1173,21 +1173,21 @@ export const Sidebar: React.FC = () => {
 
                   return (
                     <div key={item.id} className="space-y-0.5">
-                      {/* Parent Button */}
+                                      {/* Parent Button */}
                       <button
                         id={`nav-item-${item.id}`}
                         onClick={() => toggleMenu(item.id, item.isExpandable)}
-                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm font-semibold transition-all group relative ${
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
                           isCurrentParent
                             ? isLight
-                              ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs ring-1 ring-indigo-500/10'
-                              : 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950'
+                              ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
+                              : 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
                             : isExpanded
                             ? isLight
                               ? 'bg-slate-100/90 text-slate-950 border border-slate-200 font-semibold'
                               : 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
                             : isLight
-                            ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-950 border border-transparent font-medium'
+                            ? 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
                             : 'text-slate-300 hover:bg-slate-900/80 hover:text-white border border-transparent font-medium'
                         }`}
                       >

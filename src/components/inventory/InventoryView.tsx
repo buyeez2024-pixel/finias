@@ -1672,7 +1672,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 <p className="font-bold text-slate-900 dark:text-white">Royal Electricals <span className="text-slate-500 font-normal">{locations.find(l=>l.id===viewingAdjustment.locationId)?.name}</span></p>
                 <p className="text-slate-500 italic">Naidu Nagar, Chembakur Road</p>
                 <p className="text-slate-500">Madanapalle, Andhra Pradesh, India</p>
-                <p className="text-slate-500 font-mono">Mobile: 8220038825</p>
+                <p className="text-slate-500 font-mono">Mobile: +91 9876543210</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">

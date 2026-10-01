@@ -794,7 +794,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       }`}>
         {/* Top Controls: Search, Barcode Scan, Cashier Tools */}
         <div className="p-1.5 sm:p-2.5 border-b border-slate-800 bg-slate-900/95 space-y-1.5 sm:space-y-2 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-1.5 sm:items-center w-full">
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-1.5 sm:items-center lg:items-stretch w-full min-w-0">
             {/* Dedicated Search Input Bar - Always 100% visible and wide */}
             <div className="relative flex-1 min-w-[200px] w-full">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -817,7 +817,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             </div>
 
             {/* Secondary Controls Bar: Barcode Scanner, Shift & Fast Tools */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin touch-pan-x py-0.5 shrink-0 whitespace-nowrap flex-1 sm:max-w-[65%]">
+            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar touch-pan-x py-0.5 shrink-0 whitespace-nowrap flex-1 sm:max-w-[65%] lg:max-w-full lg:flex-wrap lg:overflow-x-visible lg:whitespace-normal">
               {/* Barcode Laser Input */}
               <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-700 shrink-0">
                 <Barcode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -848,7 +848,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
               </div>
 
               {/* Cashier Shift Drawer & Quick Actions Group */}
-              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap lg:flex-wrap lg:whitespace-normal">
                 {/* Immediate Sale Return quick button */}
                 <button
                   id="pos-sale-return-top-btn"

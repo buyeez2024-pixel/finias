@@ -64,75 +64,6 @@ export const CustomerGroupsView: React.FC = () => {
 
   return (
     <div className="w-full max-w-full min-w-0 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fadeIn overflow-x-hidden pb-28">
-      {/* Contact Modules Sub-Navigation Bar */}
-      <div className={`p-1.5 rounded-2xl border flex items-center gap-1.5 overflow-x-auto custom-scrollbar touch-pan-x w-full ${
-        isLight ? 'bg-slate-100/90 border-slate-200' : 'bg-slate-900/90 border-slate-800'
-      }`}>
-        <button
-          onClick={() => navigateToContacts('customers')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-            contactsSubTab === 'customers'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : isLight
-              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Customers</span>
-        </button>
-
-        <button
-          onClick={() => navigateToContacts('suppliers')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-            contactsSubTab === 'suppliers'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : isLight
-              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <Truck className="w-3.5 h-3.5" />
-          <span>Suppliers</span>
-        </button>
-
-        <button
-          onClick={() => navigateToContacts('customer_groups')}
-          className="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-        >
-          <Tag className="w-3.5 h-3.5" />
-          <span>Customer Groups</span>
-        </button>
-
-        <button
-          onClick={() => navigateToContacts('import_contacts')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-            contactsSubTab === 'import_contacts'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : isLight
-              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Import Contacts</span>
-        </button>
-
-        <button
-          onClick={() => navigateToContacts('customer_ledger')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-            contactsSubTab === 'customer_ledger'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : isLight
-              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <BookMarked className="w-3.5 h-3.5" />
-          <span>Ledgers</span>
-        </button>
-      </div>
-
       {/* Top Banner */}
       <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border shadow-md w-full min-w-0 ${
         isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
@@ -213,36 +144,6 @@ export const CustomerGroupsView: React.FC = () => {
             <Tag className="w-4 h-4 text-indigo-500 shrink-0" />
             <span>Active Customer Groups ({customerGroups.length})</span>
           </h2>
-
-          {/* Mobile View Toggle */}
-          <div className="flex sm:hidden items-center p-1 rounded-xl bg-slate-800/40 border border-slate-700/50">
-            <button
-              type="button"
-              onClick={() => setMobileViewMode('cards')}
-              className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                mobileViewMode === 'cards'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Swipe Cards View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="text-[10px]">Cards</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileViewMode('table')}
-              className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                mobileViewMode === 'table'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Table View"
-            >
-              <TableIcon className="w-3.5 h-3.5" />
-              <span className="text-[10px]">Table</span>
-            </button>
-          </div>
         </div>
 
         {/* 1. MOBILE SWIPE CARDS VIEW (Active on phones when cards mode selected) */}
@@ -363,7 +264,7 @@ export const CustomerGroupsView: React.FC = () => {
                             onClick={() => handleOpenEdit(group)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 border cursor-pointer ${
                               isLight
-                                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
                                 : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                             }`}
                           >
@@ -413,7 +314,7 @@ export const CustomerGroupsView: React.FC = () => {
         <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden sm:block'} w-full overflow-x-auto custom-scrollbar touch-pan-x pb-2`}>
           <table className="w-full text-left text-xs min-w-[620px]">
             <thead className={`uppercase text-[10px] tracking-wider border-b font-bold ${
-              isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-950 text-slate-400 border-slate-800'
+              isLight ? 'bg-slate-50 border-slate-100 text-slate-700' : 'bg-slate-950 text-slate-400 border-slate-800'
             }`}>
               <tr>
                 <th className="py-3.5 px-4">Group Name</th>
@@ -488,8 +389,10 @@ export const CustomerGroupsView: React.FC = () => {
                       </td>
 
                       <td className="py-3.5 px-4 text-center font-mono font-bold">
-                        <span className={`px-2.5 py-0.5 rounded-full border text-xs ${
-                          isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700'
+                        <span className={`inline-flex items-center justify-center gap-1.5 text-xs ${
+                          isLight
+                            ? 'px-2.5 py-1 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                            : 'px-2.5 py-0.5 rounded-full border bg-slate-800 text-slate-300 border-slate-700'
                         }`}>
                           {assignedCount} {assignedCount === 1 ? 'Customer' : 'Customers'}
                         </span>
@@ -500,7 +403,9 @@ export const CustomerGroupsView: React.FC = () => {
                           <button
                             onClick={() => handleOpenEdit(group)}
                             className={`p-1.5 rounded-lg transition border cursor-pointer ${
-                              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                              isLight
+                                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
                             }`}
                             title="Edit Group"
                           >

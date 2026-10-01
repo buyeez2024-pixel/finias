@@ -412,8 +412,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             type="button"
             onClick={onBack || closeContactPage}
             id="btn-back-to-customers"
-            className={`p-2 rounded-xl transition border shadow-xs shrink-0 ${
-              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            className={`transition shrink-0 cursor-pointer ${
+              isLight
+                ? 'p-1.5 rounded-lg border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'p-2 rounded-xl border bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700 shadow-xs'
             }`}
             title="Back to Contact Directory"
           >
@@ -450,10 +452,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             type="button"
             onClick={closeContactPage}
             id="btn-cancel-customer-form"
-            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer truncate ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 text-xs font-bold transition text-center cursor-pointer truncate ${
               isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                ? 'p-1.5 rounded-lg border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'py-2.5 rounded-xl border bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
             }`}
           >
             Cancel
@@ -1026,10 +1028,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
           <button
             type="button"
             onClick={closeContactPage}
-            className={`w-full sm:w-auto px-5 py-2.5 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
+            className={`w-full sm:w-auto px-5 text-xs font-bold transition text-center cursor-pointer ${
               isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+                ? 'p-1.5 rounded-lg border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'py-2.5 rounded-xl border bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
             }`}
           >
             Cancel & Return
@@ -1055,8 +1057,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
           <button
             type="button"
             onClick={closeContactPage}
-            className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition border text-center cursor-pointer ${
-              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
+            className={`flex-1 px-3 text-xs font-bold transition text-center cursor-pointer ${
+              isLight
+                ? 'p-1.5 rounded-lg border bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'py-2.5 rounded-xl border bg-slate-800 text-slate-300 border-slate-700'
             }`}
           >
             Cancel

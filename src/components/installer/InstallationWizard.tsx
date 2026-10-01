@@ -241,13 +241,13 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
       }
       if (val.trim().startsWith('+91') || (clean.startsWith('91') && clean.length > 10)) {
         if (clean.length !== 12 || !/^91[6789]\d{9}$/.test(clean)) {
-          setPhoneError('For India (+91), enter 10 digits (e.g. 8220038825) or 12 digits with 91 (e.g. +91 8220038825)');
+          setPhoneError('For India (+91), enter 10 digits (e.g. 9876543210) or 12 digits with 91 (e.g. +91 9876543210)');
         } else {
           setPhoneError('');
         }
       } else {
         if (clean.length !== 10 || !/^[6789]\d{9}$/.test(clean)) {
-          setPhoneError('For India, phone number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 8220038825)');
+          setPhoneError('For India, phone number must be exactly 10 digits starting with 6, 7, 8, or 9 (e.g. 9876543210)');
         } else {
           setPhoneError('');
         }
@@ -1716,7 +1716,7 @@ SET FOREIGN_KEY_CHECKS = 1;
                     value={businessPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     required
-                    placeholder="+91 8220038825 or 8220038825"
+                    placeholder="+91 9876543210 or 9876543210"
                     className={`w-full px-3.5 py-2.5 bg-slate-900 border rounded-xl text-xs text-white focus:outline-none ${phoneError ? 'border-rose-500' : 'border-slate-700 focus:border-indigo-500'}`}
                   />
                   {step3Attempted && !businessPhone.trim() && !phoneError && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Phone Number</span>}
@@ -1725,7 +1725,7 @@ SET FOREIGN_KEY_CHECKS = 1;
                   <div className="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-800/50 text-[11px] text-indigo-300 mt-2 flex items-start gap-2">
                     <HelpCircle className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                     <span>
-                      <strong>💡 Phone Number Format Hint:</strong> Enter mobile phone number. If country is India, enter 10 digits (e.g. <code className="font-mono text-white bg-indigo-900/60 px-1 py-0.5 rounded">8220038825</code>) or include country code (e.g. <code className="font-mono text-white bg-indigo-900/60 px-1 py-0.5 rounded">+91 8220038825</code>). The system considers and standardizes it as <strong>+91 8220038825</strong>.
+                      <strong>💡 Phone Number Format Hint:</strong> Enter mobile phone number. If country is India, enter 10 digits (e.g. <code className="font-mono text-white bg-indigo-900/60 px-1 py-0.5 rounded">9876543210</code>) or include country code (e.g. <code className="font-mono text-white bg-indigo-900/60 px-1 py-0.5 rounded">+91 9876543210</code>). The system considers and standardizes it as <strong>+91 9876543210</strong>.
                     </span>
                   </div>
                 </div>

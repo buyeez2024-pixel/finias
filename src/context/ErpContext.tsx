@@ -2343,7 +2343,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentPath = window.location.pathname;
       const hasHash = Boolean(window.location.hash);
       if (currentPath !== cleanPath || hasHash) {
-        window.history.replaceState(null, '', cleanPath);
+        window.history.pushState({ path: cleanPath, activeTab }, '', cleanPath);
       }
     }
   }, [activeTab, inventorySubTab, settingsSubTab, userMenuSubTab, contactsSubTab, editingProduct, isAddUserModalOpen]);

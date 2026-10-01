@@ -306,7 +306,9 @@ export const SettingsView: React.FC = () => {
           settingsSubTab === 'staff_permissions' ||
           settingsSubTab === 'employee_permissions' ||
           settingsSubTab === 'staff' ||
-          settingsSubTab === 'roles') && <EmployeePermissionsTab initialSection="users" />}
+          settingsSubTab === 'roles') && (
+          <AccessDeniedGuard moduleName="Staff & Permissions" moduleId="permissions" />
+        )}
         {(settingsSubTab === 'invoice_layouts' || settingsSubTab === 'invoice_layout') && <InvoiceLayoutsTab />}
         {settingsSubTab === 'tax' && <TaxSettingsTab />}
         {settingsSubTab === 'currency' && <CurrencySettingsTab />}
@@ -318,7 +320,9 @@ export const SettingsView: React.FC = () => {
         {settingsSubTab === 'payment_methods' && <PaymentMethodsTab />}
         {settingsSubTab === 'notification_templates' && <NotificationTemplatesView />}
         {settingsSubTab === 'signature_seal' && <SignatureSealTab />}
-        {(settingsSubTab === 'database_setup' || settingsSubTab === 'database') && <DatabaseSetupTab />}
+        {(settingsSubTab === 'database_setup' || settingsSubTab === 'database') && (
+          <AccessDeniedGuard moduleName="Database Setup" moduleId="database_setup" />
+        )}
       </div>
     </div>
   );
