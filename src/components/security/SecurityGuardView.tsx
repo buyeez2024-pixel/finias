@@ -182,6 +182,23 @@ export const SecurityGuardView: React.FC = () => {
   const [enforceMfaAdmins, setEnforceMfaAdmins] = useState<boolean>(settings.enforceMfaAdmins ?? false);
   const [blockVpnProxies, setBlockVpnProxies] = useState<boolean>(settings.blockVpnProxies ?? true);
 
+  // Tiered Rate Limiting & Exponential Backoff
+  const [enableRateLimiting, setEnableRateLimiting] = useState<boolean>(
+    settings.enableRateLimiting ?? true
+  );
+  const [authDelayThreshold, setAuthDelayThreshold] = useState<number>(
+    settings.authDelayThreshold || 3
+  );
+  const [authBaseDelayMs, setAuthBaseDelayMs] = useState<number>(
+    settings.authBaseDelayMs || 1500
+  );
+  const [publicMaxRequests, setPublicMaxRequests] = useState<number>(
+    settings.publicMaxRequests || 60
+  );
+  const [authenticatedMaxRequests, setAuthenticatedMaxRequests] = useState<number>(
+    settings.authenticatedMaxRequests || 600
+  );
+
   // Blacklist & Whitelist IPs
   const [blacklistedIps, setBlacklistedIps] = useState<string[]>(
     settings.blacklistedIps || ['185.220.101.5', '198.51.100.42', '45.142.120.12']
@@ -233,6 +250,11 @@ export const SecurityGuardView: React.FC = () => {
       requireEmailVerification,
       enforceMfaAdmins,
       blockVpnProxies,
+      enableRateLimiting,
+      authDelayThreshold,
+      authBaseDelayMs,
+      publicMaxRequests,
+      authenticatedMaxRequests,
       blacklistedIps,
       flaggedRegistrations: flaggedLogs,
     });
@@ -973,6 +995,128 @@ export const SecurityGuardView: React.FC = () => {
                   onChange={(e) => setRequireEmailVerification(e.target.checked)}
                   className="h-5 w-5 rounded border-slate-700 text-indigo-600 cursor-pointer"
                 />
+              </div>
+            </div>
+
+            {/* TIERED RATE LIMITING & EXPONENTIAL BACKOFF (ENTERPRISE DEFENSE) */}
+            <div className={`col-span-1 md:col-span-2 p-4 sm:p-5 rounded-2xl border space-y-4 ${
+              isLight ? 'bg-indigo-50/50 border-indigo-200 text-slate-800' : 'bg-slate-950/80 border-indigo-900/40 text-slate-200'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-indigo-200/50 dark:border-indigo-900/40 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl border ${isLight ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-indigo-950 border-indigo-800 text-indigo-400'}`}>
+                    <ShieldAlert className="w-5 h-5 shrink-0" />
+                  </div>
+                  <div>
+                    <h4 className={`text-sm font-bold flex items-center gap-2 ${isLight ? 'text-indigo-950' : 'text-white'}`}>
+                      <span>Tiered Rate Limiting & Exponential Backoff Engine</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        enableRateLimiting
+                          ? isLight ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                          : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {enableRateLimiting ? 'Active' : 'Disabled'}
+                      </span>
+                    </h4>
+                    <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      Multi-tier rate throttle designed for shared store IP (NAT) with progressive backoff delays.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer self-start sm:self-auto">
+                  <span className={`text-xs font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Shield Status:</span>
+                  <input
+                    type="checkbox"
+                    checked={enableRateLimiting}
+                    onChange={(e) => setEnableRateLimiting(e.target.checked)}
+                    className="h-5 w-5 rounded border-slate-700 text-indigo-600 cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                {/* 1. Exponential Delay Threshold */}
+                <div className={`p-3.5 rounded-xl border space-y-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}`}>
+                  <label className={`font-bold block text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>Backoff Delay Starts At</label>
+                  <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Attempts before progressive delays kick in instead of instant lockout.
+                  </p>
+                  <select
+                    value={authDelayThreshold}
+                    onChange={(e) => setAuthDelayThreshold(Number(e.target.value))}
+                    disabled={!enableRateLimiting}
+                    className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none ${
+                      isLight ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-700 text-white'
+                    }`}
+                  >
+                    <option value={2}>After 2 Failed Attempts</option>
+                    <option value={3}>After 3 Failed Attempts (Recommended)</option>
+                    <option value={4}>After 4 Failed Attempts</option>
+                    <option value={5}>After 5 Failed Attempts</option>
+                  </select>
+                </div>
+
+                {/* 2. Base Exponential Multiplier */}
+                <div className={`p-3.5 rounded-xl border space-y-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}`}>
+                  <label className={`font-bold block text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>Base Delay Interval</label>
+                  <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Initial delay multiplied exponentially (e.g. 1.5s → 3s → 6s → 12s).
+                  </p>
+                  <select
+                    value={authBaseDelayMs}
+                    onChange={(e) => setAuthBaseDelayMs(Number(e.target.value))}
+                    disabled={!enableRateLimiting}
+                    className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none ${
+                      isLight ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-700 text-white'
+                    }`}
+                  >
+                    <option value={1000}>1.0s Base Exponential</option>
+                    <option value={1500}>1.5s Base (Recommended)</option>
+                    <option value={2000}>2.0s Base Exponential</option>
+                    <option value={3000}>3.0s Base (Strict)</option>
+                  </select>
+                </div>
+
+                {/* 3. Public Route Rate Limit */}
+                <div className={`p-3.5 rounded-xl border space-y-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}`}>
+                  <label className={`font-bold block text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>Public Endpoint Limit</label>
+                  <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Limits unauthenticated status & barcode catalog lookups.
+                  </p>
+                  <select
+                    value={publicMaxRequests}
+                    onChange={(e) => setPublicMaxRequests(Number(e.target.value))}
+                    disabled={!enableRateLimiting}
+                    className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none ${
+                      isLight ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-700 text-white'
+                    }`}
+                  >
+                    <option value={30}>30 Requests / Min (Strict)</option>
+                    <option value={60}>60 Requests / Min (Recommended)</option>
+                    <option value={120}>120 Requests / Min</option>
+                  </select>
+                </div>
+
+                {/* 4. POS / Cashier Throughput */}
+                <div className={`p-3.5 rounded-xl border space-y-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'}`}>
+                  <label className={`font-bold block text-xs ${isLight ? 'text-slate-900' : 'text-white'}`}>POS / Cashier Throughput</label>
+                  <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Generous limit ensuring barcode scanners never hit bottleneck.
+                  </p>
+                  <select
+                    value={authenticatedMaxRequests}
+                    onChange={(e) => setAuthenticatedMaxRequests(Number(e.target.value))}
+                    disabled={!enableRateLimiting}
+                    className={`w-full rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none ${
+                      isLight ? 'bg-slate-50 border-slate-300 text-slate-800' : 'bg-slate-950 border-slate-700 text-white'
+                    }`}
+                  >
+                    <option value={300}>300 Requests / Min (Standard)</option>
+                    <option value={600}>600 Requests / Min (Recommended)</option>
+                    <option value={1200}>1,200 Requests / Min (Hypermarket)</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>

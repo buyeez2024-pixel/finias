@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import { Transaction, TransactionItem } from '../../types/erp';
-import { getCategoryName, getBrandName, formatCurrency } from '../../utils/formatters';
+import { getCategoryName, getBrandName, formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   ShoppingBag,
   Filter,
@@ -242,62 +242,136 @@ export const ProductPurchaseReportView: React.FC = () => {
     return map;
   }, [stockAdjustments]);
 
+  // Robust supplier resolution helper matching PurchasesView logic
+  const resolveSupplierForPurchase = (p: Transaction) => {
+    if (p.supplierName) {
+      const nameMatch = suppliers.find((s) => 
+        (s.name && s.name.trim().toLowerCase() === p.supplierName.trim().toLowerCase()) ||
+        (s.businessName && s.businessName.trim().toLowerCase() === p.supplierName.trim().toLowerCase())
+      );
+      if (nameMatch) return nameMatch;
+    }
+    if (p.supplierId) {
+      const idMatch = suppliers.find((s) => s.id === p.supplierId);
+      if (idMatch) return idMatch;
+    }
+    if (p.items && p.items.length > 0) {
+      for (const item of p.items) {
+        if ((item as any).supplierName) {
+          const itemSupp = suppliers.find((s) => 
+            (s.name && s.name.trim().toLowerCase() === (item as any).supplierName.trim().toLowerCase()) ||
+            (s.businessName && s.businessName.trim().toLowerCase() === (item as any).supplierName.trim().toLowerCase())
+          );
+          if (itemSupp) return itemSupp;
+        }
+        if ((item as any).supplierId) {
+          const itemSupp = suppliers.find((s) => s.id === (item as any).supplierId);
+          if (itemSupp) return itemSupp;
+        }
+      }
+    }
+    return undefined;
+  };
+
   // Extract all purchase line items
   const allPurchaseLineItems = useMemo<PurchaseLineItemRecord[]>(() => {
-    const purchaseTxns = transactions.filter((t) => t.type === 'purchase');
+    const purchaseTxns = transactions.filter((t) => t.type && (t.type === 'purchase' || t.type.toLowerCase().includes('purchase')));
     const records: PurchaseLineItemRecord[] = [];
 
     if (purchaseTxns.length > 0) {
       purchaseTxns.forEach((txn) => {
-        const supplier = suppliers.find((s) => s.id === txn.supplierId) || suppliers[0];
+        const matchedSupplier = resolveSupplierForPurchase(txn);
+        const supplierName = txn.supplierName || matchedSupplier?.name || matchedSupplier?.businessName || (txn.items?.[0] as any)?.supplierName || 'Walk-In Supplier';
+        const supplierId = txn.supplierId || matchedSupplier?.id || '';
+
         const location = locations.find((l) => l.id === txn.locationId) || locations[0];
+        const locationName = txn.locationName || location?.name || 'Main Location';
+        const locationId = txn.locationId || location?.id || '';
 
-        (txn.items || []).forEach((item, index) => {
-          const product = products.find((p) => p.id === item.productId || p.sku === item.sku);
+        if (txn.items && txn.items.length > 0) {
+          txn.items.forEach((item, index) => {
+            const product = products.find((p) => 
+              (item.productId && p.id === item.productId) || 
+              (item.sku && p.sku && p.sku.toLowerCase() === item.sku.toLowerCase()) ||
+              (item.productName && p.name && p.name.toLowerCase() === item.productName.toLowerCase()) ||
+              (item.name && p.name && p.name.toLowerCase() === item.name.toLowerCase())
+            );
 
-          const qty = Number(item.quantity) || 1;
-          const unitPrice = Number(item.costPrice || item.unitPrice || product?.costPrice || 10);
-          const discount = Number(item.discount || 0);
-          const netPrice = Math.max(0, unitPrice - discount);
-          const taxRate = Number(item.taxRate ?? product?.taxRate ?? 0);
-          const lineTax = (netPrice * qty * taxRate) / 100;
-          const lineSubtotal = netPrice * qty;
-          const lineTotal = lineSubtotal + lineTax;
+            const qty = Number(item.quantity) || 1;
+            const unitPrice = Number(item.costPrice ?? item.unitPrice ?? product?.costPrice ?? 0);
+            const discount = Number(item.discount || 0);
+            const netPrice = Math.max(0, unitPrice - discount);
+            const taxRate = Number(item.taxRate ?? product?.taxRate ?? 0);
+            const lineTax = (item.tax !== undefined && item.tax !== null) ? Number(item.tax) : (netPrice * qty * taxRate) / 100;
+            const lineSubtotal = (item.subtotal !== undefined && item.subtotal !== null) ? Number(item.subtotal) : (netPrice * qty);
+            const lineTotal = (item.total !== undefined && item.total !== null) ? Number(item.total) : (lineSubtotal + lineTax);
 
+            records.push({
+              id: `${txn.id}_item_${index}`,
+              transactionId: txn.id,
+              referenceNo: txn.invoiceNo || `PO-${txn.id.slice(-6)}`,
+              date: txn.date || '',
+              supplierId,
+              supplierName,
+              locationId,
+              locationName,
+              status: (txn.status as any) || 'received',
+              paymentStatus: txn.paymentStatus || 'paid',
+              productId: item.productId || product?.id || item.sku || `unknown_${index}`,
+              productName: item.productName || item.name || product?.name || 'Unknown Product',
+              sku: item.sku || product?.sku || 'N/A',
+              category: getCategoryName(product?.category || item.category),
+              brand: getBrandName(product?.brand || item.brand),
+              unit: item.unit || product?.unit || 'Pcs',
+              quantity: qty,
+              unitPrice: unitPrice,
+              costPrice: item.costPrice || unitPrice,
+              discount: discount,
+              taxRate: taxRate,
+              taxAmount: lineTax,
+              subtotal: lineSubtotal,
+              totalIncTax: lineTotal,
+              adjustedQuantity: product ? (productAdjustmentsMap[product.id] || 0) : 0,
+              currentStock: product ? Number(product.currentStock || 0) : qty,
+              image: product?.image,
+              originalTransaction: txn,
+            });
+          });
+        } else {
+          // If transaction has no explicit item array, synthesize line item so transaction is not lost
           records.push({
-            id: `${txn.id}_item_${index}`,
+            id: `${txn.id}_item_0`,
             transactionId: txn.id,
             referenceNo: txn.invoiceNo || `PO-${txn.id.slice(-6)}`,
-            date: txn.date || '2026-01-15',
-            supplierId: txn.supplierId || supplier?.id || 'sup_metro',
-            supplierName: supplier?.name || supplier?.businessName || 'Metro Wholesale Distributors',
-            locationId: txn.locationId || location?.id || 'loc_main',
-            locationName: location?.name || 'Main Warehouse',
+            date: txn.date || '',
+            supplierId,
+            supplierName,
+            locationId,
+            locationName,
             status: (txn.status as any) || 'received',
             paymentStatus: txn.paymentStatus || 'paid',
-            productId: item.productId || product?.id || `unknown_${index}`,
-            productName: item.productName || product?.name || 'Unknown Product',
-            sku: item.sku || product?.sku || 'N/A',
-            category: getCategoryName(product?.category),
-            brand: getBrandName(product?.brand),
-            unit: item.unit || product?.unit || 'Pcs',
-            quantity: qty,
-            unitPrice: unitPrice,
-            costPrice: item.costPrice || unitPrice,
-            discount: discount,
-            taxRate: taxRate,
-            taxAmount: lineTax,
-            subtotal: lineSubtotal,
-            totalIncTax: lineTotal,
-            adjustedQuantity: product ? (productAdjustmentsMap[product.id] || 0) : 0,
-            currentStock: product ? Number(product.currentStock || 0) : qty,
-            image: product?.image,
+            productId: `po_${txn.id}`,
+            productName: txn.notes || txn.invoiceNo || 'Purchase Order',
+            sku: 'N/A',
+            category: 'General',
+            brand: 'Generic',
+            unit: 'Pcs',
+            quantity: 1,
+            unitPrice: txn.subtotal || txn.totalAmount || 0,
+            costPrice: txn.subtotal || txn.totalAmount || 0,
+            discount: txn.discountAmount || 0,
+            taxRate: 0,
+            taxAmount: txn.taxAmount || 0,
+            subtotal: txn.subtotal || txn.totalAmount || 0,
+            totalIncTax: txn.totalAmount || 0,
+            adjustedQuantity: 0,
+            currentStock: 0,
             originalTransaction: txn,
           });
-        });
+        }
       });
     } else if (products && products.length > 0) {
-      // Fallback: Generate purchase line records from products catalog & suppliers
+      // Fallback: Generate purchase line records from products catalog & suppliers if zero purchase transactions exist
       products.forEach((product, index) => {
         const supplier = suppliers[index % (suppliers.length || 1)] || suppliers[0];
         const location = locations[0];
@@ -374,52 +448,93 @@ export const ProductPurchaseReportView: React.FC = () => {
     return records;
   }, [transactions, suppliers, locations, products, productAdjustmentsMap]);
 
-  // Filtered Line Items
+  // Filtered Line Items with robust date and multi-field matching
   const filteredLineItems = useMemo(() => {
     return allPurchaseLineItems.filter((item) => {
-      // Date filter
-      if (startDate && item.date.substring(0, 10) < startDate) return false;
-      if (endDate && item.date.substring(0, 10) > endDate) return false;
-
-      // Product selector
-      if (selectedProductId !== 'all' && item.productId !== selectedProductId) return false;
-
-      // Product search text
-      if (productSearch.trim()) {
-        const query = productSearch.toLowerCase();
-        const matchesName = item.productName.toLowerCase().includes(query);
-        const matchesSku = item.sku.toLowerCase().includes(query);
-        if (!matchesName && !matchesSku) return false;
+      // 1. Date filter (Using robust normalization to YYYY-MM-DD)
+      const itemYMD = normalizeDateToYMD(item.date);
+      if (datePreset !== 'All Time') {
+        if (itemYMD) {
+          if (startDate && itemYMD < startDate) return false;
+          if (endDate && itemYMD > endDate) return false;
+        }
+      } else {
+        // In All Time mode: only filter if user typed custom dates outside standard baseline 2000-01-01
+        if (itemYMD) {
+          if (startDate && startDate > '2000-01-01' && itemYMD < startDate) return false;
+          if (endDate && itemYMD > endDate) return false;
+        }
       }
 
-      // Supplier filter
-      if (selectedSupplierId !== 'all' && item.supplierId !== selectedSupplierId) return false;
+      // 2. Product selector (matches by ID, SKU, or Name)
+      if (selectedProductId !== 'all') {
+        const matchesId = item.productId === selectedProductId;
+        const targetProd = products.find((p) => p.id === selectedProductId);
+        const matchesSku = targetProd?.sku && item.sku && targetProd.sku.toLowerCase() === item.sku.toLowerCase();
+        const matchesName = targetProd?.name && item.productName && targetProd.name.toLowerCase() === item.productName.toLowerCase();
+        if (!matchesId && !matchesSku && !matchesName) return false;
+      }
 
-      // Location filter
-      if (selectedLocationId !== 'all' && item.locationId !== selectedLocationId) return false;
+      // 3. Product search text
+      if (productSearch.trim()) {
+        const query = productSearch.toLowerCase().trim();
+        const matchesName = item.productName.toLowerCase().includes(query);
+        const matchesSku = item.sku.toLowerCase().includes(query);
+        const matchesSupp = item.supplierName.toLowerCase().includes(query);
+        const matchesRef = item.referenceNo.toLowerCase().includes(query);
+        if (!matchesName && !matchesSku && !matchesSupp && !matchesRef) return false;
+      }
 
-      // Category filter
-      if (selectedCategory !== 'all' && item.category.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+      // 4. Supplier filter (matches by supplierId or supplierName)
+      if (selectedSupplierId !== 'all') {
+        const matchesId = item.supplierId === selectedSupplierId;
+        const targetSupp = suppliers.find((s) => s.id === selectedSupplierId);
+        const matchesName = targetSupp && (
+          (targetSupp.name && item.supplierName && targetSupp.name.trim().toLowerCase() === item.supplierName.trim().toLowerCase()) ||
+          (targetSupp.businessName && item.supplierName && targetSupp.businessName.trim().toLowerCase() === item.supplierName.trim().toLowerCase())
+        );
+        if (!matchesId && !matchesName) return false;
+      }
 
-      // Brand filter
-      if (selectedBrand !== 'all' && item.brand.toLowerCase() !== selectedBrand.toLowerCase()) return false;
+      // 5. Location filter (matches by locationId or locationName)
+      if (selectedLocationId !== 'all') {
+        const matchesId = item.locationId === selectedLocationId;
+        const targetLoc = locations.find((l) => l.id === selectedLocationId);
+        const matchesName = targetLoc?.name && item.locationName && targetLoc.name.toLowerCase() === item.locationName.toLowerCase();
+        if (!matchesId && !matchesName) return false;
+      }
 
-      // Purchase Status filter
-      if (selectedStatus !== 'all' && item.status !== selectedStatus) return false;
+      // 6. Category filter
+      if (selectedCategory !== 'all') {
+        if (!item.category || item.category.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+      }
 
-      // Payment Status filter
-      if (selectedPaymentStatus !== 'all' && item.paymentStatus !== selectedPaymentStatus) return false;
+      // 7. Brand filter
+      if (selectedBrand !== 'all') {
+        if (!item.brand || item.brand.toLowerCase() !== selectedBrand.toLowerCase()) return false;
+      }
 
-      // Table search box (multi-field search)
+      // 8. Purchase Status filter
+      if (selectedStatus !== 'all') {
+        if (!item.status || item.status.toLowerCase() !== selectedStatus.toLowerCase()) return false;
+      }
+
+      // 9. Payment Status filter
+      if (selectedPaymentStatus !== 'all') {
+        if (!item.paymentStatus || item.paymentStatus.toLowerCase() !== selectedPaymentStatus.toLowerCase()) return false;
+      }
+
+      // 10. Table search box (multi-field search)
       if (tableSearch.trim()) {
-        const query = tableSearch.toLowerCase();
+        const query = tableSearch.toLowerCase().trim();
         const match =
           item.productName.toLowerCase().includes(query) ||
           item.sku.toLowerCase().includes(query) ||
           item.referenceNo.toLowerCase().includes(query) ||
           item.supplierName.toLowerCase().includes(query) ||
           item.category.toLowerCase().includes(query) ||
-          item.brand.toLowerCase().includes(query);
+          item.brand.toLowerCase().includes(query) ||
+          item.locationName.toLowerCase().includes(query);
         if (!match) return false;
       }
 
@@ -429,10 +544,14 @@ export const ProductPurchaseReportView: React.FC = () => {
     allPurchaseLineItems,
     startDate,
     endDate,
+    datePreset,
     selectedProductId,
+    products,
     productSearch,
     selectedSupplierId,
+    suppliers,
     selectedLocationId,
+    locations,
     selectedCategory,
     selectedBrand,
     selectedStatus,
@@ -1301,7 +1420,11 @@ export const ProductPurchaseReportView: React.FC = () => {
                       )}
                       {colVisibility.supplier && <td className="p-3 text-slate-300">{item.supplierName}</td>}
                       {colVisibility.referenceNo && <td className="p-3 font-mono text-slate-300">{item.referenceNo}</td>}
-                      {colVisibility.date && <td className="p-3 font-mono text-slate-400">{item.date}</td>}
+                      {colVisibility.date && (
+                        <td className="p-3 font-mono text-slate-400">
+                          {formatDate(item.date, settings.dateFormat || 'DD-MM-YYYY', settings.timeZone)}
+                        </td>
+                      )}
                       {colVisibility.quantity && (
                         <td className="p-3 text-right font-mono font-bold text-white">
                           {item.quantity} <span className="text-[10px] text-slate-500">{item.unit}</span>

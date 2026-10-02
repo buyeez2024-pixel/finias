@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Transaction, Product } from '../../types/erp';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   Boxes,
   ShoppingBag,
@@ -227,9 +227,11 @@ export const PurchaseSaleProductReportView: React.FC = () => {
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
       // Date filter
-      const tDate = t.date ? t.date.substring(0, 10) : '';
-      if (startDate && tDate < startDate) return false;
-      if (endDate && tDate > endDate) return false;
+      const tDate = normalizeDateToYMD(t.date);
+      if (tDate) {
+        if (startDate && tDate < startDate) return false;
+        if (endDate && tDate > endDate) return false;
+      }
 
       // Location filter
       if (selectedLocationId !== 'all' && t.locationId !== selectedLocationId) {

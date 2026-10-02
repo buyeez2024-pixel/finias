@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   Calendar,
   Users,
@@ -117,9 +117,11 @@ export const SalesRepresentativeReportView: React.FC = () => {
       if (tx.type !== 'sale') return false;
 
       // Date check
-      const txDate = (tx.date || '').slice(0, 10);
-      if (startDate && txDate < startDate) return false;
-      if (endDate && txDate > endDate) return false;
+      const txDate = normalizeDateToYMD(tx.date);
+      if (txDate) {
+        if (startDate && txDate < startDate) return false;
+        if (endDate && txDate > endDate) return false;
+      }
 
       // Location check
       if (selectedLocationId !== 'all' && tx.locationId !== selectedLocationId) return false;
@@ -143,9 +145,11 @@ export const SalesRepresentativeReportView: React.FC = () => {
   // Filter expenses
   const filteredExpenses = useMemo(() => {
     return expenses.filter(exp => {
-      const expDate = (exp.date || '').slice(0, 10);
-      if (startDate && expDate < startDate) return false;
-      if (endDate && expDate > endDate) return false;
+      const expDate = normalizeDateToYMD(exp.date);
+      if (expDate) {
+        if (startDate && expDate < startDate) return false;
+        if (endDate && expDate > endDate) return false;
+      }
       if (selectedLocationId !== 'all' && exp.locationId !== selectedLocationId) return false;
       return true;
     });

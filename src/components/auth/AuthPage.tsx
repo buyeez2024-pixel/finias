@@ -140,6 +140,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [rateLimitCooldownSec, setRateLimitCooldownSec] = useState<number>(0);
+
+  useEffect(() => {
+    if (rateLimitCooldownSec <= 0) return;
+    const timer = setInterval(() => {
+      setRateLimitCooldownSec((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitCooldownSec]);
 
   // Smart Math Puzzle CAPTCHA state
   const [mathNum1, setMathNum1] = useState<number>(() => Math.floor(Math.random() * 10) + 2);
@@ -595,6 +604,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
     e.preventDefault();
     setErrorMessage(null);
 
+    if (rateLimitCooldownSec > 0) {
+      setErrorMessage(`Rate Shield Active: Please wait ${rateLimitCooldownSec}s before trying again.`);
+      return;
+    }
+
     const requireLoginCaptcha = settings?.requireCaptchaForLogin ?? true;
     if ((settings?.enableCaptcha ?? true) && requireLoginCaptcha) {
       if (!validateCaptchaSubmission()) return;
@@ -628,6 +642,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           setOtpError(null);
           setErrorMessage(null);
         } else {
+          if (res.delaySeconds && res.delaySeconds > 0) {
+            setRateLimitCooldownSec(res.delaySeconds);
+          }
           setLockedAccountInfo(null);
           setLockoutRemainingSeconds(0);
           setErrorMessage(
@@ -639,6 +656,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
           generateMathPuzzle();
         }
       } else {
+        setRateLimitCooldownSec(0);
         setLockedAccountInfo(null);
         setLockoutRemainingSeconds(0);
       }
@@ -1481,15 +1499,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                         {/* CAPTCHA / Bot Verification Widget */}
                         {renderCaptchaWidget(true)}
 
+                        {/* Exponential Backoff Rate Limit Warning Indicator */}
+                        {rateLimitCooldownSec > 0 && (
+                          <div className={`p-3 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-pulse border ${
+                            isLight
+                              ? 'bg-amber-50 text-amber-800 border-amber-200 shadow-2xs'
+                              : 'bg-amber-950/40 text-amber-300 border-amber-800/60'
+                          }`}>
+                            <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                            <div className="flex-1">
+                              <span>Rate Shield Active: Please wait </span>
+                              <span className="font-mono font-bold underline">{rateLimitCooldownSec}s</span>
+                              <span> before next attempt (exponential backoff).</span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Submit Button */}
                         <button
                           id="login-submit-btn"
                           type="submit"
-                          disabled={loading}
+                          disabled={loading || rateLimitCooldownSec > 0}
                           className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50"
                         >
                           {loading ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : rateLimitCooldownSec > 0 ? (
+                            <>
+                              <Clock className="w-4 h-4 animate-spin" />
+                              <span>Cooldown Active: Wait {rateLimitCooldownSec}s...</span>
+                            </>
                           ) : (
                             <>
                               <span>Sign In to ERP Terminal</span>

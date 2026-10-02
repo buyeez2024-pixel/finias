@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Transaction, TransactionItem } from '../../types/erp';
-import { getCategoryName, getBrandName, formatCurrency } from '../../utils/formatters';
+import { getCategoryName, getBrandName, formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   TrendingUp,
   Filter,
@@ -305,8 +305,11 @@ export const ProductSellReportView: React.FC = () => {
   const filteredLineItems = useMemo(() => {
     return allSellLineItems.filter((item) => {
       // Date filter
-      if (startDate && item.date.substring(0, 10) < startDate) return false;
-      if (endDate && item.date.substring(0, 10) > endDate) return false;
+      const itemYMD = normalizeDateToYMD(item.date);
+      if (itemYMD) {
+        if (startDate && itemYMD < startDate) return false;
+        if (endDate && itemYMD > endDate) return false;
+      }
 
       // Product selector
       if (selectedProductId !== 'all' && item.productId !== selectedProductId) return false;

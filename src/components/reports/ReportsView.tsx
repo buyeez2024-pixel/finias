@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import { ExportButtons } from '../common/ExportButtons';
 import { CustomerSupplierReportView } from './CustomerSupplierReportView';
 import { StockReportView } from './StockReportView';
@@ -148,18 +148,18 @@ export const ReportsView: React.FC = () => {
   const dynamicFinancialSummary = useMemo(() => {
     const salesTxns = transactions.filter((t) => {
       if (t.type !== 'sale' || t.status !== 'final') return false;
-      const transDateStr = t.date.substring(0, 10);
+      const transDateStr = normalizeDateToYMD(t.date);
       return transDateStr >= startDate && transDateStr <= endDate;
     });
 
     const purchaseTxns = transactions.filter((t) => {
       if (t.type !== 'purchase') return false;
-      const transDateStr = t.date.substring(0, 10);
+      const transDateStr = normalizeDateToYMD(t.date);
       return transDateStr >= startDate && transDateStr <= endDate;
     });
 
     const filteredExpenses = expenses.filter((e) => {
-      const expDateStr = e.date.substring(0, 10);
+      const expDateStr = normalizeDateToYMD(e.date);
       return expDateStr >= startDate && expDateStr <= endDate;
     });
 
@@ -193,13 +193,13 @@ export const ReportsView: React.FC = () => {
     // Return Transactions
     const sellReturnTxns = transactions.filter((t) => {
       if (t.type !== 'sell_return') return false;
-      const transDateStr = t.date.substring(0, 10);
+      const transDateStr = normalizeDateToYMD(t.date);
       return transDateStr >= startDate && transDateStr <= endDate;
     });
 
     const purchaseReturnTxns = transactions.filter((t) => {
       if (t.type !== 'purchase_return') return false;
-      const transDateStr = t.date.substring(0, 10);
+      const transDateStr = normalizeDateToYMD(t.date);
       return transDateStr >= startDate && transDateStr <= endDate;
     });
 
@@ -212,7 +212,7 @@ export const ReportsView: React.FC = () => {
 
     // Stock Adjustments
     const filteredAdjustments = stockAdjustments.filter((adj) => {
-      const adjDateStr = adj.date.substring(0, 10);
+      const adjDateStr = normalizeDateToYMD(adj.date);
       return adjDateStr >= startDate && adjDateStr <= endDate;
     });
 
@@ -548,8 +548,8 @@ export const ReportsView: React.FC = () => {
     return transactions.filter((t) => {
       if (t.type !== 'purchase') return false;
 
-      // Extract YYYY-MM-DD from transaction date
-      const transDateStr = t.date.substring(0, 10);
+      // Extract canonical YYYY-MM-DD from transaction date
+      const transDateStr = normalizeDateToYMD(t.date);
       const isWithinDate = transDateStr >= startDate && transDateStr <= endDate;
       
       const isSupplierMatch = supplierFilter === 'all' || t.supplierId === supplierFilter;
@@ -591,8 +591,8 @@ export const ReportsView: React.FC = () => {
     return transactions.filter((t) => {
       if (t.type !== 'sale') return false;
 
-      // Extract YYYY-MM-DD from transaction date
-      const transDateStr = t.date.substring(0, 10);
+      // Extract canonical YYYY-MM-DD from transaction date
+      const transDateStr = normalizeDateToYMD(t.date);
       const isWithinDate = transDateStr >= startDate && transDateStr <= endDate;
       
       const isCustomerMatch = customerFilter === 'all' || t.customerId === customerFilter;

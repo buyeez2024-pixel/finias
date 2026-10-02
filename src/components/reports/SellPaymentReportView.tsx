@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   Calendar,
   Users,
@@ -134,13 +134,15 @@ export const SellPaymentReportView: React.FC = () => {
   // Apply filters
   const filteredPayments = useMemo(() => {
     return paymentEntries.filter(entry => {
-      // Date filter - compare YYYY-MM-DD so timestamps like "2026-09-08 14:30" don't fail "> endDate"
-      const entryDate = entry.date ? entry.date.substring(0, 10) : '';
-      if (startDate && entryDate < startDate) {
-        return false;
-      }
-      if (endDate && entryDate > endDate) {
-        return false;
+      // Date filter - normalize any format (DD-MM-YYYY, YYYY-MM-DD, ISO) into YYYY-MM-DD for accurate comparison
+      const entryDate = normalizeDateToYMD(entry.date);
+      if (entryDate) {
+        if (startDate && entryDate < startDate) {
+          return false;
+        }
+        if (endDate && entryDate > endDate) {
+          return false;
+        }
       }
       
       // Customer filter

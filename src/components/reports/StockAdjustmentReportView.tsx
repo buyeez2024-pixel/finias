@@ -3,7 +3,7 @@ import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import { StockAdjustment, StockAdjustmentItem } from '../../types/erp';
 import { StockAdjustmentModal } from '../inventory/StockAdjustmentModal';
-import { getCategoryName } from '../../utils/formatters';
+import { getCategoryName, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import {
   AlertTriangle,
   Boxes,
@@ -209,9 +209,11 @@ export const StockAdjustmentReportView: React.FC = () => {
       }
 
       // Date Range Filter
-      const adjDate = adj.date.slice(0, 10);
-      if (startDate && adjDate < startDate) return false;
-      if (endDate && adjDate > endDate) return false;
+      const adjDate = normalizeDateToYMD(adj.date);
+      if (adjDate) {
+        if (startDate && adjDate < startDate) return false;
+        if (endDate && adjDate > endDate) return false;
+      }
 
       // Text Search Filter
       if (searchQuery.trim()) {

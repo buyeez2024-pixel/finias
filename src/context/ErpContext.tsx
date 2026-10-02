@@ -56,6 +56,11 @@ import {
 } from '../types/erp';
 import { DEFAULT_NOTIFICATION_TEMPLATES } from '../data/defaultNotificationTemplates';
 import {
+  checkAuthRateLimit,
+  recordAuthFailure,
+  resetAuthFailures,
+} from '../config/rateLimits';
+import {
   initOfflineDb,
   getStorageEngine,
   queueOfflineTransaction,
@@ -557,6 +562,8 @@ interface ErpContextType {
     userName?: string;
     userId?: string;
     otpCode?: string;
+    isThrottled?: boolean;
+    delaySeconds?: number;
   }>;
   lockUser: (userId: string, reason?: string) => { success: boolean; message: string };
   unlockUser: (userId: string) => { success: boolean; message: string };
@@ -7022,6 +7029,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     userName?: string;
     userId?: string;
     otpCode?: string;
+    isThrottled?: boolean;
+    delaySeconds?: number;
   }> => {
     const rawQuery = (emailOrPhone || '').trim();
     const cleanQuery = rawQuery.toLowerCase();
@@ -7155,6 +7164,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Check if account is admin - Admin accounts can NEVER be locked out and NEVER require OTP before signin
     const isAdmin = matchedUser.role === 'admin' || matchedUser.role === 'super_admin' || matchedUser.role === 'supreme_admin' || cleanQuery === 'admin@royalpos.com' || cleanQuery.startsWith('admin');
 
+    // 0. Check Tier 1 Rate Limiting (Exponential Backoff & Request throttling)
+    const rateLimitCheck = checkAuthRateLimit(cleanQuery, undefined, {
+      authMaxRequests: settings.authMaxRequests || 10,
+      authWindowSec: settings.authWindowSec || 300,
+      authDelayThreshold: settings.authDelayThreshold || 3,
+      authBaseDelayMs: settings.authBaseDelayMs || 1500,
+      enableRateLimiting: settings.enableRateLimiting ?? true,
+    });
+
+    if (!rateLimitCheck.allowed && !isAdmin) {
+      return {
+        success: false,
+        message: rateLimitCheck.reason || `Rate Shield Active: Please wait ${rateLimitCheck.delayRemainingSec}s before retrying.`,
+        isThrottled: true,
+        delaySeconds: rateLimitCheck.delayRemainingSec,
+        userEmail: matchedUser?.email,
+        userName: matchedUser?.name,
+      };
+    }
+
     // Check if account is locked / frozen
     const isEffectivelyLocked =
       !isAdmin &&
@@ -7216,6 +7245,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (Boolean(expectedPassword) && providedPassword.toLowerCase() === expectedPassword.toLowerCase());
 
     if (!isPasswordValid) {
+      // Record rate limit failure (calculates exponential backoff delay)
+      const failThrottle = recordAuthFailure(cleanQuery, undefined, {
+        authDelayThreshold: settings.authDelayThreshold || 3,
+        authBaseDelayMs: settings.authBaseDelayMs || 1500,
+        enableRateLimiting: settings.enableRateLimiting ?? true,
+      });
+
       // Do not increment failed login lockout on admin to prevent administrative lockouts
       const currentFailed = isAdmin ? 0 : (matchedUser.failedLogins || 0) + 1;
       const isLocked = !isAdmin && currentFailed >= maxFailed;
@@ -7277,7 +7313,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         return {
           success: false,
-          message: `Password is not matching. (${currentFailed}/${maxFailed} failed attempts before account lock).`
+          message: failThrottle.delaySec > 0
+            ? `Password is not matching. Exponential backoff active: please wait ${failThrottle.delaySec}s before next attempt (${currentFailed}/${maxFailed} failed attempts).`
+            : `Password is not matching. (${currentFailed}/${maxFailed} failed attempts before account lock).`,
+          isThrottled: failThrottle.delaySec > 0,
+          delaySeconds: failThrottle.delaySec,
         };
       }
     }
@@ -7400,6 +7440,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       // ignore
     }
+    resetAuthFailures(cleanQuery, undefined);
     return { success: true };
   };
 

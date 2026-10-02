@@ -84,6 +84,51 @@ export const formatCurrency = (
 };
 
 /**
+ * Date Normalizer Helper
+ * Converts any date format (DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY, YYYY-MM-DD, ISO, or timestamp)
+ * into a standardized canonical 'YYYY-MM-DD' string for reliable chronological comparison and filtering.
+ */
+export const normalizeDateToYMD = (dateInput?: string | Date | number | null): string => {
+  if (!dateInput) return '';
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return '';
+    const y = dateInput.getFullYear();
+    const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const d = String(dateInput.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const str = String(dateInput).trim();
+  if (!str) return '';
+
+  const datePart = str.split(/[ T]/)[0].trim();
+
+  // 1. DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
+  const ddmmyyyy = datePart.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (ddmmyyyy) {
+    const [, day, month, year] = ddmmyyyy;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // 2. YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+  const yyyymmdd = datePart.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (yyyymmdd) {
+    const [, year, month, day] = yyyymmdd;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  // 3. Try standard Date parsing
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  return datePart;
+};
+
+/**
  * 3. Timezone & 7. Date Format Helper
  * Formats any date input according to settings.dateFormat and settings.timezone
  */
@@ -93,7 +138,24 @@ export const formatDate = (
   timezone?: string
 ): string => {
   if (!dateInput) return '-';
-  const dateObj = new Date(dateInput);
+
+  let dateObj: Date;
+  if (dateInput instanceof Date) {
+    dateObj = dateInput;
+  } else if (typeof dateInput === 'number') {
+    dateObj = new Date(dateInput);
+  } else {
+    const str = String(dateInput).trim();
+    // Parse DD-MM-YYYY or DD/MM/YYYY into native Date
+    const ddmmyyyy = str.split(/[ T]/)[0].match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (ddmmyyyy) {
+      const [, day, month, year] = ddmmyyyy;
+      dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+    } else {
+      dateObj = new Date(str);
+    }
+  }
+
   if (isNaN(dateObj.getTime())) return String(dateInput);
 
   const tz = timezone || 'America/Chicago';

@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -8,13 +9,51 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import cors from "cors";
 
+// Auto-load environment variables from all standard production / local locations:
+// 1. Current working directory (.env or env.config)
+// 2. Directory where server.cjs / server.ts is located (.env or env.config)
+// 3. Parent directory (.env or env.config)
+const envSearchPaths = [
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(process.cwd(), "env.config"),
+  path.resolve(__dirname, ".env"),
+  path.resolve(__dirname, "env.config"),
+  path.resolve(__dirname, "../.env"),
+  path.resolve(__dirname, "../env.config"),
+];
+
+for (const envFile of envSearchPaths) {
+  if (fs.existsSync(envFile)) {
+    dotenv.config({ path: envFile, override: false });
+    break;
+  }
+}
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  // Resolve express-rate-limit trust proxy warnings for Cloud Run environment
+  // Resolve express-rate-limit trust proxy warnings for Cloud Run / shared proxy environment
   app.set("trust proxy", 1);
+
+  // Block public HTTP access to sensitive environment secrets and server files
+  app.use((req, res, next) => {
+    const rawPath = req.path.toLowerCase();
+    if (
+      rawPath.startsWith("/.env") ||
+      rawPath.includes("/.env") ||
+      rawPath.endsWith(".env") ||
+      rawPath.includes("env.config") ||
+      rawPath === "/package.json" ||
+      rawPath === "/package-lock.json" ||
+      rawPath === "/tsconfig.json" ||
+      rawPath === "/server.cjs" ||
+      rawPath === "/server.cjs.map"
+    ) {
+      return res.status(403).json({ error: "Access Forbidden: Configuration files are protected." });
+    }
+    next();
+  });
 
   app.use(express.json({ limit: "15mb" }));
 
@@ -37,15 +76,66 @@ async function startServer() {
     crossOriginEmbedderPolicy: false,
   }));
 
-  // 2. Rate Limiting: Prevents DDoS & Brute Force attacks (Ransomware vectors)
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 2000, // limit each IP to 2000 requests per windowMs
+  // 2. Tiered Rate Limiting: Tiered defense appropriate to each endpoint category
+  // Thresholds are fully configurable via environment variables with battle-tested defaults
+  const RATE_CONFIG = {
+    authWindowMs: Number(process.env.RATE_LIMIT_AUTH_WINDOW_MS) || 5 * 60 * 1000, // 5 minutes
+    authMax: Number(process.env.RATE_LIMIT_AUTH_MAX) || 15,                         // 15 attempts / 5 mins
+    publicWindowMs: Number(process.env.RATE_LIMIT_PUBLIC_WINDOW_MS) || 60 * 1000, // 1 minute
+    publicMax: Number(process.env.RATE_LIMIT_PUBLIC_MAX) || 120,                   // 120 req / min
+    authActionWindowMs: Number(process.env.RATE_LIMIT_ACTION_WINDOW_MS) || 60 * 1000,
+    authActionMax: Number(process.env.RATE_LIMIT_ACTION_MAX) || 600,               // 600 req / min
+    globalMax: Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 2000,
+  };
+
+  // Tier 1: Stricter limits on sensitive system, install, and authorization routes
+  const authLimiter = rateLimit({
+    windowMs: RATE_CONFIG.authWindowMs,
+    max: RATE_CONFIG.authMax,
+    message: { 
+      error: "Security Shield: Stricter rate limit triggered on authentication/setup endpoint. Please wait before retrying.",
+      retryAfter: Math.ceil(RATE_CONFIG.authWindowMs / 1000)
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(['/api/system/install', '/api/system/reset', '/api/auth'], authLimiter);
+
+  // Tier 2: Moderate limits on public health & status endpoints
+  const publicLimiter = rateLimit({
+    windowMs: RATE_CONFIG.publicWindowMs,
+    max: RATE_CONFIG.publicMax,
+    message: { 
+      error: "Security Shield: Public endpoint query limit exceeded. Please wait a moment.",
+      retryAfter: 60
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(['/api/system/status', '/api/health'], publicLimiter);
+
+  // Tier 3: Looser limits on authenticated AI, sync, and business actions
+  const authenticatedActionLimiter = rateLimit({
+    windowMs: RATE_CONFIG.authActionWindowMs,
+    max: RATE_CONFIG.authActionMax,
+    message: { 
+      error: "Security Shield: Transaction throughput limit reached. Please allow current batch to finish processing.",
+      retryAfter: 15
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(['/api/erp/ai', '/api/notifications'], authenticatedActionLimiter);
+
+  // General fallback limiter across all remaining /api routes
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: RATE_CONFIG.globalMax,
     message: { error: "Security Shield Triggered: Too many requests from this IP. Please try again later." },
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use('/api', limiter); // Apply to all API routes
+  app.use('/api', generalLimiter);
 
   // 3. HPP: Protects against HTTP Parameter Pollution attacks
   app.use(hpp());

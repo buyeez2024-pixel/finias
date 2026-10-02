@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate, normalizeDateToYMD } from '../../utils/formatters';
 import { ExportButtons } from '../common/ExportButtons';
 import {
   Users,
@@ -143,7 +143,7 @@ export const CustomerSupplierReportView: React.FC = () => {
   // Contacts Aggregation and Calculations
   const reportData = useMemo(() => {
     const filteredTxns = transactions.filter((t) => {
-      const transDateStr = t.date.substring(0, 10);
+      const transDateStr = normalizeDateToYMD(t.date);
       return transDateStr >= startDate && transDateStr <= endDate;
     });
 
