@@ -482,12 +482,20 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base sm:text-lg font-black">{user.name}</h3>
                 <span
-                  className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${currentRoleMeta.badgeColor}`}
+                  className={`text-[10px] font-black uppercase tracking-wider ${
+                    isLight && (currentRoleMeta.roleKey === 'supreme_admin' || currentRoleMeta.roleKey === 'admin')
+                      ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                      : `px-2 py-0.5 rounded-full border ${currentRoleMeta.badgeColor}`
+                  }`}
                 >
                   {currentRoleMeta.title}
                 </span>
                 {user.username && (
-                  <span className="text-[11px] font-mono text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded-md">
+                  <span className={`text-[11px] font-mono ${
+                    isLight
+                      ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                      : 'text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded-md'
+                  }`}>
                     @{user.username}
                   </span>
                 )}
@@ -500,10 +508,10 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
 
           <button
             onClick={onClose}
-            className={`p-2 rounded-2xl border transition shrink-0 self-end sm:self-center ${
+            className={`transition shrink-0 self-end sm:self-center cursor-pointer ${
               isLight
-                ? 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'p-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
             }`}
           >
             <X className="w-4 h-4" />
@@ -512,8 +520,10 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
 
         {/* Navigation Tabs */}
         <div
-          className={`flex items-center gap-2 px-5 sm:px-6 pt-3 pb-2 border-b overflow-x-auto shrink-0 ${
-            isLight ? 'bg-slate-100/60 border-slate-200' : 'bg-slate-950/40 border-slate-800'
+          className={`flex items-center gap-2 overflow-x-auto shrink-0 ${
+            isLight
+              ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+              : 'px-5 sm:px-6 pt-3 pb-2 border-b bg-slate-950/40 border-slate-800'
           }`}
         >
           <button
@@ -1128,10 +1138,10 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
             <button
               type="button"
               onClick={onClose}
-              className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              className={`text-xs font-bold transition cursor-pointer ${
                 isLight
-                  ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                  : 'px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
               }`}
             >
               Cancel

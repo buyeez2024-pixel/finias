@@ -491,11 +491,19 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <div className="space-y-0.5 sm:space-y-1 min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
                   <h2 className="text-base sm:text-xl md:text-2xl font-black tracking-tight truncate max-w-[160px] sm:max-w-none">{user.name}</h2>
-                  <span className={`text-[9px] sm:text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${roleBadgeStyle(user.role)}`}>
+                  <span className={`text-[9px] sm:text-[11px] font-extrabold uppercase ${
+                    isLight && (user.role === 'supreme_admin' || user.role === 'admin' || user.role === 'super_admin')
+                      ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                      : `px-2 py-0.5 rounded-full border ${roleBadgeStyle(user.role)}`
+                  }`}>
                     {user.role.replace('_', ' ')}
                   </span>
                   {isCurrent && (
-                    <span className="text-[9px] sm:text-[10px] bg-indigo-600 text-white font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs">
+                    <span className={
+                      isLight
+                        ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95 text-[9px] sm:text-[10px] font-extrabold'
+                        : 'text-[9px] sm:text-[10px] bg-indigo-600 text-white font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs'
+                    }>
                       You
                     </span>
                   )}
@@ -554,10 +562,10 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
               <button
                 onClick={onClose}
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 shadow-2xs ${
+                className={`transition flex items-center justify-center cursor-pointer shrink-0 ${
                   isLight
-                    ? 'bg-slate-200/80 hover:bg-slate-300 text-slate-700 border-slate-300'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                    : 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-2xs active:scale-95'
                 }`}
                 title="Close (Esc)"
               >
@@ -652,10 +660,10 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
         {/* Modal Navigation Tabs (finias POS View Tabs) */}
         <div
-          className={`flex items-center border-b p-1.5 sm:p-2 gap-1.5 sm:gap-2 text-xs overflow-x-auto shrink-0 scrollbar-none ${
+          className={`flex items-center gap-1.5 sm:gap-2 text-xs overflow-x-auto shrink-0 scrollbar-none ${
             isLight
-              ? 'bg-slate-100/60 border-slate-200'
-              : 'bg-slate-950 border-slate-800'
+              ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+              : 'border-b p-1.5 sm:p-2 bg-slate-950 border-slate-800'
           }`}
         >
           <button
@@ -880,7 +888,11 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                     <ShieldCheck className="w-4 h-4 text-indigo-500" />
                     <span>Role-Based Module Permissions ({allowedModules.length} Modules Granted)</span>
                   </h3>
-                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${roleBadgeStyle(user.role)}`}>
+                  <span className={`text-[10px] font-extrabold uppercase ${
+                    user.role === 'supreme_admin' || user.role === 'admin' || user.role === 'super_admin'
+                      ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                      : `px-2 py-0.5 rounded-full border ${roleBadgeStyle(user.role)}`
+                  }`}>
                     {user.role} tier
                   </span>
                 </div>
@@ -1517,10 +1529,10 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className={`w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-xl font-bold transition active:scale-95 border flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-2xs ${
+            className={`w-full sm:w-auto font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
               isLight
-                ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                ? 'p-1.5 rounded-lg border transition bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
+                : 'px-5 py-2.5 sm:py-2 rounded-xl transition active:scale-95 border shadow-2xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
             }`}
           >
             <X className="w-3.5 h-3.5" />
