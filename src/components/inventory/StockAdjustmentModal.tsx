@@ -3,6 +3,8 @@ import { useErp } from '../../context/ErpContext';
 import { StockAdjustmentItem } from '../../types/erp';
 import { AlertTriangle, Plus, Trash2, X, CheckCircle2, Search, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { validateStockAdjustmentData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 
 interface StockAdjustmentModalProps {
   isOpen: boolean;
@@ -23,6 +25,8 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   const [items, setItems] = useState<StockAdjustmentItem[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const isLight = settings.themeMode === 'light';
 
@@ -65,7 +69,25 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return;
+    setFieldErrors({});
+    setModalError(null);
+
+    const schemaRes = validateStockAdjustmentData({
+      locationId,
+      reason,
+      items: items.map(i => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        unitCost: i.unitCost,
+      })),
+      adjustmentType,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setModalError(schemaRes.firstError || 'Please correct the stock adjustment errors.');
+      return;
+    }
 
     adjustStock({
       locationId,
@@ -108,16 +130,24 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           </button>
         </div>
 
+        {modalError && (
+          <div className="p-3 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{modalError}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold`}>Business Location *</label>
               <select
                 value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                className={`w-full px-3 py-2 rounded-xl border focus:outline-none mt-1 ${
-                  isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
-                }`}
+                onChange={(e) => {
+                  setLocationId(e.target.value);
+                  if (fieldErrors.locationId) setFieldErrors(prev => ({ ...prev, locationId: '' }));
+                }}
+                className={`w-full px-3 py-2 rounded-xl border ${fieldErrors.locationId ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'} focus:outline-none mt-1`}
               >
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
@@ -125,6 +155,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                   </option>
                 ))}
               </select>
+              <FormFieldError error={fieldErrors.locationId} />
             </div>
 
             <div>
@@ -159,16 +190,19 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold`}>Reason / Reference Cause</label>
+              <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold`}>Reason / Reference Cause *</label>
               <input
                 type="text"
+                required
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className={`w-full px-3 py-2 rounded-xl border focus:outline-none mt-1 ${
-                  isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
-                }`}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  if (fieldErrors.reason) setFieldErrors(prev => ({ ...prev, reason: '' }));
+                }}
+                className={`w-full px-3 py-2 rounded-xl border ${fieldErrors.reason ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'} focus:outline-none mt-1`}
                 placeholder="e.g., Physical cycle count variance"
               />
+              <FormFieldError error={fieldErrors.reason} />
             </div>
 
             <div>

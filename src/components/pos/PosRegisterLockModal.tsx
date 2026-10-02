@@ -35,6 +35,7 @@ export const PosRegisterLockModal: React.FC<PosRegisterLockModalProps> = ({
     users,
     pendingPosExitTarget,
     setPendingPosExitTarget,
+    hasModuleAccess,
   } = useErp();
 
   const [activeTabMode, setActiveTabMode] = useState<'close_shift' | 'admin_override'>('close_shift');
@@ -64,7 +65,9 @@ export const PosRegisterLockModal: React.FC<PosRegisterLockModalProps> = ({
   const countedNum = parseFloat(actualCashCount) || 0;
   const cashDiscrepancy = countedNum - expectedCashInDrawer;
 
-  const targetTabLabel = (pendingPosExitTarget || 'dashboard')
+  const fallbackTarget = hasModuleAccess('dashboard') ? 'dashboard' : (hasModuleAccess('sales') ? 'sales' : 'dashboard');
+  const resolvedTarget = pendingPosExitTarget && hasModuleAccess(pendingPosExitTarget) ? pendingPosExitTarget : fallbackTarget;
+  const targetTabLabel = resolvedTarget
     .replace('_', ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 

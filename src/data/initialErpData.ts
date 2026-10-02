@@ -238,6 +238,7 @@ export const initialSettings = {
   isFreshInstallation: false,
   installationType: 'demo',
   defaultTaxRate: 0,
+  enablePosShiftLock: false,
   blockedDomains: [],
   enableSecurityGuard: true,
   blockDisposableEmails: true,
@@ -486,6 +487,7 @@ export const initialCashRegister = {
   cashSales: 0,
   totalExpenses: 0,
   isOpen: false,
+  status: 'closed',
   cashierName: '',
   notes: '',
   createdAt: new Date().toISOString()
@@ -772,11 +774,12 @@ export const initialRolePermissions = {
   },
   cashier: {
     allowedModules: [
+      'dashboard',
       'pos',
       'sales',
       'contacts',
     ],
-    canViewDashboard: false,
+    canViewDashboard: true,
     canAccessPos: true,
     canManageProducts: false,
     canEditPrices: false,

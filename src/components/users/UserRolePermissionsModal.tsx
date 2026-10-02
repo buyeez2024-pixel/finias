@@ -225,7 +225,7 @@ const BASE_PRESET_ROLES: CustomRoleDefinition[] = [
     tier: 'Tier 3 • Terminal Checkout',
     badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
     description: 'Handles point-of-sale checkout, customer registers, instant payments, receipt printing, and daily till balance.',
-    allowedModules: ['pos', 'sales', 'contacts'],
+    allowedModules: ['dashboard', 'pos', 'sales', 'contacts'],
   },
 ];
 

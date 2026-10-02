@@ -16,6 +16,8 @@ import { Customer } from '../../types/erp';
 import { useErp } from '../../context/ErpContext';
 import { formatCurrency, validateEmail } from '../../utils/formatters';
 import { validatePhoneWithCountry } from '../../utils/phoneValidation';
+import { validateContactData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 
 interface QuickAddCustomerModalProps {
@@ -44,17 +46,35 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      showFlashNotification('Customer name is required', 'error');
+    setFieldErrors({});
+
+    const schemaRes = validateContactData({
+      name,
+      contactType: 'customer',
+      mobile: phone,
+      countryCode,
+      email: email.trim().toUpperCase() === 'N/A' ? undefined : email,
+      taxNumber,
+      openingBalance,
+      creditLimit,
+      city,
+      addressLine1: address,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      showFlashNotification(schemaRes.firstError || 'Please correct errors before creating customer', 'error');
       return;
     }
 
     if (!phone.trim()) {
+      setFieldErrors(prev => ({ ...prev, mobile: 'Phone number is required' }));
       showFlashNotification('Phone number is required', 'error');
       return;
     }
@@ -62,6 +82,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
     if (phone.trim()) {
       const phoneVal = validatePhoneWithCountry(phone, countryCode);
       if (!phoneVal.isValid) {
+        setFieldErrors(prev => ({ ...prev, mobile: phoneVal.error || 'Invalid phone number' }));
         showFlashNotification(`Phone Error: ${phoneVal.error}`, 'error');
         return;
       }
@@ -69,6 +90,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
 
     if (email.trim() && email.trim().toUpperCase() !== 'N/A') {
       if (!validateEmail(email)) {
+        setFieldErrors(prev => ({ ...prev, email: 'Please enter a valid email address with a proper domain (e.g. name@mail.com).' }));
         showFlashNotification('Please enter a valid email address with a proper domain (e.g. name@mail.com).', 'error');
         return;
       }
@@ -148,10 +170,16 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
                 id="quick-customer-name-input"
                 autoFocus
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                }}
                 placeholder="e.g. Eleanor Vance, Tech Corp"
-                className="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold placeholder:text-slate-600"
+                className={`w-full bg-slate-950 text-white px-4 py-3 rounded-xl border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold placeholder:text-slate-600 ${
+                  fieldErrors.name ? 'border-red-500 ring-1 ring-red-500/20' : 'border-slate-800'
+                }`}
               />
+              <FormFieldError error={fieldErrors.name} />
             </div>
 
             {/* Business / Company Name */}

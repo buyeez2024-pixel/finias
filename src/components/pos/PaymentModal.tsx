@@ -18,6 +18,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { validateSaleData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 
 interface PaymentModalProps {
   isOpen: boolean;

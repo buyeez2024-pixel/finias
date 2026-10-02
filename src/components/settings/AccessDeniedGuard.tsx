@@ -35,6 +35,8 @@ export const AccessDeniedGuard: React.FC<AccessDeniedGuardProps> = ({
     }
     if (allowedModules.includes('dashboard')) {
       setActiveTab('dashboard');
+    } else if (allowedModules.includes('sales')) {
+      setActiveTab('sales');
     } else if (allowedModules.includes('pos')) {
       setActiveTab('pos');
     } else if (allowedModules.length > 0) {

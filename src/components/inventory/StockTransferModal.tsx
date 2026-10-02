@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { ArrowRightLeft, Plus, Trash2, X, CheckCircle2, Search } from 'lucide-react';
+import { ArrowRightLeft, Plus, Trash2, X, CheckCircle2, Search, AlertTriangle } from 'lucide-react';
+import { validateStockTransferData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 
 interface StockTransferModalProps {
   isOpen: boolean;
@@ -26,6 +28,8 @@ export const StockTransferModal: React.FC<StockTransferModalProps> = ({
   const [items, setItems] = useState<{ productId: string; productName: string; quantity: number; unitCost: number }[]>(existingTransfer?.items || []);
   const [productSearch, setProductSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (existingTransfer && isOpen) {
@@ -76,11 +80,24 @@ export const StockTransferModal: React.FC<StockTransferModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (fromLocationId === toLocationId) {
-      alert('Source and destination locations cannot be identical.');
+    setFieldErrors({});
+    setModalError(null);
+
+    const schemaRes = validateStockTransferData({
+      fromLocationId,
+      toLocationId,
+      items: items.map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+      })),
+      status,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setModalError(schemaRes.firstError || 'Please fix the transfer errors.');
       return;
     }
-    if (items.length === 0) return;
 
     if (existingTransfer) {
       updateStockTransfer(existingTransfer.id, {
@@ -118,14 +135,24 @@ export const StockTransferModal: React.FC<StockTransferModalProps> = ({
           </button>
         </div>
 
+        {modalError && (
+          <div className="p-3 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{modalError}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-slate-700 dark:text-slate-300 font-semibold">From (Origin Warehouse/Store) *</label>
               <select
                 value={fromLocationId}
-                onChange={(e) => setFromLocationId(e.target.value)}
-                className="w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-white px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none mt-1"
+                onChange={(e) => {
+                  setFromLocationId(e.target.value);
+                  if (fieldErrors.fromLocationId) setFieldErrors(prev => ({ ...prev, fromLocationId: '' }));
+                }}
+                className={`w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-white px-3 py-2 rounded-xl border ${fieldErrors.fromLocationId ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-300 dark:border-slate-700'} focus:outline-none mt-1`}
               >
                 {locations?.map((loc) => (
                   <option key={loc.id} value={loc.id}>
@@ -133,14 +160,18 @@ export const StockTransferModal: React.FC<StockTransferModalProps> = ({
                   </option>
                 ))}
               </select>
+              <FormFieldError error={fieldErrors.fromLocationId} />
             </div>
 
             <div>
               <label className="text-slate-700 dark:text-slate-300 font-semibold">To (Destination Branch) *</label>
               <select
                 value={toLocationId}
-                onChange={(e) => setToLocationId(e.target.value)}
-                className="w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-white px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 focus:outline-none mt-1"
+                onChange={(e) => {
+                  setToLocationId(e.target.value);
+                  if (fieldErrors.toLocationId) setFieldErrors(prev => ({ ...prev, toLocationId: '' }));
+                }}
+                className={`w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-white px-3 py-2 rounded-xl border ${fieldErrors.toLocationId ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-300 dark:border-slate-700'} focus:outline-none mt-1`}
               >
                 {locations?.map((loc) => (
                   <option key={loc.id} value={loc.id}>
@@ -148,6 +179,7 @@ export const StockTransferModal: React.FC<StockTransferModalProps> = ({
                   </option>
                 ))}
               </select>
+              <FormFieldError error={fieldErrors.toLocationId} />
             </div>
 
             <div>

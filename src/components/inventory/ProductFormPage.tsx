@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { optimizeImage } from '../../lib/imageOptimization';
 import { formatCurrency } from '../../utils/formatters';
+import { validateProductData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import { Product, ProductLot } from '../../types/erp';
 import { BarcodeRenderer } from '../common/BarcodeRenderer';
 import {
@@ -341,6 +343,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
   // UI state
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editingLot, setEditingLot] = useState<ProductLot | null>(null);
@@ -780,9 +783,31 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   // Save Logic
   const handleSave = (andAddAnother: boolean = false) => {
     setFormError(null);
+    setFieldErrors({});
 
-    if (!name.trim()) {
-      setFormError('Product Name is required.');
+    // 1. Strict Schema-Driven Input Validation
+    const schemaRes = validateProductData({
+      name,
+      sku: sku.trim() || undefined,
+      type: productType,
+      unit,
+      costPrice: productType === 'single' ? costPrice : undefined,
+      sellingPrice: productType === 'single' ? sellingPrice : undefined,
+      alertQuantity,
+      taxRate,
+      category,
+      brand,
+      variations: productType === 'variable' ? variations.map((v) => ({
+        name: v.name,
+        sku: v.sku,
+        purchasePrice: v.costPrice,
+        sellingPrice: v.sellingPrice,
+      })) : undefined,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setFormError(schemaRes.firstError || 'Please correct the highlighted fields before saving.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -1202,10 +1227,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   required
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                  }}
                   placeholder="Enter full descriptive product title..."
-                  className="w-full bg-slate-950 text-white font-semibold text-sm px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1 placeholder-slate-500"
+                  className={`w-full bg-slate-950 text-white font-semibold text-sm px-3.5 py-2.5 rounded-xl border ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 mt-1 placeholder-slate-500`}
                 />
+                <FormFieldError error={fieldErrors.name} />
               </div>
 
               {/* SKU & Barcode Inputs */}
@@ -1228,10 +1257,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     id="prod-input-sku"
                     type="text"
                     value={sku}
-                    onChange={(e) => setSku(e.target.value)}
+                    onChange={(e) => {
+                      setSku(e.target.value);
+                      if (fieldErrors.sku) setFieldErrors(prev => ({ ...prev, sku: '' }));
+                    }}
                     placeholder="Leave blank to auto-generate"
-                    className="w-full bg-slate-950 text-white font-mono font-bold px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1 uppercase"
+                    className={`w-full bg-slate-950 text-white font-mono font-bold px-3.5 py-2.5 rounded-xl border ${fieldErrors.sku ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 mt-1 uppercase`}
                   />
+                  <FormFieldError error={fieldErrors.sku} />
                   {duplicateSkuProduct && (
                     <p className="text-[11px] text-rose-400 flex items-center gap-1.5 mt-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -1492,8 +1525,11 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   <select
                     id="prod-select-unit"
                     value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full bg-slate-950 text-white font-medium px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
+                    onChange={(e) => {
+                      setUnit(e.target.value);
+                      if (fieldErrors.unit) setFieldErrors(prev => ({ ...prev, unit: '' }));
+                    }}
+                    className={`w-full bg-slate-950 text-white font-medium px-3.5 py-2.5 rounded-xl border ${fieldErrors.unit ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 mt-1`}
                   >
                     <option value="">Select Unit</option>
                     {units.map((u) => (
@@ -1507,6 +1543,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     {!units.some((u) => u.shortName.toLowerCase() === (unit || '').toLowerCase()) &&
                       unit && <option value={unit}>{unit} (Custom)</option>}
                   </select>
+                  <FormFieldError error={fieldErrors.unit} />
                 </div>
               </div>
 
@@ -2319,7 +2356,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       <label className="text-[11px] text-slate-400 font-semibold block mb-1">
                         Exc. Tax ({settings.currencySymbol}) *
                       </label>
-                      <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
+                      <div className={`flex items-center rounded-xl border ${fieldErrors.costPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
                         <input
                           id="prod-input-cost-price"
                           required
@@ -2327,7 +2364,10 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                           step="0.01"
                           min="0"
                           value={costPrice}
-                          onChange={(e) => handleCostPriceExcTaxChange(e.target.value)}
+                          onChange={(e) => {
+                            handleCostPriceExcTaxChange(e.target.value);
+                            if (fieldErrors.costPrice) setFieldErrors(prev => ({ ...prev, costPrice: '' }));
+                          }}
                           onPaste={(e) => {
                             const pastedText = e.clipboardData.getData('text');
                             handleCostPriceExcTaxPaste(pastedText);
@@ -2336,6 +2376,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                           className="w-full bg-transparent text-indigo-400 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
+                      <FormFieldError error={fieldErrors.costPrice} />
                     </div>
 
                     <div>
@@ -2392,7 +2433,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       <label className="text-[11px] text-slate-400 font-semibold block mb-1">
                         Exc. Tax ({settings.currencySymbol}) *
                       </label>
-                      <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
+                      <div className={`flex items-center rounded-xl border ${fieldErrors.sellingPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
                         <input
                           id="prod-input-selling-price"
                           required
@@ -2400,11 +2441,15 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                           step="0.01"
                           min="0"
                           value={sellingPrice}
-                          onChange={(e) => handleSellingPriceExcTaxChange(e.target.value)}
+                          onChange={(e) => {
+                            handleSellingPriceExcTaxChange(e.target.value);
+                            if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));
+                          }}
                           placeholder="0.00"
                           className="w-full bg-transparent text-white font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
+                      <FormFieldError error={fieldErrors.sellingPrice} />
                     </div>
 
                     <div>
@@ -2509,13 +2554,16 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
                 <div>
                   <label className="text-slate-300 font-semibold block mb-1.5">Low Stock Alert Threshold</label>
-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition">
+                  <div className={`flex items-center rounded-xl border ${fieldErrors.alertQuantity ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition`}>
                     <input
                       id="prod-input-alert-qty"
                       type="number"
-                      min="1"
+                      min="0"
                       value={alertQuantity}
-                      onChange={(e) => setAlertQuantity(e.target.value)}
+                      onChange={(e) => {
+                        setAlertQuantity(e.target.value);
+                        if (fieldErrors.alertQuantity) setFieldErrors(prev => ({ ...prev, alertQuantity: '' }));
+                      }}
                       placeholder="10"
                       className="w-full bg-transparent text-amber-300 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
@@ -2523,6 +2571,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       {unit}
                     </div>
                   </div>
+                  <FormFieldError error={fieldErrors.alertQuantity} />
                 </div>
               </div>
 

@@ -67,6 +67,7 @@ const MainAppContent: React.FC = () => {
     lockUser,
     unlockUser,
     hasModuleAccess,
+    rolePermissions,
     showRegisterExitLockModal,
     setShowRegisterExitLockModal,
     pendingPosExitTarget,
@@ -160,7 +161,19 @@ const MainAppContent: React.FC = () => {
 
   const onOpenPaymentModal = useCallback(() => setShowPaymentModal(true), []);
   const onOpenAddCustomerModal = useCallback(() => setShowAddCustomerModal(true), []);
-  const onExitPos = useCallback(() => setActiveTab('dashboard'), [setActiveTab]);
+  
+  const getSafeExitTab = useCallback(() => {
+    if (hasModuleAccess('dashboard')) return 'dashboard';
+    if (hasModuleAccess('sales')) return 'sales';
+    if (hasModuleAccess('contacts')) return 'contacts';
+    const userRole = currentUser?.role || 'cashier';
+    const allowed = rolePermissions[userRole]?.allowedModules || [];
+    return allowed[0] || 'dashboard';
+  }, [hasModuleAccess, currentUser, rolePermissions]);
+
+  const onExitPos = useCallback(() => {
+    setActiveTab(getSafeExitTab());
+  }, [getSafeExitTab, setActiveTab]);
 
   const [isInstallUrl, setIsInstallUrl] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -403,7 +416,7 @@ const MainAppContent: React.FC = () => {
             <AccessDeniedGuard
               moduleName={activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
               moduleId={activeTab}
-              onNavigateHome={() => setActiveTab('dashboard')}
+              onNavigateHome={() => setActiveTab(getSafeExitTab())}
             />
           ) : (
             <>
@@ -767,7 +780,10 @@ const MainAppContent: React.FC = () => {
         isOpen={showRegisterExitLockModal}
         onClose={() => setShowRegisterExitLockModal(false)}
         onExitSuccess={() => {
-          setActiveTab(pendingPosExitTarget || 'dashboard');
+          const target = pendingPosExitTarget && hasModuleAccess(pendingPosExitTarget)
+            ? pendingPosExitTarget
+            : getSafeExitTab();
+          setActiveTab(target);
           setShowRegisterExitLockModal(false);
         }}
       />

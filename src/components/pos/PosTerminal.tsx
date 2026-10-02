@@ -98,6 +98,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
     cashRegister = { status: 'closed', openingCash: 0 },
     openRegister = () => {},
     closeRegister = () => {},
+    hasModuleAccess = () => true,
     isPosExitAllowed = () => true,
     setPendingPosExitTarget = () => {},
     showRegisterExitLockModal = false,
@@ -222,16 +223,22 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
     if (onExitPos) {
       onExitPos();
     } else {
-      setActiveTab('dashboard');
+      if (hasModuleAccess('dashboard')) {
+        setActiveTab('dashboard');
+      } else if (hasModuleAccess('sales')) {
+        setActiveTab('sales');
+      } else {
+        setActiveTab('pos');
+      }
     }
-  }, [onExitPos, setActiveTab]);
+  }, [onExitPos, setActiveTab, hasModuleAccess]);
 
   const handleRequestExit = useCallback(() => {
-    // 1. Role & Cash Register Security Policy Check:
-    // Without opening and closing Cash Register, only Admin can exit POS screen
+    // 1. Role & Cash Register Security Policy Check (only when shift lock is active and register is open)
     if (!isPosExitAllowed()) {
       soundEffects.playScanError();
-      setPendingPosExitTarget('dashboard');
+      const fallbackTarget = hasModuleAccess('dashboard') ? 'dashboard' : (hasModuleAccess('sales') ? 'sales' : 'dashboard');
+      setPendingPosExitTarget(fallbackTarget);
       setShowRegisterExitLockModal(true);
       showFlashNotification(
         'Exit Blocked: Cash register shift is active. Reconcile drawer and close shift to exit, or request Admin override.',
@@ -243,12 +250,13 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
     // 2. If exit is allowed, check for active cart items
     if (cart.length === 0) {
       handleExecuteExit();
-      showFlashNotification('Exited POS terminal to dashboard', 'info');
+      showFlashNotification('Exited POS terminal', 'info');
     } else {
       setShowExitConfirmModal(true);
     }
   }, [
     isPosExitAllowed,
+    hasModuleAccess,
     setPendingPosExitTarget,
     setShowRegisterExitLockModal,
     showFlashNotification,

@@ -3,6 +3,7 @@ import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import { Category } from '../../types/erp';
 import { formatCurrency } from '../../utils/formatters';
+import { validateMasterEntityData } from '../../utils/validation';
 import {
   FolderTree,
   Plus,
@@ -380,6 +381,18 @@ export const CategoriesView: React.FC = () => {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    const schemaRes = validateMasterEntityData({
+      name: formData.name,
+      shortName: formData.shortCode,
+      code: formData.code,
+      entityLabel: 'Category Name',
+    });
+
+    if (!schemaRes.isValid) {
+      setFormError(schemaRes.firstError || 'Please fix the form errors before saving.');
+      return;
+    }
 
     const nameClean = formData.name.trim();
     if (!nameClean) {

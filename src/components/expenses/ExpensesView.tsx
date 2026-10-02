@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import { formatCurrency } from '../../utils/formatters';
+import { validateExpenseData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import {
   DollarSign,
   Plus,
@@ -102,6 +104,7 @@ export const ExpensesView: React.FC = () => {
   const [accountId, setAccountId] = useState(paymentAccounts[0]?.id || '');
   const [paymentNote, setPaymentNote] = useState('');
   const [notes, setNotes] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   
   // Refund states
   const [isRefund, setIsRefund] = useState(false);
@@ -169,8 +172,26 @@ export const ExpensesView: React.FC = () => {
 
   const handleCreateExpense = (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
+
+    const schemaRes = validateExpenseData({
+      categoryId: category,
+      amount,
+      expenseDate: date ? date.split('T')[0] : undefined,
+      title: notes,
+      refNo: referenceNo,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      return;
+    }
+
     const numAmt = parseFloat(amount) || 0;
-    if (numAmt <= 0) return;
+    if (numAmt <= 0) {
+      setFieldErrors(prev => ({ ...prev, amount: 'Expense amount must be greater than 0.' }));
+      return;
+    }
 
     // Calculate tax if any
     let taxRateVal = 0;
@@ -474,10 +495,16 @@ export const ExpensesView: React.FC = () => {
                           type="number"
                           step="0.01"
                           value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
+                          onChange={(e) => {
+                            setAmount(e.target.value);
+                            if (fieldErrors.amount) setFieldErrors(prev => ({ ...prev, amount: '' }));
+                          }}
                           placeholder="0.00"
-                          className="w-full bg-slate-950 text-rose-400 font-bold px-3 py-2.5 rounded-lg border border-rose-950 focus:border-rose-500 focus:outline-none transition text-sm"
+                          className={`w-full bg-slate-950 text-rose-400 font-bold px-3 py-2.5 rounded-lg border focus:border-rose-500 focus:outline-none transition text-sm ${
+                            fieldErrors.amount ? 'border-red-500 ring-1 ring-red-500/20' : 'border-rose-950'
+                          }`}
                         />
+                        <FormFieldError error={fieldErrors.amount} />
                       </div>
                     </div>
 

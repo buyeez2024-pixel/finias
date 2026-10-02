@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { TransactionItem, TransactionStatus, PaymentMethod, Product } from '../../types/erp';
 import { isTransactionEditable, formatCurrency } from '../../utils/formatters';
+import { validatePurchaseData } from '../../utils/validation';
 import { Truck, Plus, Trash2, ArrowLeft, CheckCircle2, Boxes, Clock, User, Landmark, CreditCard, Search, Calculator, Percent, Info, X, FileText, Banknote, Building, FileCheck, Sparkles } from 'lucide-react';
 import { ProductFormPage } from '../inventory/ProductFormPage';
 import { ContactFormPage } from '../contacts/ContactFormPage';
@@ -368,12 +369,25 @@ export const PurchaseFormPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isEditMode && (items.length === 0 || items.every(i => (i.quantity || 0) <= 0))) {
-      showFlashNotification('Please add at least one product with quantity greater than 0', 'error');
+
+    const effectivePaidAmount = paidAmountInput !== '' ? parseFloat(paidAmountInput || '0') : (grandTotal > 0 ? grandTotal : 0);
+
+    const schemaRes = validatePurchaseData({
+      supplierId,
+      purchaseDate,
+      items: items.map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        unitCost: it.unitPrice,
+      })),
+      paymentAmount: effectivePaidAmount,
+    });
+
+    if (!schemaRes.isValid) {
+      showFlashNotification(schemaRes.firstError || 'Please correct the purchase order form errors.', 'error');
       return;
     }
 
-    const effectivePaidAmount = paidAmountInput !== '' ? parseFloat(paidAmountInput || '0') : (grandTotal > 0 ? grandTotal : 0);
     if (effectivePaidAmount > 0 && !paymentMethod) {
       showFlashNotification('Please select a Payment Method for the payment amount', 'error');
       return;

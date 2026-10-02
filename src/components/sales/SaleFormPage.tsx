@@ -3,6 +3,7 @@ import { useErp } from '../../context/ErpContext';
 import { TransactionItem, TransactionStatus, PaymentMethod, Product, Customer } from '../../types/erp';
 import { isTransactionEditable, formatCurrency, applyAmountRounding, validateEmail } from '../../utils/formatters';
 import { validatePhoneNumber } from '../../utils/phoneValidation';
+import { validateSaleData } from '../../utils/validation';
 import {
   Receipt,
   Plus,
@@ -600,13 +601,23 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
 
   // Form Submission
   const handleSaveSale = (targetStatus: TransactionStatus = 'final') => {
-    if (items.length === 0) {
-      showFlashNotification('Please add at least one product line to create a sale invoice', 'error');
-      return;
-    }
+    // Run schema-level validation
+    const schemaRes = validateSaleData({
+      customerId,
+      items: items.map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+      })),
+      discountAmount: parseFloat(discountValue) || 0,
+      discountType: discountType as any,
+      subtotal: subtotalItems,
+      paymentAmount: effectivePaidAmount,
+      paymentMethod,
+    });
 
-    if (!customerId) {
-      showFlashNotification('Please select a customer for this invoice', 'error');
+    if (!schemaRes.isValid) {
+      showFlashNotification(schemaRes.firstError || 'Please correct the transaction errors.', 'error');
       return;
     }
 

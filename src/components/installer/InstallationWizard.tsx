@@ -278,14 +278,14 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
     if (/[0-9]/.test(pwd)) score += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
 
+    const isStrong = pwd.length >= 8 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
+
     let text = 'Weak Password';
     let color = 'bg-rose-500';
-    let isStrong = false;
 
-    if (score >= 4 && pwd.length >= 8) {
+    if (isStrong) {
       text = score === 5 ? 'Very Strong' : 'Strong Password';
       color = 'bg-emerald-500';
-      isStrong = true;
     } else if (score >= 2) {
       text = 'Moderate Password';
       color = 'bg-amber-500';
@@ -1448,6 +1448,8 @@ SET FOREIGN_KEY_CHECKS = 1;
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                   {step3Attempted && !businessName.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Store / Company Name</span>}
+                  {step3Attempted && businessName.trim() && businessName.trim().length < 8 && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Business name must be at least 8 characters.</span>}
+                  {step3Attempted && businessName.trim() && !(/^[A-Za-z\s]+$/.test(businessName.trim())) && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Business name must contain only alphabets and spaces (no numbers or symbols).</span>}
                 </div>
 
                 <div>
@@ -1621,12 +1623,49 @@ SET FOREIGN_KEY_CHECKS = 1;
                   <input
                     type="text"
                     value={businessZip}
+                    maxLength={
+                      businessCountry.trim().toLowerCase().includes('india') ||
+                      businessCountry.trim().toLowerCase() === 'in' ||
+                      currencyCode === 'INR'
+                        ? 6
+                        : 10
+                    }
                     onChange={(e) => handleZipChange(e.target.value)}
                     required
-                    placeholder="Enter zip to auto-fill location (e.g. 10001, 90210)"
+                    placeholder={
+                      businessCountry.trim().toLowerCase().includes('india') ||
+                      businessCountry.trim().toLowerCase() === 'in' ||
+                      currencyCode === 'INR'
+                        ? 'Enter 6-digit Indian PIN code (e.g. 500001)'
+                        : 'Enter zip code (e.g. 10001, 90210)'
+                    }
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
-                  {step3Attempted && !businessZip.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Postal / Zip Code</span>}
+                  {step3Attempted && !businessZip.trim() && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Postal / Zip Code</span>
+                  )}
+                  {(businessCountry.trim().toLowerCase().includes('india') ||
+                    businessCountry.trim().toLowerCase() === 'in' ||
+                    currencyCode === 'INR') &&
+                    businessZip.trim() &&
+                    !/^\d{6}$/.test(businessZip.trim()) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">For India, Postal / PIN Code must be strictly 6 numeric digits (e.g. 500001).</span>
+                    )}
+                  {!(businessCountry.trim().toLowerCase().includes('india') ||
+                    businessCountry.trim().toLowerCase() === 'in' ||
+                    currencyCode === 'INR') &&
+                    businessZip.trim().length > 10 && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">Postal / Zip Code cannot exceed 10 characters.</span>
+                    )}
+                  {!(businessCountry.trim().toLowerCase().includes('india') ||
+                    businessCountry.trim().toLowerCase() === 'in' ||
+                    currencyCode === 'INR') &&
+                    step3Attempted &&
+                    businessZip.trim() &&
+                    businessZip.trim().length <= 10 &&
+                    !/^[A-Za-z0-9\s-]{3,10}$/.test(businessZip.trim()) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">Postal / Zip Code must be 3-10 alphanumeric characters.</span>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -1643,6 +1682,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                       className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                     {step3Attempted && !businessCity.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your City</span>}
+                    {step3Attempted && businessCity.trim() && (!/^[A-Za-z\s]+$/.test(businessCity.trim()) || businessCity.trim().length < 2) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">City must contain only alphabets (min 2 characters).</span>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
@@ -1657,6 +1699,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                       className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                     {step3Attempted && !businessProvince.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Province / District</span>}
+                    {step3Attempted && businessProvince.trim() && (!/^[A-Za-z\s]+$/.test(businessProvince.trim()) || businessProvince.trim().length < 2) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">Province must contain only alphabets (min 2 characters).</span>
+                    )}
                   </div>
                 </div>
 
@@ -1674,6 +1719,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                       className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                     {step3Attempted && !businessState.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your State</span>}
+                    {step3Attempted && businessState.trim() && (!/^[A-Za-z\s]+$/.test(businessState.trim()) || businessState.trim().length < 2) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">State must contain only alphabets (min 2 characters).</span>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
@@ -1688,6 +1736,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                       className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                     {step3Attempted && !businessCountry.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Country</span>}
+                    {step3Attempted && businessCountry.trim() && (!/^[A-Za-z\s]+$/.test(businessCountry.trim()) || businessCountry.trim().length < 2) && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">Country must contain only alphabets (min 2 characters).</span>
+                    )}
                   </div>
                 </div>
 
@@ -1704,6 +1755,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                   {step3Attempted && !businessAddress.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Street Address</span>}
+                  {step3Attempted && businessAddress.trim() && businessAddress.trim().length < 5 && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Street Address must be at least 5 characters.</span>
+                  )}
                 </div>
 
                 <div>
@@ -1746,17 +1800,78 @@ SET FOREIGN_KEY_CHECKS = 1;
                 type="button"
                 onClick={() => {
                   setStep3Attempted(true);
+                  const trimmedName = businessName.trim();
+                  const trimmedZip = businessZip.trim();
+                  const trimmedCity = businessCity.trim();
+                  const trimmedProvince = businessProvince.trim();
+                  const trimmedState = businessState.trim();
+                  const trimmedCountry = businessCountry.trim();
+                  const trimmedAddress = businessAddress.trim();
+
+                  if (!trimmedName) {
+                    showFlashNotification('Please enter your Store / Company Name', 'error');
+                    return;
+                  }
+                  if (trimmedName.length < 8) {
+                    showFlashNotification('Business name must be at least 8 characters.', 'error');
+                    return;
+                  }
+                  if (!/^[A-Za-z\s]+$/.test(trimmedName)) {
+                    showFlashNotification('Business name must contain only alphabets and spaces (no numbers or symbols).', 'error');
+                    return;
+                  }
+                  const isIndiaCountry =
+                    businessCountry.trim().toLowerCase().includes('india') ||
+                    businessCountry.trim().toLowerCase() === 'in' ||
+                    currencyCode === 'INR';
+
+                  if (isIndiaCountry) {
+                    if (!/^\d{6}$/.test(trimmedZip)) {
+                      showFlashNotification('For India, Postal / PIN Code must be strictly 6 numeric digits (e.g. 500001).', 'error');
+                      return;
+                    }
+                  } else {
+                    if (trimmedZip.length > 10) {
+                      showFlashNotification('Postal / Zip Code cannot exceed 10 characters.', 'error');
+                      return;
+                    }
+                    if (!trimmedZip || !/^[A-Za-z0-9\s-]{3,10}$/.test(trimmedZip)) {
+                      showFlashNotification('Please enter a valid Postal / Zip Code (3-10 alphanumeric characters).', 'error');
+                      return;
+                    }
+                  }
+                  if (!trimmedCity || !/^[A-Za-z\s]+$/.test(trimmedCity) || trimmedCity.length < 2) {
+                    showFlashNotification('City must contain only alphabets (min 2 characters).', 'error');
+                    return;
+                  }
+                  if (!trimmedProvince || !/^[A-Za-z\s]+$/.test(trimmedProvince) || trimmedProvince.length < 2) {
+                    showFlashNotification('Province / District must contain only alphabets (min 2 characters).', 'error');
+                    return;
+                  }
+                  if (!trimmedState || !/^[A-Za-z\s]+$/.test(trimmedState) || trimmedState.length < 2) {
+                    showFlashNotification('State must contain only alphabets (min 2 characters).', 'error');
+                    return;
+                  }
+                  if (!trimmedCountry || !/^[A-Za-z\s]+$/.test(trimmedCountry) || trimmedCountry.length < 2) {
+                    showFlashNotification('Country must contain only alphabets (min 2 characters).', 'error');
+                    return;
+                  }
+                  if (!trimmedAddress || trimmedAddress.length < 5) {
+                    showFlashNotification('Street Address must be at least 5 characters.', 'error');
+                    return;
+                  }
+
                   const missing = [];
-                  if (!businessName.trim()) missing.push('Store Name');
+                  if (!trimmedName) missing.push('Store Name');
                   if (!currencyCode.trim()) missing.push('Currency Code');
                   if (!currencySymbol.trim()) missing.push('Currency Symbol');
                   if (!timezone.trim()) missing.push('Timezone');
-                  if (!businessZip.trim()) missing.push('Postal/Zip Code');
-                  if (!businessCity.trim()) missing.push('City');
-                  if (!businessProvince.trim()) missing.push('Province/District');
-                  if (!businessState.trim()) missing.push('State');
-                  if (!businessCountry.trim()) missing.push('Country');
-                  if (!businessAddress.trim()) missing.push('Street Address');
+                  if (!trimmedZip) missing.push('Postal/Zip Code');
+                  if (!trimmedCity) missing.push('City');
+                  if (!trimmedProvince) missing.push('Province/District');
+                  if (!trimmedState) missing.push('State');
+                  if (!trimmedCountry) missing.push('Country');
+                  if (!trimmedAddress) missing.push('Street Address');
                   if (!businessPhone.trim() || !!phoneError) missing.push('valid Phone Number');
                   
                   if (missing.length > 0) {
@@ -1828,6 +1943,9 @@ SET FOREIGN_KEY_CHECKS = 1;
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                   {step4Attempted && !adminName.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Full Name</span>}
+                  {step4Attempted && adminName.trim() && (!/^[A-Za-z\s]+$/.test(adminName.trim()) || adminName.trim().length < 2) && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Full name must contain only alphabets (min 2 characters, no numbers or symbols).</span>
+                  )}
                 </div>
 
                 <div>
@@ -1898,10 +2016,18 @@ SET FOREIGN_KEY_CHECKS = 1;
                     value={adminUsername}
                     onChange={(e) => setAdminUsername(e.target.value)}
                     required
-                    placeholder="admin"
+                    placeholder="e.g. admin_master2026 or super_admin#1"
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
-                  {step4Attempted && !adminUsername.trim() && <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Username</span>}
+                  {step4Attempted && !adminUsername.trim() && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Please enter your Username</span>
+                  )}
+                  {step4Attempted && adminUsername.trim() && adminUsername.trim().length < 8 && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Username must be at least 8 characters long (contains alphanumeric & special characters).</span>
+                  )}
+                  {step4Attempted && adminUsername.trim() && adminUsername.trim().length >= 8 && !/^[A-Za-z0-9@_#\.\-\$!]+$/.test(adminUsername.trim()) && (
+                    <span className="text-[10px] text-rose-400 font-semibold block mt-1">Username can only contain alphanumeric characters and allowed special symbols (@, _, ., -, #, !, $).</span>
+                  )}
                   <span className="text-[10px] text-slate-500 mt-1 block">Can be used to log in instead of email</span>
                 </div>
 
@@ -2022,22 +2148,38 @@ SET FOREIGN_KEY_CHECKS = 1;
                 type="button"
                 onClick={() => {
                   setStep4Attempted(true);
+                  const trimmedName = adminName.trim();
+                  const trimmedUsername = adminUsername.trim();
                   const missing = [];
-                  if (!adminName.trim()) missing.push('Full Name');
+
+                  if (!trimmedName) {
+                    missing.push('Full Name');
+                  } else if (!/^[A-Za-z\s]+$/.test(trimmedName) || trimmedName.length < 2) {
+                    missing.push('valid Full Name (alphabets only, min 2 chars)');
+                  }
+
                   if (!adminEmail.trim()) {
                     missing.push('Admin Email Address');
                   } else if (!(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail.trim()))) {
                     missing.push('valid Admin Email Address (name@domain.com)');
                   }
-                  if (!adminUsername.trim()) missing.push('Username');
+
+                  if (!trimmedUsername) {
+                    missing.push('Username');
+                  } else if (trimmedUsername.length < 8) {
+                    missing.push('Username (minimum 8 characters required)');
+                  } else if (!/^[A-Za-z0-9@_#\.\-\$!]+$/.test(trimmedUsername)) {
+                    missing.push('Username (only alphanumeric characters and special symbols allowed)');
+                  }
+
                   if (!adminPassword.trim()) {
                     missing.push('Password');
                   } else if (!calculatePasswordStrength(adminPassword).isStrong) {
-                    missing.push('Strong Password (min 8 chars, uppercase, lowercase, number, symbol)');
+                    missing.push('Strong Password (min 8 chars, uppercase, lowercase, number, symbol e.g. Admin#2026!)');
                   }
                   
                   if (missing.length > 0) {
-                    showFlashNotification(`Please fill in missing fields / correct email format: ${missing.join(', ')}`, 'error');
+                    showFlashNotification(`Please fill in missing fields / correct errors: ${missing.join(', ')}`, 'error');
                     return;
                   }
 

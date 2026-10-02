@@ -5,7 +5,7 @@ import { KeyRound, Lock, Check, Save } from 'lucide-react';
 export const PosSecurityTab: React.FC = () => {
   const { settings, updateSettings } = useErp();
   const [pin, setPin] = useState(settings.adminOverridePin || 'admin123');
-  const [shiftLock, setShiftLock] = useState(settings.enablePosShiftLock ?? true);
+  const [shiftLock, setShiftLock] = useState(settings.enablePosShiftLock ?? false);
   const [branchRestriction, setBranchRestriction] = useState(settings.enableBranchRestriction ?? false);
   const [saved, setSaved] = useState(false);
 

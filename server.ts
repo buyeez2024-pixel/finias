@@ -2,12 +2,18 @@ import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { getGeminiClient } from "./server/gemini";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import cors from "cors";
+
+// Cross-module directory resolver safe in both ESM (tsx dev server) and CJS (dist/server.cjs)
+const baseDir = typeof __dirname !== "undefined"
+  ? __dirname
+  : path.dirname(fileURLToPath(import.meta.url));
 
 // Auto-load environment variables from all standard production / local locations:
 // 1. Current working directory (.env or env.config)
@@ -16,10 +22,10 @@ import cors from "cors";
 const envSearchPaths = [
   path.resolve(process.cwd(), ".env"),
   path.resolve(process.cwd(), "env.config"),
-  path.resolve(__dirname, ".env"),
-  path.resolve(__dirname, "env.config"),
-  path.resolve(__dirname, "../.env"),
-  path.resolve(__dirname, "../env.config"),
+  path.resolve(baseDir, ".env"),
+  path.resolve(baseDir, "env.config"),
+  path.resolve(baseDir, "../.env"),
+  path.resolve(baseDir, "../env.config"),
 ];
 
 for (const envFile of envSearchPaths) {
@@ -31,7 +37,20 @@ for (const envFile of envSearchPaths) {
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
+
+  // Secure Environment & Secrets Verification Check
+  console.log("🔒 Security Shield: Verifying server-side environment and secret protection...");
+  if (process.env.GEMINI_API_KEY) {
+    console.log("   • Gemini API Key detected (secure server-side)");
+  } else {
+    console.log("   • Gemini API Key not set (AI features will use local heuristic fallback)");
+  }
+  if (process.env.SMTP_USER || process.env.SMTP_HOST) {
+    console.log("   • SMTP Gateway configuration detected");
+  } else {
+    console.log("   • SMTP Gateway configured via runtime settings or test fallback");
+  }
 
   // Resolve express-rate-limit trust proxy warnings for Cloud Run / shared proxy environment
   app.set("trust proxy", 1);
@@ -202,6 +221,21 @@ async function startServer() {
     }
   }
 
+  function getSafeErrorMessage(err: any, fallback: string): string {
+    const msg = err?.message || String(err);
+    if (
+      msg.includes("/") ||
+      msg.includes("\\") ||
+      msg.includes("SQLSTATE") ||
+      msg.includes("syntax error") ||
+      msg.includes("at Object.") ||
+      msg.includes("at Module.")
+    ) {
+      return fallback;
+    }
+    return msg;
+  }
+
   // System Status API
   app.get("/api/system/status", (req, res) => {
     const status = getSystemStatus();
@@ -218,7 +252,28 @@ async function startServer() {
 
   // System Install API - permanently locks installation & deactivates installer
   app.post("/api/system/install", (req, res) => {
+    const currentStatus = getSystemStatus();
+    if (currentStatus.isInstalled || currentStatus.installationCompleted) {
+      return res.status(403).json({
+        success: false,
+        error: "Security Access Denied: System installation is permanently locked. The installer has been deactivated.",
+      });
+    }
+
     const { businessName, adminEmail, adminUsername, settings, adminUser, isDemoInstallation } = req.body;
+
+    const trimmedBiz = typeof businessName === 'string' ? businessName.trim() : '';
+    if (trimmedBiz.length < 8 || !/^[A-Za-z\s]+$/.test(trimmedBiz)) {
+      return res.status(400).json({ success: false, error: "Backend Validation Error: Business name must contain only alphabets and spaces (minimum 8 characters)." });
+    }
+    if (!adminEmail || typeof adminEmail !== 'string' || !adminEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: "Backend Validation Error: A valid admin email is required." });
+    }
+    const trimmedUser = typeof adminUsername === 'string' ? adminUsername.trim() : (adminUser?.username || '');
+    if (trimmedUser && trimmedUser.length < 8) {
+      return res.status(400).json({ success: false, error: "Backend Validation Error: Admin username must be at least 8 characters long." });
+    }
+
     const status = {
       isInstalled: true,
       installationCompleted: true,
@@ -283,6 +338,9 @@ async function startServer() {
   app.post("/api/erp/ai/forecast-inventory", async (req, res) => {
     try {
       const { products, transactions, locations } = req.body;
+      if (!products || !Array.isArray(products)) {
+        return res.status(400).json({ success: false, error: "Backend Validation Error: Products array is required for inventory forecasting." });
+      }
       const ai = getGeminiClient();
 
       if (!ai) {
@@ -379,7 +437,7 @@ Provide a rigorous, actionable inventory reorder and demand forecast in JSON for
       console.error("AI Inventory Forecast Error:", err);
       return res.status(500).json({
         success: false,
-        error: err.message || "Failed to generate AI inventory forecast",
+        error: getSafeErrorMessage(err, "Failed to generate AI inventory forecast"),
       });
     }
   });
@@ -388,6 +446,9 @@ Provide a rigorous, actionable inventory reorder and demand forecast in JSON for
   app.post("/api/erp/ai/financial-audit", async (req, res) => {
     try {
       const { financialSummary, expenses, sales, purchases, settings } = req.body;
+      if (!financialSummary || typeof financialSummary !== 'object') {
+        return res.status(400).json({ success: false, error: "Backend Validation Error: Financial summary object is required for audit." });
+      }
       const ai = getGeminiClient();
 
       if (!ai) {
@@ -471,7 +532,7 @@ Respond strictly in JSON format matching this schema:
       console.error("AI Financial Audit Error:", err);
       return res.status(500).json({
         success: false,
-        error: err.message || "Failed to conduct AI financial audit",
+        error: getSafeErrorMessage(err, "Failed to conduct AI financial audit"),
       });
     }
   });
@@ -516,7 +577,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
       console.error("AI Assistant Error:", err);
       return res.status(500).json({
         success: false,
-        error: err.message || "Failed to process AI assistant request",
+        error: getSafeErrorMessage(err, "Failed to process AI assistant request"),
       });
     }
   });
@@ -614,7 +675,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
       console.error("Email Dispatch Error:", err);
       return res.status(500).json({
         success: false,
-        error: err.message || "Failed to send email via SMTP server",
+        error: getSafeErrorMessage(err, "Failed to send email via SMTP server"),
         tip: "If using Gmail, ensure 2-Step Verification is enabled and use a 16-character 'App Password' instead of your regular password.",
       });
     }
@@ -656,7 +717,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
       console.error("SMTP Verify Error:", err);
       return res.status(500).json({
         success: false,
-        error: err.message || "SMTP connection verification failed",
+        error: getSafeErrorMessage(err, "SMTP connection verification failed"),
         tip: "Check hostname, port (587 for TLS, 465 for SSL), username, and app password.",
       });
     }

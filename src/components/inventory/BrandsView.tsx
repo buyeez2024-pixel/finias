@@ -2,6 +2,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Brand } from '../../types/erp';
 import { formatCurrency } from '../../utils/formatters';
+import { validateMasterEntityData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import { ExportButtons } from '../common/ExportButtons';
 import {
   Award,
@@ -134,6 +136,7 @@ export const BrandsView: React.FC = () => {
   const [viewingBrand, setViewingBrand] = useState<Brand | null>(null);
   const [formData, setFormData] = useState<BrandFormData>(initialFormState);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(new Set());
 
@@ -304,12 +307,22 @@ export const BrandsView: React.FC = () => {
   const handleSaveBrand = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setFieldErrors({});
 
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
-      setFormError('Brand name is required.');
+    const schemaRes = validateMasterEntityData({
+      name: formData.name,
+      shortName: formData.shortCode,
+      code: formData.code,
+      entityLabel: 'Brand Name',
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setFormError(schemaRes.firstError || 'Please correct the highlighted form errors.');
       return;
     }
+
+    const trimmedName = formData.name.trim();
 
     // Auto-generate code if empty
     const codeToUse =
@@ -550,6 +563,7 @@ export const BrandsView: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => {
                     const newName = e.target.value;
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
                     setFormData((prev) => ({
                       ...prev,
                       name: newName,
@@ -563,8 +577,9 @@ export const BrandsView: React.FC = () => {
                           : prev.shortCode,
                     }));
                   }}
-                  className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-sky-500 transition"
+                  className={`w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-sky-500 transition`}
                 />
+                <FormFieldError error={fieldErrors.name} />
               </div>
 
               <div>
@@ -577,11 +592,13 @@ export const BrandsView: React.FC = () => {
                   required
                   placeholder="e.g. BRD-APEX"
                   value={formData.code}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))
-                  }
-                  className="w-full bg-slate-950 font-mono text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-sky-500 transition"
+                  onChange={(e) => {
+                    if (fieldErrors.code) setFieldErrors(prev => ({ ...prev, code: '' }));
+                    setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }));
+                  }}
+                  className={`w-full bg-slate-950 font-mono text-white text-xs px-3.5 py-2.5 rounded-xl border ${fieldErrors.code ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-sky-500 transition`}
                 />
+                <FormFieldError error={fieldErrors.code} />
               </div>
             </div>
 

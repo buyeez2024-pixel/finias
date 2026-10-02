@@ -4,6 +4,8 @@ import { UserRole } from '../../types/erp';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 import { validatePhoneWithCountry } from '../../utils/phoneValidation';
 import { validateEmail } from '../../utils/formatters';
+import { validateUserData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import {
   UserPlus,
   ArrowLeft,
@@ -22,7 +24,128 @@ import {
   Key,
   Camera,
   Trash2,
+  Copy,
+  Check,
+  Lock,
+  ShieldAlert,
+  Wand2,
 } from 'lucide-react';
+
+export interface PasswordStrengthResult {
+  score: number;
+  label: string;
+  color: string;
+  bgColor: string;
+  badgeClass: string;
+  percentage: number;
+  checks: {
+    minLength: boolean;
+    upper: boolean;
+    lower: boolean;
+    number: boolean;
+    special: boolean;
+  };
+}
+
+export function evaluatePasswordStrength(pass: string): PasswordStrengthResult {
+  if (!pass) {
+    return {
+      score: 0,
+      label: 'Not set',
+      color: 'text-slate-500',
+      bgColor: 'bg-slate-700',
+      badgeClass: 'bg-slate-800 text-slate-400 border-slate-700',
+      percentage: 0,
+      checks: { minLength: false, upper: false, lower: false, number: false, special: false },
+    };
+  }
+
+  const checks = {
+    minLength: pass.length >= 8,
+    upper: /[A-Z]/.test(pass),
+    lower: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pass),
+  };
+
+  let score = 0;
+  if (pass.length >= 6) score += 1;
+  if (checks.minLength) score += 1;
+  if (checks.upper && checks.lower) score += 1;
+  if (checks.number) score += 1;
+  if (checks.special) score += 1;
+
+  if (score <= 1) {
+    return {
+      score: 1,
+      label: 'Weak Password',
+      color: 'text-rose-400',
+      bgColor: 'bg-rose-500',
+      badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+      percentage: 25,
+      checks,
+    };
+  } else if (score === 2 || score === 3) {
+    return {
+      score: 2,
+      label: 'Medium Password',
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500',
+      badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      percentage: 50,
+      checks,
+    };
+  } else if (score === 4) {
+    return {
+      score: 3,
+      label: 'Strong Password',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500',
+      badgeClass: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+      percentage: 75,
+      checks,
+    };
+  } else {
+    return {
+      score: 4,
+      label: 'Very Strong & Secure',
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500',
+      badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      percentage: 100,
+      checks,
+    };
+  }
+}
+
+export function generateRandomStrongPassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const digits = '23456789';
+  const specials = '!@#$%^&*_-+=';
+  const all = upper + lower + digits + specials;
+
+  let pass = '';
+  pass += upper[Math.floor(Math.random() * upper.length)];
+  pass += lower[Math.floor(Math.random() * lower.length)];
+  pass += digits[Math.floor(Math.random() * digits.length)];
+  pass += specials[Math.floor(Math.random() * specials.length)];
+
+  for (let i = 4; i < 14; i++) {
+    pass += all[Math.floor(Math.random() * all.length)];
+  }
+
+  return pass.split('').sort(() => 0.5 - Math.random()).join('');
+}
+
+export function generateMemorablePassword(): string {
+  const words = ['Royal', 'Summit', 'Apex', 'Crown', 'Falcon', 'Silver', 'Nova', 'Titan', 'Vanguard', 'Swift', 'Phoenix', 'Quantum'];
+  const word = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(100 + Math.random() * 900);
+  const symbols = ['@', '#', '$', '!'];
+  const sym = symbols[Math.floor(Math.random() * symbols.length)];
+  return `${word}Staff${sym}${num}`;
+}
 
 export function getRoleDefaults(role: string): { department: string; designation: string } {
   switch (role) {
@@ -134,6 +257,7 @@ export const AddUserPage: React.FC = () => {
   const [isManualUsername, setIsManualUsername] = useState(false);
   const [isManualPassword, setIsManualPassword] = useState(false);
   const [showPasswordText, setShowPasswordText] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     prefix: 'Mr',
@@ -214,6 +338,41 @@ export const AddUserPage: React.FC = () => {
     }
   }, [formData.allowLogin, formData.email, formData.firstName, isManualUsername, isManualPassword]);
 
+  const passwordStrength = useMemo(() => {
+    return evaluatePasswordStrength(formData.password);
+  }, [formData.password]);
+
+  const handleApplyGeneratedPassword = (type: 'strong' | 'memorable' | 'default') => {
+    let newPass = 'Password@123';
+    if (type === 'strong') {
+      newPass = generateRandomStrongPassword();
+    } else if (type === 'memorable') {
+      newPass = generateMemorablePassword();
+    }
+    setIsManualPassword(true);
+    setFormData((prev) => ({
+      ...prev,
+      password: newPass,
+      confirmPassword: newPass,
+    }));
+    showFlashNotification(
+      type === 'strong'
+        ? 'Generated strong 14-character secure password!'
+        : type === 'memorable'
+        ? 'Generated memorable easy-to-read password!'
+        : 'Applied standard default password.',
+      'success'
+    );
+  };
+
+  const handleCopyPassword = () => {
+    if (!formData.password) return;
+    navigator.clipboard.writeText(formData.password);
+    setCopiedPassword(true);
+    setTimeout(() => setCopiedPassword(false), 2000);
+    showFlashNotification('Password copied to clipboard!', 'success');
+  };
+
   const handleBackToUsers = () => {
     setUserMenuSubTab('users');
     setActiveTab('user_menu');
@@ -225,6 +384,29 @@ export const AddUserPage: React.FC = () => {
     const fullName = formData.prefix
       ? `${formData.prefix} ${formData.firstName}`.trim()
       : formData.firstName.trim();
+
+    const finalUsername = formData.username.trim() || formData.email.trim().split('@')[0] || formData.firstName.trim().toLowerCase().replace(/\s+/g, '');
+    const finalPassword = formData.password || 'Password@123';
+
+    // Run strict schema validation
+    const schemaRes = validateUserData({
+      username: finalUsername,
+      email: formData.email,
+      password: formData.allowLogin ? finalPassword : undefined,
+      role: formData.role,
+      isNewUser: true,
+    });
+
+    if (!schemaRes.isValid) {
+      showFlashNotification(schemaRes.firstError || 'Please fix user profile errors before saving.', 'error');
+      if (schemaRes.errors.username || schemaRes.errors.email || schemaRes.errors.password) {
+        setActiveSectionTab('basic');
+      } else if (schemaRes.errors.role) {
+        setActiveSectionTab('roles');
+      }
+      return;
+    }
+
     if (!formData.firstName.trim()) {
       showFlashNotification('Full Name is required.', 'error');
       setActiveSectionTab('basic');
@@ -270,9 +452,6 @@ export const AddUserPage: React.FC = () => {
       setActiveSectionTab('roles');
       return;
     }
-
-    const finalUsername = formData.username.trim() || formData.email.trim().split('@')[0] || formData.firstName.trim().toLowerCase().replace(/\s+/g, '');
-    const finalPassword = formData.password || 'Password@123';
 
     if (formData.allowLogin && formData.password && formData.password !== formData.confirmPassword) {
       showFlashNotification('Password and Confirm Password do not match.', 'error');
@@ -574,43 +753,67 @@ export const AddUserPage: React.FC = () => {
 
             {/* Login Credentials Section */}
             {formData.allowLogin && (
-              <div className="p-4 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-3 animate-fadeIn">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <h4 className="font-extrabold text-indigo-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Login Account Credentials</span>
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsManualUsername(false);
-                      setIsManualPassword(false);
-                      const fn = formData.firstName.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._]/g, '') || 'staff';
-                      const autoU = formData.email.trim()
-                        ? formData.email.trim().split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '')
-                        : fn;
-                      setFormData((prev) => ({
-                        ...prev,
-                        username: autoU,
-                        password: 'Password@123',
-                        confirmPassword: 'Password@123',
-                      }));
-                    }}
-                    className="text-[10px] font-bold text-indigo-300 hover:text-white bg-indigo-500/20 px-2.5 py-1 rounded-lg border border-indigo-500/30 flex items-center gap-1 transition w-fit"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Re-Generate Credentials</span>
-                  </button>
-                </div>
+              <div className="p-4 sm:p-5 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-4 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800/80">
+                  <div>
+                    <h4 className="font-extrabold text-indigo-400 text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                      <span>Login Account Credentials</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Generate high-security passwords, evaluate strength, or use custom passcodes
+                    </p>
+                  </div>
 
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>
-                    Username & default password (<strong>Password@123</strong>) are generated automatically. The user can update their password later in their profile settings.
-                  </span>
+                  {/* Auto-Generation Action Pills */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyGeneratedPassword('strong')}
+                      className="text-[10px] font-bold text-emerald-300 hover:text-white bg-emerald-500/15 hover:bg-emerald-500/25 px-2.5 py-1.5 rounded-xl border border-emerald-500/30 flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+                      title="Generate high-entropy 14-character cryptographic password"
+                    >
+                      <Wand2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Generate Strong</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleApplyGeneratedPassword('memorable')}
+                      className="text-[10px] font-bold text-sky-300 hover:text-white bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1.5 rounded-xl border border-sky-500/30 flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+                      title="Generate memorable staff password (e.g. RoyalStaff@789)"
+                    >
+                      <Key className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Generate Memorable</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsManualUsername(false);
+                        setIsManualPassword(false);
+                        const fn = formData.firstName.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._]/g, '') || 'staff';
+                        const autoU = formData.email.trim()
+                          ? formData.email.trim().split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '')
+                          : fn;
+                        setFormData((prev) => ({
+                          ...prev,
+                          username: autoU,
+                          password: 'Password@123',
+                          confirmPassword: 'Password@123',
+                        }));
+                      }}
+                      className="text-[10px] font-bold text-indigo-300 hover:text-white bg-indigo-500/15 hover:bg-indigo-500/25 px-2.5 py-1.5 rounded-xl border border-indigo-500/30 flex items-center gap-1.5 transition active:scale-95"
+                      title="Reset to default username and standard password"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Default</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                  {/* Username */}
                   <div>
                     <label className="block text-xs text-slate-400 font-semibold mb-1">
                       Username <span className="text-rose-400">*</span>
@@ -623,23 +826,49 @@ export const AddUserPage: React.FC = () => {
                         setIsManualUsername(true);
                         setFormData({ ...formData, username: e.target.value });
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold font-mono"
                     />
                     <p className="text-[11px] text-slate-500 mt-1">Unique login handle used for signing in</p>
                   </div>
 
+                  {/* Password Input with Visibility and Copy */}
                   <div>
-                    <label className="block text-xs text-slate-400 font-semibold mb-1 flex items-center justify-between">
-                      <span>Password</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowPasswordText(!showPasswordText)}
-                        className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1"
-                      >
-                        {showPasswordText ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        <span>{showPasswordText ? 'Hide' : 'Show'}</span>
-                      </button>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-slate-400 font-semibold flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-slate-500" />
+                        <span>Password</span>
+                        <span className="text-rose-400">*</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {formData.password && (
+                          <button
+                            type="button"
+                            onClick={handleCopyPassword}
+                            className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1 transition"
+                            title="Copy Password"
+                          >
+                            {copiedPassword ? (
+                              <span className="text-emerald-400 flex items-center gap-0.5 font-bold">
+                                <Check className="w-3 h-3" /> Copied!
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-0.5">
+                                <Copy className="w-3 h-3" /> Copy
+                              </span>
+                            )}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordText(!showPasswordText)}
+                          className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        >
+                          {showPasswordText ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          <span>{showPasswordText ? 'Hide' : 'Show'}</span>
+                        </button>
+                      </div>
+                    </div>
+
                     <input
                       type={showPasswordText ? 'text' : 'password'}
                       placeholder="••••••••"
@@ -650,11 +879,29 @@ export const AddUserPage: React.FC = () => {
                       }}
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
                     />
-                    <p className="text-[11px] text-slate-500 mt-1">Default temporary password or custom PIN/passcode</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Minimum 6 characters (8+ recommended)</p>
                   </div>
 
+                  {/* Confirm Password */}
                   <div>
-                    <label className="block text-xs text-slate-400 font-semibold mb-1">Confirm Password</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-slate-400 font-semibold">Confirm Password</label>
+                      {formData.password && formData.confirmPassword && (
+                        <span className={`text-[10px] font-bold flex items-center gap-1 ${
+                          formData.password === formData.confirmPassword ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {formData.password === formData.confirmPassword ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" /> Passwords match
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3" /> Passwords do not match
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     <input
                       type={showPasswordText ? 'text' : 'password'}
                       placeholder="••••••••"
@@ -663,11 +910,91 @@ export const AddUserPage: React.FC = () => {
                         setIsManualPassword(true);
                         setFormData({ ...formData, confirmPassword: e.target.value });
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono"
+                      className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-mono ${
+                        formData.confirmPassword && formData.password !== formData.confirmPassword
+                          ? 'border-rose-500 ring-1 ring-rose-500/20'
+                          : 'border-slate-800'
+                      }`}
                     />
                     <p className="text-[11px] text-slate-500 mt-1">Re-enter the password to confirm verification</p>
                   </div>
                 </div>
+
+                {/* Password Strength Meter & Security Evaluator */}
+                {formData.password && (
+                  <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2.5 mt-2 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-300">Password Strength:</span>
+                        <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md border ${passwordStrength.badgeClass}`}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-mono font-bold ${passwordStrength.color}`}>
+                        {passwordStrength.percentage}% Score
+                      </span>
+                    </div>
+
+                    {/* Visual Strength Progress Segments */}
+                    <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-slate-950 p-0.5 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-300 ${
+                        passwordStrength.score >= 1 ? passwordStrength.bgColor : 'bg-slate-800'
+                      }`} />
+                      <div className={`h-full rounded-full transition-all duration-300 ${
+                        passwordStrength.score >= 2 ? passwordStrength.bgColor : 'bg-slate-800'
+                      }`} />
+                      <div className={`h-full rounded-full transition-all duration-300 ${
+                        passwordStrength.score >= 3 ? passwordStrength.bgColor : 'bg-slate-800'
+                      }`} />
+                      <div className={`h-full rounded-full transition-all duration-300 ${
+                        passwordStrength.score >= 4 ? passwordStrength.bgColor : 'bg-slate-800'
+                      }`} />
+                    </div>
+
+                    {/* Criteria Checklist Badges */}
+                    <div className="flex items-center gap-2 flex-wrap pt-1 text-[10px]">
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                        passwordStrength.checks.minLength
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {passwordStrength.checks.minLength ? <Check className="w-2.5 h-2.5" /> : '○'} 8+ Chars
+                      </span>
+
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                        passwordStrength.checks.upper
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {passwordStrength.checks.upper ? <Check className="w-2.5 h-2.5" /> : '○'} Uppercase (A-Z)
+                      </span>
+
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                        passwordStrength.checks.lower
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {passwordStrength.checks.lower ? <Check className="w-2.5 h-2.5" /> : '○'} Lowercase (a-z)
+                      </span>
+
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                        passwordStrength.checks.number
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {passwordStrength.checks.number ? <Check className="w-2.5 h-2.5" /> : '○'} Number (0-9)
+                      </span>
+
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                        passwordStrength.checks.special
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-950 text-slate-500 border-slate-800'
+                      }`}>
+                        {passwordStrength.checks.special ? <Check className="w-2.5 h-2.5" /> : '○'} Special Symbol (!@#$)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

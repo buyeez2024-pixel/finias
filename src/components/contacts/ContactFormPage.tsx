@@ -3,6 +3,8 @@ import { useErp } from '../../context/ErpContext';
 import { Customer } from '../../types/erp';
 import { formatCurrency, validateEmail } from '../../utils/formatters';
 import { validatePhoneWithCountry } from '../../utils/phoneValidation';
+import { validateContactData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 import {
   UserPlus,
@@ -125,6 +127,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const [notes, setNotes] = useState(editingContact?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isZipLoading, setIsZipLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleZipCodeLookup = async (zip: string) => {
     const cleanZip = zip.trim();
@@ -245,18 +248,47 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
 
-    if (!name.trim()) {
-      showFlashNotification('Please enter the contact full name.', 'error');
+    // Run strict schema validation (all address fields mandatory, GST mandatory for suppliers)
+    const schemaRes = validateContactData({
+      name,
+      contactType,
+      mobile: phone,
+      countryCode,
+      alternatePhone,
+      altCountryCode,
+      email: email.trim().toUpperCase() === 'N/A' ? undefined : email,
+      taxNumber,
+      businessName,
+      openingBalance,
+      advanceBalance,
+      creditLimit,
+      address,
+      addressLine1: address,
+      city,
+      province,
+      state,
+      country,
+      zipcode,
+      zipCode: zipcode,
+      notes,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      showFlashNotification(schemaRes.firstError || 'Please fix the form errors before saving.', 'error');
       return;
     }
 
     if (!contactType) {
+      setFieldErrors(prev => ({ ...prev, contactType: 'Please select a Customer Type.' }));
       showFlashNotification('Please select a Customer Type.', 'error');
       return;
     }
 
     if (!phone.trim()) {
+      setFieldErrors(prev => ({ ...prev, mobile: 'Primary Phone Number is required.' }));
       showFlashNotification('Primary Phone Number is required.', 'error');
       return;
     }
@@ -265,6 +297,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     if (phone.trim()) {
       const primaryPhoneVal = validatePhoneWithCountry(phone, countryCode);
       if (!primaryPhoneVal.isValid) {
+        setFieldErrors(prev => ({ ...prev, mobile: primaryPhoneVal.error || 'Invalid phone number' }));
         showFlashNotification(`Primary Phone Error: ${primaryPhoneVal.error}`, 'error');
         return;
       }
@@ -273,6 +306,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     if (alternatePhone.trim()) {
       const altPhoneVal = validatePhoneWithCountry(alternatePhone, altCountryCode);
       if (!altPhoneVal.isValid) {
+        setFieldErrors(prev => ({ ...prev, alternatePhone: altPhoneVal.error || 'Invalid alternate phone' }));
         showFlashNotification(`Alternate Phone Error: ${altPhoneVal.error}`, 'error');
         return;
       }
@@ -284,6 +318,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       const phoneExists = customers.some(c => c.id !== currentId && c.phone && isDuplicatePhone(c.phone, phone)) ||
                           suppliers.some(s => s.id !== currentId && s.phone && isDuplicatePhone(s.phone, phone));
       if (phoneExists) {
+        setFieldErrors(prev => ({ ...prev, mobile: 'Mobile number is already registered under another contact' }));
         showFlashNotification('Mobile number is already registered under another contact', 'error');
         return;
       }
@@ -292,6 +327,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     // Email format validation & Duplicate Email check
     if (email.trim() && email.trim().toUpperCase() !== 'N/A') {
       if (!validateEmail(email)) {
+        setFieldErrors(prev => ({ ...prev, email: 'Please enter a valid email address with a proper domain (e.g. name@mail.com).' }));
         showFlashNotification('Please enter a valid email address with a proper domain (e.g. name@mail.com).', 'error');
         return;
       }
@@ -299,6 +335,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       const emailExists = customers.some(c => c.id !== currentId && c.email?.trim().toLowerCase() === emailClean) ||
                           suppliers.some(s => s.id !== currentId && s.email?.trim().toLowerCase() === emailClean);
       if (emailExists) {
+        setFieldErrors(prev => ({ ...prev, email: 'Email is already registered under another contact' }));
         showFlashNotification('Email is already registered under another contact', 'error');
         return;
       }
@@ -503,14 +540,20 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 required
                 id="input-customer-name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                }}
                 placeholder="e.g. Johnathan Doe"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                  isLight
+                  fieldErrors.name
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                 }`}
               />
+              <FormFieldError error={fieldErrors.name} />
             </div>
 
             {(contactType === 'supplier' || contactType === 'both') && (
@@ -522,29 +565,40 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   type="text"
                   id="input-customer-business"
                   value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
+                  onChange={(e) => {
+                    setBusinessName(e.target.value);
+                    if (fieldErrors.businessName) setFieldErrors(prev => ({ ...prev, businessName: '' }));
+                  }}
                   placeholder="e.g. Doe Enterprises Inc."
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    isLight
+                    fieldErrors.businessName
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.businessName} />
               </div>
             )}
 
             {/* Customer Type */}
             <div>
               <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                Contact Type
+                Contact Type <span className="text-rose-500">*</span>
               </label>
               <select
                 id="select-customer-type"
                 value={contactType}
-                onChange={(e) => setContactType(e.target.value as any)}
+                onChange={(e) => {
+                  setContactType(e.target.value as any);
+                  if (fieldErrors.contactType) setFieldErrors(prev => ({ ...prev, contactType: '' }));
+                }}
                 disabled={isEditMode}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                  isLight
+                  fieldErrors.contactType
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100'
                 }`}
@@ -554,6 +608,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 <option value="supplier">Supplier</option>
                 <option value="both">Both (Customer & Supplier)</option>
               </select>
+              <FormFieldError error={fieldErrors.contactType} />
             </div>
 
             {/* Customer Group (Pricing Strategy) */}
@@ -635,11 +690,15 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 id="input-customer-phone"
                 phoneValue={phone}
                 countryCode={countryCode}
-                onChangePhone={setPhone}
+                onChangePhone={(val) => {
+                  setPhone(val);
+                  if (fieldErrors.mobile) setFieldErrors(prev => ({ ...prev, mobile: '' }));
+                }}
                 onChangeCountryCode={setCountryCode}
                 showHint={true}
                 required={true}
               />
+              <FormFieldError error={fieldErrors.mobile} />
               {phone.trim() && (customers.some(c => c.id !== editingContact?.id && c.phone && isDuplicatePhone(c.phone, phone)) || suppliers.some(s => s.id !== editingContact?.id && s.phone && isDuplicatePhone(s.phone, phone))) && (
                 <p className="text-[11px] text-rose-500 font-semibold mt-1">
                   Mobile number is already registered under another contact
@@ -648,15 +707,21 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             </div>
 
             {/* Alternate Phone */}
-            <PhoneInputWithCountry
-              label="Alternate Contact Phone"
-              id="input-customer-alt-phone"
-              phoneValue={alternatePhone}
-              countryCode={altCountryCode}
-              onChangePhone={setAlternatePhone}
-              onChangeCountryCode={setAltCountryCode}
-              showHint={true}
-            />
+            <div>
+              <PhoneInputWithCountry
+                label="Alternate Contact Phone"
+                id="input-customer-alt-phone"
+                phoneValue={alternatePhone}
+                countryCode={altCountryCode}
+                onChangePhone={(val) => {
+                  setAlternatePhone(val);
+                  if (fieldErrors.alternatePhone) setFieldErrors(prev => ({ ...prev, alternatePhone: '' }));
+                }}
+                onChangeCountryCode={setAltCountryCode}
+                showHint={true}
+              />
+              <FormFieldError error={fieldErrors.alternatePhone} />
+            </div>
 
             {/* Email Address */}
             <div>
@@ -670,14 +735,20 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 type="email"
                 id="input-customer-email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                }}
                 placeholder="e.g. contact@doe-enterprises.com"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition font-mono ${
-                  isLight
+                  fieldErrors.email
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                 }`}
               />
+              <FormFieldError error={fieldErrors.email} />
               {email.trim() && email.trim() !== 'N/A' && (customers.some(c => c.id !== editingContact?.id && c.email?.trim().toLowerCase() === email.trim().toLowerCase()) || suppliers.some(s => s.id !== editingContact?.id && s.email?.trim().toLowerCase() === email.trim().toLowerCase())) && (
                 <p className="text-[11px] text-rose-500 font-semibold mt-1">
                   Email is already registered under another contact
@@ -703,29 +774,48 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 pt-1">
             {/* GST / TAX Number */}
-            {contactType !== 'customer' && (
-              <div className="sm:col-span-2 lg:col-span-1 animate-fadeIn">
-                <label className={`block text-xs font-semibold mb-1.5 flex items-center gap-1 ${
-                  isLight ? 'text-slate-700' : 'text-slate-300'
-                }`}>
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
+                isLight ? 'text-slate-700' : 'text-slate-300'
+              }`}>
+                <span className="flex items-center gap-1">
                   <Receipt className="w-3.5 h-3.5 text-slate-400" />
                   <span>GST / TAX Number</span>
-                </label>
-                <input
-                  type="text"
-                  id="input-customer-tax"
-                  value={taxNumber}
-                  onChange={(e) => setTaxNumber(e.target.value)}
-                  placeholder="e.g. GSTIN27AABCU9603R1ZM"
-                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition uppercase font-mono ${
-                    isLight
-                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
-                  }`}
-                />
-                <p className="text-[10px] text-slate-400 mt-1">Tax identifier for invoice generation</p>
-              </div>
-            )}
+                  {(contactType === 'supplier' || contactType === 'both') && (
+                    <span className="text-rose-500 font-bold">*</span>
+                  )}
+                </span>
+                {(contactType === 'supplier' || contactType === 'both') ? (
+                  <span className="text-[10px] text-rose-500 font-bold">Required for Supplier</span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                )}
+              </label>
+              <input
+                type="text"
+                id="input-customer-tax"
+                required={contactType === 'supplier' || contactType === 'both'}
+                value={taxNumber}
+                onChange={(e) => {
+                  setTaxNumber(e.target.value);
+                  if (fieldErrors.taxNumber) setFieldErrors(prev => ({ ...prev, taxNumber: '' }));
+                }}
+                placeholder="e.g. GSTIN27AABCU9603R1ZM"
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition uppercase font-mono ${
+                  fieldErrors.taxNumber
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                }`}
+              />
+              <FormFieldError error={fieldErrors.taxNumber} />
+              <p className="text-[10px] text-slate-400 mt-1">
+                {(contactType === 'supplier' || contactType === 'both')
+                  ? 'Mandatory government tax & GST registration identifier for suppliers'
+                  : 'Tax identifier for B2B customer invoice generation'}
+              </p>
+            </div>
 
             {/* Opening Balance */}
             <div>
@@ -740,13 +830,19 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 step="0.01"
                 id="input-customer-opening-balance"
                 value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
+                onChange={(e) => {
+                  setOpeningBalance(e.target.value);
+                  if (fieldErrors.openingBalance) setFieldErrors(prev => ({ ...prev, openingBalance: '' }));
+                }}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
-                  isLight
+                  fieldErrors.openingBalance
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100'
                 }`}
               />
+              <FormFieldError error={fieldErrors.openingBalance} />
               <div className="flex items-start gap-1 mt-1 text-[10px] text-slate-400 leading-tight">
                 <HelpCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
                 <span>Any previous balance owed before system setup.</span>
@@ -766,13 +862,19 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 step="0.01"
                 id="input-customer-advance-balance"
                 value={advanceBalance}
-                onChange={(e) => setAdvanceBalance(e.target.value)}
+                onChange={(e) => {
+                  setAdvanceBalance(e.target.value);
+                  if (fieldErrors.advanceBalance) setFieldErrors(prev => ({ ...prev, advanceBalance: '' }));
+                }}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
-                  isLight
+                  fieldErrors.advanceBalance
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100'
                 }`}
               />
+              <FormFieldError error={fieldErrors.advanceBalance} />
               <div className="flex items-start gap-1 mt-1 text-[10px] text-slate-400 leading-tight">
                 <HelpCircle className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
                 <span>Advance money deposited by contact.</span>
@@ -792,13 +894,19 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 step="0.01"
                 id="input-customer-credit-limit"
                 value={creditLimit}
-                onChange={(e) => setCreditLimit(e.target.value)}
+                onChange={(e) => {
+                  setCreditLimit(e.target.value);
+                  if (fieldErrors.creditLimit) setFieldErrors(prev => ({ ...prev, creditLimit: '' }));
+                }}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
-                  isLight
+                  fieldErrors.creditLimit
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100'
                 }`}
               />
+              <FormFieldError error={fieldErrors.creditLimit} />
               <p className="text-[10px] text-slate-400 mt-1">Maximum allowed credit for deferred orders</p>
             </div>
           </div>
@@ -860,132 +968,187 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             <div className="p-2 bg-sky-500/10 rounded-xl text-sky-500 border border-sky-500/20 shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>Address & Geographical Details</h2>
-              <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Physical street address, city, state, province, and postal code</p>
+            <div className="min-w-0 flex-1 flex items-center justify-between">
+              <div>
+                <h2 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Address & Geographical Details <span className="text-rose-500 font-bold">*</span>
+                </h2>
+                <p className={`text-xs truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  All geographical and physical street address fields are mandatory
+                </p>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                All Fields Mandatory
+              </span>
             </div>
           </div>
 
           <div className="space-y-3.5 sm:space-y-4 pt-1">
+            {/* Street Address */}
             <div>
               <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                Street Address
+                Street Address <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
+                required
                 id="input-customer-address"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  if (fieldErrors.address) setFieldErrors(prev => ({ ...prev, address: '' }));
+                }}
                 placeholder="e.g. 742 Evergreen Terrace, Suite 400"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                  isLight
+                  fieldErrors.address
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
                     ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                     : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                 }`}
               />
+              <FormFieldError error={fieldErrors.address} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+              {/* Zip / Postal Code */}
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
                   isLight ? 'text-slate-700' : 'text-slate-300'
                 }`}>
-                  <span>Zip / Postal Code</span>
+                  <span>Zip / Postal Code <span className="text-rose-500">*</span></span>
                   {isZipLoading && (
                     <span className="text-[10px] text-indigo-500 animate-pulse font-medium">Fetching...</span>
                   )}
                 </label>
                 <input
                   type="text"
+                  required
                   id="input-customer-zipcode"
                   value={zipcode}
                   onChange={(e) => {
                     const val = e.target.value;
                     setZipcode(val);
+                    if (fieldErrors.zipcode) setFieldErrors(prev => ({ ...prev, zipcode: '' }));
                     const cleanZip = val.trim();
                     if (cleanZip.length === 5 || cleanZip.length === 6) {
                       handleZipCodeLookup(cleanZip);
                     }
                   }}
-                  placeholder="e.g. 62701"
+                  placeholder="e.g. 62701 or 517325"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono transition ${
-                    isLight
+                    fieldErrors.zipcode
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.zipcode} />
               </div>
 
+              {/* City */}
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  City
+                  City <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  required
                   id="input-customer-city"
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
+                  onChange={(e) => {
+                    setCity(e.target.value);
+                    if (fieldErrors.city) setFieldErrors(prev => ({ ...prev, city: '' }));
+                  }}
                   placeholder="e.g. Springfield"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    isLight
+                    fieldErrors.city
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.city} />
               </div>
 
+              {/* Province / District */}
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Province / District
+                  Province / District <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  required
                   id="input-customer-province"
                   value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  placeholder="e.g. Ontario / Central"
+                  onChange={(e) => {
+                    setProvince(e.target.value);
+                    if (fieldErrors.province) setFieldErrors(prev => ({ ...prev, province: '' }));
+                  }}
+                  placeholder="e.g. Sangamon County / Central"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    isLight
+                    fieldErrors.province
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.province} />
               </div>
 
+              {/* State / Region */}
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  State
+                  State <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  required
                   id="input-customer-state"
                   value={state}
-                  onChange={(e) => setState(e.target.value)}
+                  onChange={(e) => {
+                    setState(e.target.value);
+                    if (fieldErrors.state) setFieldErrors(prev => ({ ...prev, state: '' }));
+                  }}
                   placeholder="e.g. Illinois"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    isLight
+                    fieldErrors.state
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.state} />
               </div>
 
+              {/* Country */}
               <div>
                 <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Country
+                  Country <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  required
                   id="input-customer-country"
                   value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="e.g. United States"
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    if (fieldErrors.country) setFieldErrors(prev => ({ ...prev, country: '' }));
+                  }}
+                  placeholder="e.g. United States / India"
                   className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    isLight
+                    fieldErrors.country
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
                       ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                       : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.country} />
               </div>
             </div>
           </div>
@@ -1010,14 +1173,20 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               id="textarea-customer-notes"
               rows={3}
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                if (fieldErrors.notes) setFieldErrors(prev => ({ ...prev, notes: '' }));
+              }}
               placeholder="Add internal remarks, special instructions, tax exemption IDs, or contact preferences..."
               className={`w-full text-xs p-3.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition resize-none ${
-                isLight
+                fieldErrors.notes
+                  ? 'border-red-500 ring-1 ring-red-500/20'
+                  : isLight
                   ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
                   : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
               }`}
             />
+            <FormFieldError error={fieldErrors.notes} />
           </div>
         </div>
 

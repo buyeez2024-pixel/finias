@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Product } from '../../types/erp';
 import { BarcodeRenderer } from '../common/BarcodeRenderer';
+import { validateProductData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import {
   Package,
   X,
@@ -47,6 +49,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [alertQuantity, setAlertQuantity] = useState(productToEdit?.alertQuantity?.toString() || '10');
   const [image, setImage] = useState(productToEdit?.image || '');
   const [description, setDescription] = useState(productToEdit?.description || '');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -125,6 +129,27 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
+    setModalError(null);
+
+    const schemaRes = validateProductData({
+      name,
+      sku: sku.trim() || undefined,
+      type: 'single',
+      unit,
+      costPrice,
+      sellingPrice,
+      alertQuantity,
+      taxRate,
+      category,
+      brand,
+    });
+
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setModalError(schemaRes.firstError || 'Please fix the errors indicated in the form.');
+      return;
+    }
 
     const cost = parseFloat(costPrice) || 0;
     const price = parseFloat(sellingPrice) || 0;
@@ -192,6 +217,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </button>
           </div>
 
+          {modalError && (
+            <div className="p-3 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{modalError}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             {/* Basic Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -201,12 +233,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   required
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                  }}
                   placeholder="e.g. Ultra HD Smart LED Display"
-                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:border-indigo-500 mt-1 ${
-                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                  className={`w-full px-3 py-2 rounded-xl border ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 mt-1 ${
+                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.name} />
               </div>
 
               {/* SKU Field with auto-generator */}
@@ -227,11 +263,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   required
                   type="text"
                   value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  className={`w-full font-mono px-3 py-2 rounded-xl border focus:outline-none mt-1 ${
-                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                  onChange={(e) => {
+                    setSku(e.target.value);
+                    if (fieldErrors.sku) setFieldErrors(prev => ({ ...prev, sku: '' }));
+                  }}
+                  className={`w-full font-mono px-3 py-2 rounded-xl border ${fieldErrors.sku ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none mt-1 ${
+                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white'
                   }`}
                 />
+                <FormFieldError error={fieldErrors.sku} />
                 {duplicateSkuProduct && (
                   <p className="text-[10px] text-rose-500 flex items-center gap-1 mt-1">
                     <AlertTriangle className="w-3 h-3" />
@@ -335,16 +375,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
               <div>
                 <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold flex items-center justify-between`}>
-                  <span>Unit of Measurement</span>
+                  <span>Unit of Measurement *</span>
                   <span className="text-[10px] text-indigo-500 font-semibold">Configured in Units</span>
                 </label>
                 <select
                   value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
+                  onChange={(e) => {
+                    setUnit(e.target.value);
+                    if (fieldErrors.unit) setFieldErrors(prev => ({ ...prev, unit: '' }));
+                  }}
                   className={`w-full px-3 py-2 rounded-xl border focus:outline-none mt-1 font-medium text-xs ${
-                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                    fieldErrors.unit ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
                   }`}
                 >
+                  <option value="">Select Unit</option>
                   {units.map((u) => (
                     <option key={u.id} value={u.shortName}>
                       {u.name} ({u.shortName}) {u.allowDecimal ? '• Decimals allowed' : ''} {!u.isBaseUnit && u.baseUnitMultiplier ? `• [1 = ${u.baseUnitMultiplier} base]` : ''}
@@ -354,6 +398,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     <option value={unit}>{unit} (Custom)</option>
                   )}
                 </select>
+                <FormFieldError error={fieldErrors.unit} />
               </div>
             </div>
 
@@ -391,10 +436,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <label className={`${isLight ? 'text-slate-600' : 'text-slate-400'} font-semibold text-xs block mb-1`}>
-                    Cost Price ({settings.currencySymbol})
+                    Cost Price ({settings.currencySymbol}) *
                   </label>
                   <div className={`flex items-center rounded-lg border overflow-hidden focus-within:border-emerald-500 transition ${
-                    isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'
+                    fieldErrors.costPrice ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'
                   }`}>
                     <div className={`px-2.5 py-1.5 font-mono font-bold text-xs select-none border-r ${
                       isLight ? 'bg-slate-100 text-emerald-700 border-slate-200' : 'bg-slate-950 text-emerald-400 border-slate-800'
@@ -405,20 +450,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                       type="number"
                       step="0.01"
                       value={costPrice}
-                      onChange={(e) => setCostPrice(e.target.value)}
+                      onChange={(e) => {
+                        setCostPrice(e.target.value);
+                        if (fieldErrors.costPrice) setFieldErrors(prev => ({ ...prev, costPrice: '' }));
+                      }}
                       className={`w-full bg-transparent font-mono font-bold text-xs px-2.5 py-1.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         isLight ? 'text-emerald-700' : 'text-emerald-400'
                       }`}
                     />
                   </div>
+                  <FormFieldError error={fieldErrors.costPrice} />
                 </div>
 
                 <div>
                   <label className={`${isLight ? 'text-slate-600' : 'text-slate-400'} font-semibold text-xs block mb-1`}>
-                    Selling Price ({settings.currencySymbol})
+                    Selling Price ({settings.currencySymbol}) *
                   </label>
                   <div className={`flex items-center rounded-lg border overflow-hidden focus-within:border-indigo-500 transition ${
-                    isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'
+                    fieldErrors.sellingPrice ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'
                   }`}>
                     <div className={`px-2.5 py-1.5 font-mono font-bold text-xs select-none border-r ${
                       isLight ? 'bg-slate-100 text-indigo-700 border-slate-200' : 'bg-slate-950 text-indigo-400 border-slate-800'
@@ -429,12 +478,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                       type="number"
                       step="0.01"
                       value={sellingPrice}
-                      onChange={(e) => setSellingPrice(e.target.value)}
+                      onChange={(e) => {
+                        setSellingPrice(e.target.value);
+                        if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));
+                      }}
                       className={`w-full bg-transparent font-mono font-bold text-xs px-2.5 py-1.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         isLight ? 'text-slate-900' : 'text-white'
                       }`}
                     />
                   </div>
+                  <FormFieldError error={fieldErrors.sellingPrice} />
                 </div>
 
                 <div>
@@ -442,11 +495,15 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <input
                     type="number"
                     value={alertQuantity}
-                    onChange={(e) => setAlertQuantity(e.target.value)}
+                    onChange={(e) => {
+                      setAlertQuantity(e.target.value);
+                      if (fieldErrors.alertQuantity) setFieldErrors(prev => ({ ...prev, alertQuantity: '' }));
+                    }}
                     className={`w-full font-mono text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                      isLight ? 'bg-white text-amber-700 border-slate-200' : 'bg-slate-900 text-amber-300 border-slate-700'
+                      fieldErrors.alertQuantity ? 'border-rose-500 ring-1 ring-rose-500' : isLight ? 'bg-white text-amber-700 border-slate-200' : 'bg-slate-900 text-amber-300 border-slate-700'
                     }`}
                   />
+                  <FormFieldError error={fieldErrors.alertQuantity} />
                 </div>
               </div>
 

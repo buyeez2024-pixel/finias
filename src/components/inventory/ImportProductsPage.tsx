@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useErp } from '../../context/ErpContext';
 import { Product } from '../../types/erp';
+import { validateSpreadsheetFile } from '../../utils/fileValidation';
 import {
   FileSpreadsheet,
   Download,
@@ -236,6 +237,12 @@ export const ImportProductsPage: React.FC = () => {
 
   const handleFileUpload = (f: File) => {
     if (!f) return;
+    const valRes = validateSpreadsheetFile(f);
+    if (!valRes.isValid) {
+      showFlashNotification(valRes.error || 'Invalid file format.', 'error');
+      return;
+    }
+
     setIsProcessing(true);
     setFile(f);
 

@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Warranty, WarrantyDurationType, Product } from '../../types/erp';
 import { ExportButtons } from '../common/ExportButtons';
+import { validateWarrantyData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -327,10 +329,16 @@ export const WarrantiesView: React.FC = () => {
 
   // Validate Form
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!formData.name.trim()) {
-      errors.name = 'Warranty plan name is required.';
-    } else if (
+    const schemaRes = validateWarrantyData({
+      name: formData.name,
+      duration: formData.duration,
+      durationType: formData.durationType,
+      description: formData.description,
+    });
+
+    const errors: Record<string, string> = { ...(schemaRes.errors || {}) };
+
+    if (
       warranties.some(
         (w) =>
           w.name.toLowerCase() === formData.name.trim().toLowerCase() &&
@@ -338,10 +346,6 @@ export const WarrantiesView: React.FC = () => {
       )
     ) {
       errors.name = 'A warranty plan with this name already exists.';
-    }
-
-    if (formData.duration <= 0 || isNaN(formData.duration)) {
-      errors.duration = 'Duration must be a positive number (at least 1).';
     }
 
     setFormErrors(errors);
@@ -667,18 +671,16 @@ export const WarrantiesView: React.FC = () => {
                 id="war-modal-name-input"
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: '' }));
+                  setFormData({ ...formData, name: e.target.value });
+                }}
                 placeholder="e.g. 1-Year Comprehensive Hardware Warranty"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none transition ${inputBg} ${
                   formErrors.name ? 'border-rose-500' : 'border-slate-700 focus:border-emerald-500'
                 }`}
               />
-              {formErrors.name && (
-                <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  <span>{formErrors.name}</span>
-                </p>
-              )}
+              <FormFieldError error={formErrors.name} />
             </div>
 
             {/* Duration & Duration Type */}
@@ -693,15 +695,16 @@ export const WarrantiesView: React.FC = () => {
                   min="1"
                   step="1"
                   value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    if (formErrors.duration) setFormErrors(prev => ({ ...prev, duration: '' }));
+                    setFormData({ ...formData, duration: Number(e.target.value) || 1 });
+                  }}
                   placeholder="e.g. 1, 2, 6, 30"
                   className={`w-full font-bold text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none transition ${inputBg} ${
                     formErrors.duration ? 'border-rose-500' : 'border-slate-700 focus:border-emerald-500'
                   }`}
                 />
-                {formErrors.duration && (
-                  <p className="text-[11px] text-rose-400 mt-1">{formErrors.duration}</p>
-                )}
+                <FormFieldError error={formErrors.duration} />
               </div>
 
               <div>

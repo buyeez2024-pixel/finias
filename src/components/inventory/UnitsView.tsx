@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Unit } from '../../types/erp';
 import { ExportButtons } from '../common/ExportButtons';
+import { validateUnitData } from '../../utils/validation';
+import { FormFieldError } from '../common/FormFieldError';
 import {
   Scale,
   Plus,
@@ -90,6 +92,7 @@ export const UnitsView: React.FC = () => {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [formData, setFormData] = useState<UnitFormData>(initialFormState);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [unitToDelete, setUnitToDelete] = useState<Unit | null>(null);
 
@@ -210,14 +213,18 @@ export const UnitsView: React.FC = () => {
   const handleSaveUnit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setFieldErrors({});
 
-    if (!formData.name.trim()) {
-      setFormError('Unit Name is required (e.g. "Kilograms", "Pieces", "Box").');
-      return;
-    }
+    const schemaRes = validateUnitData({
+      name: formData.name,
+      shortName: formData.shortName,
+      allowDecimal: formData.allowDecimal,
+      baseUnitMultiplier: formData.isMultiple ? formData.baseUnitMultiplier : undefined,
+    });
 
-    if (!formData.shortName.trim()) {
-      setFormError('Short Name / Code is required (e.g. "Kg", "Pcs", "Box").');
+    if (!schemaRes.isValid) {
+      setFieldErrors(schemaRes.errors);
+      setFormError(schemaRes.firstError || 'Please correct the highlighted form errors.');
       return;
     }
 
@@ -419,10 +426,14 @@ export const UnitsView: React.FC = () => {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                  setFormData({ ...formData, name: e.target.value });
+                }}
                 placeholder="e.g. Kilograms"
-                className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 font-semibold"
+                className={`w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border ${fieldErrors.name ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 font-semibold`}
               />
+              <FormFieldError error={fieldErrors.name} />
             </div>
 
             {/* Short Name */}
@@ -436,10 +447,14 @@ export const UnitsView: React.FC = () => {
                 type="text"
                 required
                 value={formData.shortName}
-                onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
+                onChange={(e) => {
+                  if (fieldErrors.shortName) setFieldErrors(prev => ({ ...prev, shortName: '' }));
+                  setFormData({ ...formData, shortName: e.target.value });
+                }}
                 placeholder="e.g. Kg"
-                className="w-full bg-slate-950 text-white font-mono text-xs font-bold px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 uppercase"
+                className={`w-full bg-slate-950 text-white font-mono text-xs font-bold px-3.5 py-2.5 rounded-xl border ${fieldErrors.shortName ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} focus:outline-none focus:border-indigo-500 uppercase`}
               />
+              <FormFieldError error={fieldErrors.shortName} />
             </div>
 
             {/* Allow Decimal */}

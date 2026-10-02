@@ -1388,6 +1388,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     });
+    // Ensure cashier role includes dashboard so exiting POS or viewing dashboard never causes access denied
+    if (migrated.cashier) {
+      if (!migrated.cashier.allowedModules.includes('dashboard')) {
+        migrated.cashier.allowedModules = ['dashboard', ...migrated.cashier.allowedModules];
+      }
+      migrated.cashier.canViewDashboard = true;
+    }
     return migrated;
   });
 
@@ -6707,12 +6714,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     }
 
-    // Non-admin can exit if cash register shift is closed
-    if (activeReg?.status === 'closed') {
+    // If POS shift lock policy is not explicitly enabled in settings, exit is allowed freely
+    if (!settings?.enablePosShiftLock) {
       return true;
     }
 
-    // Register is open and user is not admin: exit blocked
+    // If register shift is not actively open (status is closed or not opened yet), exit is allowed
+    const isRegisterShiftOpen = activeReg?.status === 'open' || activeReg?.isOpen === true;
+    if (!isRegisterShiftOpen) {
+      return true;
+    }
+
+    // Only if shift lock is enabled AND cash register shift is actively open: require drawer closing or supervisor override
     return false;
   };
 
