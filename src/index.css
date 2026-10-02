@@ -61,6 +61,22 @@ div[class*="overflow-y-auto"] {
   :root:not(.dark) .auth-page-root .bg-slate-100 {
     background-color: #e6eaff !important;
   }
+
+  @media (hover: hover) {
+    .hover\:bg-slate-100:hover {
+      background-color: #c7d2fe;
+    }
+  }
+
+  /* Mobile Main Menu toggle & drawer: hover:bg-slate-100 background-color is #c7d2fe */
+  #mobile-sidebar-drawer .hover\:bg-slate-100:hover,
+  #mobile-sidebar-drawer .hover\:bg-slate-100:active,
+  :root:not(.dark) #mobile-sidebar-drawer .hover\:bg-slate-100:hover,
+  :root:not(.dark) #mobile-sidebar-drawer .hover\:bg-slate-100:active,
+  :root[data-theme="light"] #mobile-sidebar-drawer .hover\:bg-slate-100:hover,
+  :root[data-theme="light"] #mobile-sidebar-drawer .hover\:bg-slate-100:active {
+    background-color: #c7d2fe !important;
+  }
 }
 
 /* Remove default browser up and down arrows (spinners) from number inputs for a sleek, professional look */

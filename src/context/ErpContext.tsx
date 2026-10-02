@@ -2180,7 +2180,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Inject dynamic theme color CSS overrides for Tailwind v4 color variables
   useEffect(() => {
     const accent = settings.themeAccent || 'indigo';
-    const mode = settings.themeMode || 'dark';
+    const mode = settings.themeMode || 'light';
 
     // 1. Handle Dark/Light mode on root element
     document.documentElement.setAttribute('data-theme', mode);

@@ -1068,7 +1068,13 @@ export const Sidebar: React.FC = () => {
     return `${iconBg} ${iconColor}`;
   };
 
-  const isLight = settings?.themeMode === 'light';
+  const isLight =
+    settings?.themeMode === 'light' ||
+    (!settings?.themeMode &&
+      typeof document !== 'undefined' &&
+      !document.documentElement.classList.contains('dark')) ||
+    (typeof document !== 'undefined' &&
+      !document.documentElement.classList.contains('dark'));
 
   const sidebarContent = (
     <>
@@ -1109,7 +1115,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Main Navigation Container */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2.5 min-h-0">
+      <div className={`flex-1 overflow-y-auto no-scrollbar p-2 space-y-2.5 min-h-0 ${isLight ? 'bg-white' : ''}`}>
         {/* If searching, render instant search results */}
         {searchQuery ? (
           <div className="space-y-1">
@@ -1178,16 +1184,14 @@ export const Sidebar: React.FC = () => {
                         id={`nav-item-${item.id}`}
                         onClick={() => toggleMenu(item.id, item.isExpandable)}
                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
-                          isCurrentParent
-                            ? isLight
+                          isLight
+                            ? isCurrentParent
                               ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
-                              : 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
+                              : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                            : isCurrentParent
+                            ? 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
                             : isExpanded
-                            ? isLight
-                              ? 'bg-slate-100/90 text-slate-950 border border-slate-200 font-semibold'
-                              : 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
-                            : isLight
-                            ? 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                            ? 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
                             : 'text-slate-300 hover:bg-slate-900/80 hover:text-white border border-transparent font-medium'
                         }`}
                       >
@@ -1260,7 +1264,7 @@ export const Sidebar: React.FC = () => {
                       {item.isExpandable && isExpanded && item.subItems && (
                         <div
                           className={`relative mt-1 mb-1.5 ml-3.5 pl-3.5 border-l-2 ${
-                            isLight ? 'border-slate-200' : 'border-slate-800/90'
+                            isLight ? 'border-slate-200 bg-transparent' : 'border-slate-800/90'
                           } space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150`}
                         >
                           {item.subItems.map((sub) => {
@@ -1275,12 +1279,12 @@ export const Sidebar: React.FC = () => {
                                 }}
                                 title={sub.label}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
-                                  sub.isActive
-                                    ? isLight
+                                  isLight
+                                    ? sub.isActive
                                       ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
-                                      : 'bg-indigo-600/20 text-indigo-200 font-semibold border border-indigo-500/30 shadow-xs shadow-indigo-950'
-                                    : isLight
-                                    ? 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                                      : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                                    : sub.isActive
+                                    ? 'bg-indigo-600/20 text-indigo-200 font-semibold border border-indigo-500/30 shadow-xs shadow-indigo-950'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-900/80 border border-transparent font-medium'
                                 }`}
                               >
