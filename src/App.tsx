@@ -90,6 +90,27 @@ const MainAppContent: React.FC = () => {
       document.documentElement.setAttribute('data-theme', 'light');
     }
   }, [settings?.themeMode]);
+
+  // Ensure all buttons with text 'Cancel' inside modals/views are tagged for global CSS rules
+  React.useEffect(() => {
+    const markCancelButtons = () => {
+      document.querySelectorAll('button').forEach((btn) => {
+        const text = btn.textContent?.trim();
+        if (text === 'Cancel' || text === 'Cancel & Return' || text === 'Cancel & Go Back') {
+          if (!btn.hasAttribute('data-text')) {
+            btn.setAttribute('data-text', 'Cancel');
+          }
+          if (!btn.classList.contains('cancel-modal-btn')) {
+            btn.classList.add('cancel-modal-btn');
+          }
+        }
+      });
+    };
+    markCancelButtons();
+    const observer = new MutationObserver(markCancelButtons);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
  
   // Modals state with reload persistence
   const [showPaymentModal, setShowPaymentModal] = useState(false);

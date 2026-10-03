@@ -1705,14 +1705,31 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               Date: {viewingAdjustment.date}
             </div>
 
-            <div className="grid grid-cols-2 gap-8 text-xs border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="space-y-1">
-                <p className="text-slate-400 font-semibold">Business:</p>
-                <p className="font-bold text-slate-900 dark:text-white">Royal Electricals <span className="text-slate-500 font-normal">{locations.find(l=>l.id===viewingAdjustment.locationId)?.name}</span></p>
-                <p className="text-slate-500 italic">Naidu Nagar, Chembakur Road</p>
-                <p className="text-slate-500">Madanapalle, Andhra Pradesh, India</p>
-                <p className="text-slate-500 font-mono">Mobile: +91 9876543210</p>
-              </div>
+             <div className="grid grid-cols-2 gap-8 text-xs border-b border-slate-100 dark:border-slate-800 pb-4">
+               <div className="space-y-1">
+                 <p className="text-slate-400 font-semibold">Business:</p>
+                 <p className="font-bold text-slate-900 dark:text-white">
+                   {settings.businessName || settings.name || 'Finias POS'}{' '}
+                   <span className="text-slate-500 font-normal">
+                     {locations.find((l) => l.id === viewingAdjustment.locationId)?.name || ''}
+                   </span>
+                 </p>
+                 <p className="text-slate-500 italic">
+                   {locations.find((l) => l.id === viewingAdjustment.locationId)?.address || settings.address || 'Naidu Nagar, Chembakur Road'}
+                 </p>
+                 <p className="text-slate-500">
+                   {locations.find((l) => l.id === viewingAdjustment.locationId)
+                     ? [
+                         locations.find((l) => l.id === viewingAdjustment.locationId)?.city,
+                         locations.find((l) => l.id === viewingAdjustment.locationId)?.state,
+                         locations.find((l) => l.id === viewingAdjustment.locationId)?.country
+                       ].filter(Boolean).join(', ')
+                     : 'Madanapalle, Andhra Pradesh, India'}
+                 </p>
+                 <p className="text-slate-500 font-mono">
+                   Mobile: {locations.find((l) => l.id === viewingAdjustment.locationId)?.phone || settings.phone || '+91 9876543210'}
+                 </p>
+               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <p className="text-slate-400 font-semibold">Reference No:</p>

@@ -80,6 +80,7 @@ export const CurrencySettingsTab: React.FC = () => {
   const [formDecimals, setFormDecimals] = useState<number>(2);
   const [formSetAsActive, setFormSetAsActive] = useState<boolean>(true);
   const [formRate, setFormRate] = useState<string>('1.0');
+  const [error, setError] = useState<string | null>(null);
 
   // Simulator State
   const [testAmount, setTestAmount] = useState<number>(2499.5);
@@ -91,7 +92,7 @@ export const CurrencySettingsTab: React.FC = () => {
   };
 
   const handleCodeChange = (rawCode: string) => {
-    const code = rawCode.toUpperCase().trim();
+    const code = rawCode.slice(0, 4).toUpperCase().trim();
     setFormCode(code);
 
     const currencyMap: Record<string, { symbol: string; name: string; placement?: 'prefix' | 'suffix'; decimals?: number }> = {
@@ -147,6 +148,7 @@ export const CurrencySettingsTab: React.FC = () => {
     setFormDecimals(2);
     setFormSetAsActive(true);
     setFormRate('1.0');
+    setError(null);
     setIsModalOpen(true);
   };
 
@@ -159,19 +161,39 @@ export const CurrencySettingsTab: React.FC = () => {
     setFormDecimals(curr.decimalPlaces ?? 2);
     setFormSetAsActive(curr.id === activeCurrency.id || !!curr.isDefault);
     setFormRate(curr.exchangeRate?.toString() || '1.0');
+    setError(null);
     setIsModalOpen(true);
   };
 
   const handleSaveCurrency = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formCode.trim() || !formSymbol.trim()) {
-      alert('Please provide both a Currency Code and a Currency Symbol.');
-      return;
-    }
+    setError(null);
 
     const cleanCode = formCode.trim().toUpperCase();
     const cleanSymbol = formSymbol.trim();
-    const cleanName = formName.trim() || `${cleanCode} Currency`;
+    const cleanName = formName.trim();
+
+    if (!cleanCode) {
+      setError('ISO Currency Code is required.');
+      return;
+    }
+    if (cleanCode.length > 4) {
+      setError('ISO Currency Code must be up to 4 characters long.');
+      return;
+    }
+    if (!cleanSymbol) {
+      setError('Currency Symbol is required.');
+      return;
+    }
+    if (!cleanName) {
+      setError('Currency Name is required.');
+      return;
+    }
+    if (cleanName.length < 4) {
+      setError('Currency Name must be at least 4 characters long.');
+      return;
+    }
+
     const cleanDecimals = Number(formDecimals);
     const cleanRate = parseFloat(formRate) || 1.0;
 
@@ -657,14 +679,25 @@ export const CurrencySettingsTab: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveCurrency} className="space-y-4 mt-4 text-xs">
+              {error && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2 font-medium animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-slate-400 font-bold mb-1">Currency Name *</label>
                 <input
                   type="text"
                   required
+                  minLength={4}
                   placeholder="e.g. Brazilian Real, Swiss Franc, Kuwaiti Dinar"
                   value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  onChange={(e) => {
+                    setFormName(e.target.value);
+                    if (error) setError(null);
+                  }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -675,10 +708,13 @@ export const CurrencySettingsTab: React.FC = () => {
                   <input
                     type="text"
                     required
-                    maxLength={6}
-                    placeholder="e.g. BRL, CHF, KWD, USD"
+                    maxLength={4}
+                    placeholder="e.g. USD, EUR, INR"
                     value={formCode}
-                    onChange={(e) => handleCodeChange(e.target.value)}
+                    onChange={(e) => {
+                      handleCodeChange(e.target.value);
+                      if (error) setError(null);
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -690,7 +726,10 @@ export const CurrencySettingsTab: React.FC = () => {
                     required
                     placeholder="e.g. R$, Fr., KD, $, ₹, €"
                     value={formSymbol}
-                    onChange={(e) => setFormSymbol(e.target.value)}
+                    onChange={(e) => {
+                      setFormSymbol(e.target.value);
+                      if (error) setError(null);
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold text-center focus:outline-none focus:border-indigo-500"
                   />
                 </div>

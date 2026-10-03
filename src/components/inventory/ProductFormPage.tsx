@@ -785,6 +785,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     setFormError(null);
     setFieldErrors({});
 
+    // HSN Validation
+    if (settings?.enableHsnCode && !hsnCode.trim()) {
+      setFormError('HSN / SAC Code is required when HSN tracking is enabled.');
+      return;
+    }
+
     // 1. Strict Schema-Driven Input Validation
     const schemaRes = validateProductData({
       name,
@@ -1491,6 +1497,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <span>HSN / SAC Code</span>
+                      {settings?.enableHsnCode && <span className="text-rose-500">*</span>}
                       <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded border border-indigo-500/20">
                         GST Compliance
                       </span>
@@ -1502,8 +1509,13 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     value={hsnCode}
                     onChange={(e) => setHsnCode(e.target.value)}
                     placeholder="e.g. 8528.52 (Audio/Video), 8471 (Computers)"
-                    className="w-full bg-slate-950 text-white font-mono font-bold px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
+                    className={`w-full bg-slate-950 text-white font-mono font-bold px-3.5 py-2.5 rounded-xl border ${
+                      settings?.enableHsnCode && !hsnCode.trim() ? 'border-rose-500' : 'border-slate-700'
+                    } focus:outline-none focus:border-indigo-500 mt-1`}
                   />
+                  {settings?.enableHsnCode && !hsnCode.trim() && (
+                    <p className="text-[11px] text-rose-500 mt-1">HSN / SAC Code is required.</p>
+                  )}
                   <p className="text-[11px] text-slate-400 mt-1">
                     Harmonized System of Nomenclature code for tax determination.
                   </p>

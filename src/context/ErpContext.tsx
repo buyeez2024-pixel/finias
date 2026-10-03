@@ -2138,6 +2138,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         if (sysRes.ok) {
           const sysData = await sysRes.json();
+          if (sysData.success && sysData.businessName && active) {
+            setSettings((prev) => {
+              if (prev.name !== sysData.businessName || prev.businessName !== sysData.businessName) {
+                const updated = { ...prev, name: sysData.businessName, businessName: sysData.businessName };
+                try {
+                  localStorage.setItem(`${STORAGE_KEY}_settings`, JSON.stringify(updated));
+                } catch {}
+                // Keep the default main location synchronized with the final installation name
+                setLocations((prevLocs) =>
+                  prevLocs.map((loc) => {
+                    if (loc.isDefault || loc.id === 'loc_main' || loc.name === 'Main HQ') {
+                      return { ...loc, name: sysData.businessName, businessName: sysData.businessName };
+                    }
+                    return loc;
+                  })
+                );
+                return updated;
+              }
+              return prev;
+            });
+          }
           if (sysData.success && sysData.adminUser && active) {
             setUsers((prev) => {
               const hasAdmin = prev.some(
@@ -2517,6 +2538,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const scopedLocations = useMemo(() => {
     let filtered = locations.filter((loc) => {
+      if (loc.id === 'loc_main') return true; // Ensure main flagship is always included
       if (activeBusinessId && loc.businessId) return loc.businessId === activeBusinessId;
       if (loc.businessName && activeBusinessName) return loc.businessName.toLowerCase() === activeBusinessName.toLowerCase();
       if (loc.name === 'Downtown Store' || loc.id === 'loc_store1') return false;
@@ -2536,8 +2558,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }];
     } else {
       filtered = filtered.map((l) => {
-        if (l.name === 'Main HQ' || (l.id === 'loc_main' && (!l.name || l.name === 'Main HQ'))) {
-          return { ...l, name: activeBusinessName, businessName: activeBusinessName };
+        if (l.id === 'loc_main') {
+          return {
+            ...l,
+            name: l.name === 'Royal POSfini' ? activeBusinessName : l.name,
+            businessName: activeBusinessName,
+          };
         }
         return l;
       });
@@ -2582,9 +2608,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('installation_type', 'fresh');
       }
 
-      if (newSettings.businessName || newSettings.name) {
-        const newBizName = (newSettings.businessName || newSettings.name || '').trim();
-        if (newBizName) {
+      if (newSettings.businessName !== undefined || newSettings.name !== undefined) {
+        const newBizName = newSettings.businessName !== undefined ? newSettings.businessName : newSettings.name;
+        if (newBizName !== undefined) {
           updated.name = newBizName;
           updated.businessName = newBizName;
           setLocations((prevLocs) =>

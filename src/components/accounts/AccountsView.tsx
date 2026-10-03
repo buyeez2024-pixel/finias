@@ -58,7 +58,7 @@ export const AccountsView: React.FC = () => {
       name: '',
       accountNumber: `ACC-${Math.floor(100000 + Math.random() * 900000)}`,
       type: 'Bank',
-      balance: 0,
+      balance: '',
       bankName: '',
     });
     setIsModalOpen(true);
@@ -66,7 +66,10 @@ export const AccountsView: React.FC = () => {
 
   const handleOpenEdit = (acc: FinancialAccount) => {
     setEditingAccount(acc);
-    setFormData({ ...acc });
+    setFormData({
+      ...acc,
+      balance: acc.balance === undefined || acc.balance === null ? '' : String(acc.balance)
+    });
     setIsModalOpen(true);
   };
 
@@ -86,10 +89,15 @@ export const AccountsView: React.FC = () => {
       return;
     }
 
+    const payload = {
+      ...formData,
+      balance: formData.balance === '' || formData.balance === undefined || formData.balance === null ? 0 : Number(formData.balance)
+    };
+
     if (editingAccount) {
-      updateAccount(editingAccount.id, formData);
+      updateAccount(editingAccount.id, payload);
     } else {
-      addAccount(formData);
+      addAccount(payload);
     }
     setIsModalOpen(false);
   };
@@ -547,8 +555,8 @@ export const AccountsView: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.balance ?? 0}
-                  onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+                  value={formData.balance === undefined || formData.balance === null ? '' : formData.balance}
+                  onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>

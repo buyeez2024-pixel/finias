@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { validatePhoneWithCountry } from '../../utils/phoneValidation';
+import { validatePhoneWithCountry, extractRawPhoneAndCountry } from '../../utils/phoneValidation';
 import { validateEmail } from '../../utils/formatters';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 import { optimizeImage } from '../../lib/imageOptimization';
@@ -28,6 +28,7 @@ import {
   Truck,
   Wallet,
   Sliders,
+  Lock,
   Sun,
   Moon,
   Hash,
@@ -257,6 +258,16 @@ export const BusinessSettingsTab: React.FC = () => {
   useEffect(() => {
     setFormData((prev) => ({ ...prev, ...settings }));
   }, [settings]);
+
+  // Auto-detect phone country code from stored settings phone on load or settings update
+  useEffect(() => {
+    if (settings?.phone) {
+      const extracted = extractRawPhoneAndCountry(settings.phone);
+      if (extracted.countryCode && extracted.countryCode !== 'OTHER') {
+        setBusinessPhoneCountryCode(extracted.countryCode);
+      }
+    }
+  }, [settings?.phone]);
 
   const activeSection = (businessSettingsSection as SettingsSectionId) || 'business';
   const setActiveSection = (section: SettingsSectionId) => {
@@ -767,13 +778,14 @@ export const BusinessSettingsTab: React.FC = () => {
                     <input
                       type="text"
                       value={formData.name || ''}
-                      onChange={(e) => handleFieldChange('name', e.target.value)}
-                      required
+                      disabled
+                      readOnly
                       placeholder="e.g. Royal POS & Enterprise ERP"
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-400 cursor-not-allowed opacity-70"
                     />
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Displayed on your main Dashboard title, invoices, receipts, and system reports.
+                    <p className="text-[11px] text-indigo-400 mt-1.5 font-medium flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span>Business name is finalized during installation and cannot be altered.</span>
                     </p>
                   </div>
 

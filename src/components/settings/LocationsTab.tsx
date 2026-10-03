@@ -41,6 +41,9 @@ export const LocationsTab: React.FC = () => {
 
   const displayedLocations = useMemo(() => {
     const scoped = locations.filter((l) => {
+      // The main flagship location loc_main should ALWAYS be displayed under Branch Outlets
+      if (l.id === 'loc_main') return true;
+
       if (currentBusinessId && l.businessId) {
         return l.businessId === currentBusinessId;
       }
@@ -52,8 +55,20 @@ export const LocationsTab: React.FC = () => {
       }
       return true;
     });
-    return scoped.length > 0 ? scoped : locations;
-  }, [locations, currentBusinessName, currentBusinessId, currentUser?.locationId, selectedLocationId]);
+    
+    // Auto-update loc_main businessName and name inside display context to maintain consistency
+    return scoped.map((l) => {
+      if (l.id === 'loc_main') {
+        const activeName = currentUser?.businessName || settings?.businessName || settings?.name || 'Royal POSfini';
+        return {
+          ...l,
+          name: l.name === 'Royal POSfini' ? activeName : l.name,
+          businessName: activeName,
+        };
+      }
+      return l;
+    });
+  }, [locations, currentBusinessName, currentBusinessId, currentUser?.locationId, selectedLocationId, settings?.businessName, settings?.name, currentUser?.businessName]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingLoc, setEditingLoc] = useState<Location | null>(null);

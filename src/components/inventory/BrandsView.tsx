@@ -507,12 +507,14 @@ export const BrandsView: React.FC = () => {
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
+              data-text="Cancel"
+              data-action="cancel"
               onClick={() => setIsModalOpen(false)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
-                isLight 
-                  ? 'bg-slate-900 hover:bg-slate-850 text-slate-100 shadow-slate-900/10' 
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 shadow-slate-800/20'
-              }`}
+              className={
+                isLight
+                  ? 'px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95'
+                  : 'px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2 cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+              }
             >
               Cancel
             </button>
@@ -721,7 +723,7 @@ export const BrandsView: React.FC = () => {
                       <Upload className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-200 group-hover:text-white transition">
+                      <p className={`text-xs font-semibold text-slate-200 transition ${isLight ? 'group-hover:text-slate-300 group-hover:mb-1.5' : 'group-hover:text-white'}`}>
                         Upload Brand Logo
                       </p>
                       <p className="text-[11px] text-slate-400 mt-0.5">
@@ -900,12 +902,14 @@ export const BrandsView: React.FC = () => {
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
+                data-text="Cancel"
+                data-action="cancel"
                 onClick={() => setIsModalOpen(false)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                className={
                   isLight
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                }`}
+                    ? 'px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95'
+                    : 'px-4 py-2.5 rounded-xl text-xs font-bold transition border cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }
               >
                 Cancel
               </button>

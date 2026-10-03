@@ -1029,3 +1029,58 @@ html.dark #nav-pos-cart-badge span {
   font-size: 11px !important;
   opacity: 1 !important;
 }
+
+/* ========================================================================= */
+/* MODAL CANCEL BUTTON STYLING IN LIGHT MODE                                 */
+/* ========================================================================= */
+/* Rule targeting buttons with text 'Cancel' inside modals that applies the specific class string 'px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95' specifically when the data-theme attribute is set to light */
+:root[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn),
+:root[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn),
+:root[data-theme="light"] div[class*="modal" i] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn),
+:root[data-theme="light"] button[data-text="Cancel"],
+:root[data-theme="light"] button[data-cancel="true"],
+:root[data-theme="light"] .cancel-modal-btn,
+[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn),
+[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn),
+[data-theme="light"] button[data-text="Cancel"] {
+  @apply px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95;
+  padding: 0.625rem 1.5rem !important; /* px-6 py-2.5 */
+  border-radius: 0.75rem !important; /* rounded-xl */
+  background-color: #0284c7 !important; /* bg-sky-600 */
+  color: #ffffff !important; /* text-white */
+  font-size: 0.75rem !important; /* text-xs */
+  line-height: 1rem !important;
+  font-weight: 700 !important; /* font-bold */
+  box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3), 0 4px 6px -4px rgba(2, 132, 199, 0.3) !important; /* shadow-lg shadow-sky-600/30 */
+  display: flex !important; /* flex */
+  align-items: center !important; /* items-center */
+  gap: 0.5rem !important; /* gap-2 */
+  cursor: pointer !important; /* cursor-pointer */
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1) !important; /* transition */
+  border: none !important;
+}
+
+:root[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):hover,
+:root[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):hover,
+:root[data-theme="light"] div[class*="modal" i] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):hover,
+:root[data-theme="light"] button[data-text="Cancel"]:hover,
+:root[data-theme="light"] button[data-cancel="true"]:hover,
+:root[data-theme="light"] .cancel-modal-btn:hover,
+[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):hover,
+[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):hover,
+[data-theme="light"] button[data-text="Cancel"]:hover {
+  background-color: #0ea5e9 !important; /* hover:bg-sky-500 */
+}
+
+:root[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):active,
+:root[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):active,
+:root[data-theme="light"] div[class*="modal" i] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):active,
+:root[data-theme="light"] button[data-text="Cancel"]:active,
+:root[data-theme="light"] button[data-cancel="true"]:active,
+:root[data-theme="light"] .cancel-modal-btn:active,
+[data-theme="light"] .modal button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):active,
+[data-theme="light"] [role="dialog"] button:where([data-text="Cancel"], [data-action="cancel"], .cancel-btn):active,
+[data-theme="light"] button[data-text="Cancel"]:active {
+  transform: scale(0.95) !important; /* active:scale-95 */
+}
+

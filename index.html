@@ -4,6 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Royal POS - Omnichannel ERP & Point of Sale Suite</title>
+    <script>
+      (function() {
+        try {
+          var storageKey = 'ultimate_erp_pos_database_v1';
+          var saved = localStorage.getItem(storageKey + '_settings');
+          var theme = 'dark'; // Default system theme is dark
+          if (saved) {
+            var parsed = JSON.parse(saved);
+            if (parsed && parsed.themeMode) {
+              theme = parsed.themeMode;
+            }
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // Silent fallback to dark mode on error
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <meta name="description" content="Royal POS Enterprise ERP solution with real-time multi-location inventory, cashier terminal, and AI intelligence." />
     <meta property="og:title" content="Royal POS - Omnichannel ERP & Point of Sale Suite" />
     <meta property="og:description" content="Royal POS Enterprise ERP solution with real-time multi-location inventory, cashier terminal, and AI intelligence." />

@@ -99,6 +99,64 @@ export const Sidebar: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
+  const getHrefForTab = (tab: string, subTab?: string): string => {
+    let base = '/';
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname;
+      if (p.startsWith('/farm/') || p === '/farm') {
+        base = '/farm/';
+      }
+    }
+
+    let path = `/${tab}`;
+    if (tab === 'dashboard') {
+      path = '/dashboard';
+    } else if (tab === 'installer' || tab === 'installation_wizard') {
+      path = '/install';
+    } else if (tab === 'inventory') {
+      if (!subTab || subTab === 'matrix') {
+        path = '/inventory';
+      } else {
+        path = `/inventory/${subTab}`;
+      }
+    } else if (tab === 'settings') {
+      if (!subTab || subTab === 'business_settings') {
+        path = '/settings';
+      } else {
+        path = `/settings/${subTab}`;
+      }
+    } else if (tab === 'user_menu') {
+      if (subTab === 'users') {
+        path = '/users';
+      } else if (subTab === 'roles') {
+        path = '/roles';
+      } else if (subTab === 'permissions') {
+        path = '/permissions';
+      } else if (subTab === 'sales_commission_agents') {
+        path = '/sales_commission_agents';
+      } else if (subTab) {
+        path = `/user_menu/${subTab}`;
+      } else {
+        path = '/user_menu';
+      }
+    } else if (tab === 'contacts') {
+      if (!subTab || subTab === 'customers') {
+        path = '/contacts';
+      } else {
+        path = `/contacts/${subTab}`;
+      }
+    } else if (tab === 'expenses') {
+      path = '/expenses';
+    } else if (tab === 'system_updates') {
+      path = '/system_updates';
+    } else if (tab === 'list_pos_sale' || tab === 'pos_sales') {
+      path = '/pos_sales';
+    }
+
+    const resolved = (base + path).replace(/\/+/g, '/');
+    return resolved;
+  };
+
   // Determine active parent group based on activeTab & sub-tabs
   const getParentForActiveTab = (): string => {
     if (
@@ -975,13 +1033,15 @@ export const Sidebar: React.FC = () => {
 
   // Global search quick-match items
   const allSearchableItems = useMemo(() => {
-    const list: { parentLabel: string; label: string; icon: React.ComponentType<{ className?: string }>; onClick: () => void }[] = [];
+    const list: { parentLabel: string; label: string; icon: React.ComponentType<{ className?: string }>; onClick: () => void; href: string }[] = [];
     filteredGroups.forEach((grp) => {
       grp.items.forEach((item) => {
+        const itemFirstSubId = item.subItems && item.subItems.length > 0 ? item.subItems[0].id : undefined;
         list.push({
           parentLabel: grp.groupTitle,
           label: item.label,
           icon: item.icon,
+          href: getHrefForTab(item.id, itemFirstSubId),
           onClick: () => {
             if (item.isExpandable) {
               setExpandedMenu(item.id);
@@ -1001,6 +1061,7 @@ export const Sidebar: React.FC = () => {
               parentLabel: item.label,
               label: sub.label,
               icon: sub.icon,
+              href: getHrefForTab(item.id, sub.id),
               onClick: () => {
                 setExpandedMenu(item.id);
                 sub.onClick();
@@ -1133,11 +1194,15 @@ export const Sidebar: React.FC = () => {
               searchResults.map((res, idx) => {
                 const ItemIcon = res.icon;
                 return (
-                  <button
+                  <a
                     key={idx}
-                    onClick={() => {
-                      res.onClick();
-                      setIsMobileSidebarOpen(false);
+                    href={res.href}
+                    onClick={(e) => {
+                      if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button !== 1) {
+                        e.preventDefault();
+                        res.onClick();
+                        setIsMobileSidebarOpen(false);
+                      }
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
                       isLight
@@ -1145,16 +1210,18 @@ export const Sidebar: React.FC = () => {
                         : 'text-slate-200 bg-slate-900/70 hover:bg-indigo-600 hover:text-white border-slate-800 hover:border-indigo-500'
                     }`}
                   >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center border shrink-0 ${isLight ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-800 border-slate-700 text-indigo-400'}`}>
-                      <ItemIcon className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`truncate font-semibold ${isLight ? 'text-slate-900 group-hover:text-indigo-950' : 'text-white'}`}>{res.label}</div>
-                      <div className={`text-[10px] ${isLight ? 'text-slate-500 group-hover:text-indigo-700' : 'text-slate-400 group-hover:text-indigo-100'} truncate`}>
-                        {res.parentLabel}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center border shrink-0 ${isLight ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-800 border-slate-700 text-indigo-400'}`}>
+                        <ItemIcon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`truncate font-semibold ${isLight ? 'text-slate-900 group-hover:text-indigo-950' : 'text-white'}`}>{res.label}</div>
+                        <div className={`text-[10px] ${isLight ? 'text-slate-500 group-hover:text-indigo-700' : 'text-slate-400 group-hover:text-indigo-100'} truncate`}>
+                          {res.parentLabel}
+                        </div>
                       </div>
                     </div>
-                  </button>
+                  </a>
                 );
               })
             )}
@@ -1179,86 +1246,156 @@ export const Sidebar: React.FC = () => {
 
                   return (
                     <div key={item.id} className="space-y-0.5">
-                                      {/* Parent Button */}
-                      <button
-                        id={`nav-item-${item.id}`}
-                        onClick={() => toggleMenu(item.id, item.isExpandable)}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
-                          isLight
-                            ? isCurrentParent
-                              ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
-                              : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
-                            : isCurrentParent
-                            ? 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
-                            : isExpanded
-                            ? 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
-                            : 'text-slate-300 hover:bg-slate-900/80 hover:text-white border border-transparent font-medium'
-                        }`}
-                      >
-                        {/* Active Left Indicator Bar */}
-                        {isCurrentParent && (
-                          <span
-                            className={`absolute left-0 top-1.5 bottom-1.5 w-1 ${
-                              isLight ? 'bg-indigo-600' : 'bg-indigo-500'
-                            } rounded-r shadow-xs shadow-indigo-500`}
-                          />
-                        )}
+                      {/* Parent Button */}
+                      {item.isExpandable ? (
+                        <button
+                          id={`nav-item-${item.id}`}
+                          onClick={() => toggleMenu(item.id, item.isExpandable)}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
+                            isLight
+                              ? isCurrentParent
+                                ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
+                                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                              : isCurrentParent
+                              ? 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
+                              : isExpanded
+                              ? 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
+                              : 'text-slate-300 hover:bg-slate-900/80 hover:text-white border border-transparent font-medium'
+                          }`}
+                        >
+                          {/* Active Left Indicator Bar */}
+                          {isCurrentParent && (
+                            <span
+                              className={`absolute left-0 top-1.5 bottom-1.5 w-1 ${
+                                isLight ? 'bg-indigo-600' : 'bg-indigo-500'
+                              } rounded-r shadow-xs shadow-indigo-500`}
+                            />
+                          )}
 
-                        <div className="flex items-center gap-2.5 min-w-0 pl-1">
-                          <div
-                            className={`w-6 h-6 rounded-md flex items-center justify-center border shrink-0 transition-colors ${
-                              isCurrentParent
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs shadow-indigo-600/30'
-                                : getIconBoxStyles(false, item.iconBg, item.iconColor, isLight)
-                            }`}
-                          >
-                            <Icon
-                              className={`w-3.5 h-3.5 ${
+                          <div className="flex items-center gap-2.5 min-w-0 pl-1">
+                            <div
+                              className={`w-6 h-6 rounded-md flex items-center justify-center border shrink-0 transition-colors ${
                                 isCurrentParent
-                                  ? 'text-white'
+                                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs shadow-indigo-600/30'
+                                  : getIconBoxStyles(false, item.iconBg, item.iconColor, isLight)
+                              }`}
+                            >
+                              <Icon
+                                className={`w-3.5 h-3.5 ${
+                                  isCurrentParent
+                                    ? 'text-white'
+                                    : isLight
+                                    ? 'text-slate-600 group-hover:text-indigo-600'
+                                    : item.iconColor
+                                }`}
+                              />
+                            </div>
+                            <span
+                              className={`truncate ${
+                                isCurrentParent
+                                  ? isLight
+                                    ? 'text-indigo-950 font-bold'
+                                    : 'text-white font-bold'
+                                  : isExpanded
+                                  ? isLight
+                                    ? 'text-slate-950 font-semibold'
+                                    : 'text-indigo-200 font-semibold'
                                   : isLight
-                                  ? 'text-slate-600 group-hover:text-indigo-600'
-                                  : item.iconColor
+                                  ? 'text-slate-700 group-hover:text-slate-950'
+                                  : 'text-slate-300 group-hover:text-white'
                               }`}
-                            />
+                            >
+                              {item.label}
+                            </span>
                           </div>
-                          <span
-                            className={`truncate ${
-                              isCurrentParent
-                                ? isLight
-                                  ? 'text-indigo-950 font-bold'
-                                  : 'text-white font-bold'
-                                : isExpanded
-                                ? isLight
-                                  ? 'text-slate-950 font-semibold'
-                                  : 'text-indigo-200 font-semibold'
-                                : isLight
-                                ? 'text-slate-700 group-hover:text-slate-950'
-                                : 'text-slate-300 group-hover:text-white'
-                            }`}
-                          >
-                            {item.label}
-                          </span>
-                        </div>
 
-                        {item.isExpandable && (
-                          <div className={`p-0.5 shrink-0 ml-1 ${isLight ? 'text-slate-400 group-hover:text-slate-700' : 'text-slate-400 group-hover:text-slate-200'}`}>
-                            <ChevronRight
-                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                isExpanded
-                                  ? isLight
-                                    ? 'rotate-90 text-indigo-700 font-bold'
-                                    : 'rotate-90 text-indigo-400 font-bold'
-                                  : isCurrentParent
-                                  ? isLight
-                                    ? 'text-indigo-700 font-bold'
-                                    : 'text-indigo-400 font-bold'
-                                  : ''
-                              }`}
+                          {item.isExpandable && (
+                            <div className={`p-0.5 shrink-0 ml-1 ${isLight ? 'text-slate-400 group-hover:text-slate-700' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                              <ChevronRight
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                  isExpanded
+                                    ? isLight
+                                      ? 'rotate-90 text-indigo-700 font-bold'
+                                      : 'rotate-90 text-indigo-400 font-bold'
+                                    : isCurrentParent
+                                    ? isLight
+                                      ? 'text-indigo-700 font-bold'
+                                      : 'text-indigo-400 font-bold'
+                                    : ''
+                                }`}
+                              />
+                            </div>
+                          )}
+                        </button>
+                      ) : (
+                        <a
+                          id={`nav-item-${item.id}`}
+                          href={getHrefForTab(item.id)}
+                          onClick={(e) => {
+                            if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button !== 1) {
+                              e.preventDefault();
+                              toggleMenu(item.id, item.isExpandable);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
+                            isLight
+                              ? isCurrentParent
+                                ? 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200 shadow-2xs'
+                                : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-transparent font-medium'
+                              : isCurrentParent
+                              ? 'bg-slate-900 text-white font-bold border border-indigo-500/40 shadow-xs shadow-indigo-950 font-semibold'
+                              : isExpanded
+                              ? 'bg-slate-900/80 text-indigo-200 border border-slate-800 font-semibold'
+                              : 'text-slate-300 hover:bg-slate-900/80 hover:text-white border border-transparent font-medium'
+                          }`}
+                        >
+                          {/* Active Left Indicator Bar */}
+                          {isCurrentParent && (
+                            <span
+                              className={`absolute left-0 top-1.5 bottom-1.5 w-1 ${
+                                isLight ? 'bg-indigo-600' : 'bg-indigo-500'
+                              } rounded-r shadow-xs shadow-indigo-500`}
                             />
+                          )}
+
+                          <div className="flex items-center gap-2.5 min-w-0 pl-1">
+                            <div
+                              className={`w-6 h-6 rounded-md flex items-center justify-center border shrink-0 transition-colors ${
+                                isCurrentParent
+                                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs shadow-indigo-600/30'
+                                  : getIconBoxStyles(false, item.iconBg, item.iconColor, isLight)
+                              }`}
+                            >
+                              <Icon
+                                className={`w-3.5 h-3.5 ${
+                                  isCurrentParent
+                                    ? 'text-white'
+                                    : isLight
+                                    ? 'text-slate-600 group-hover:text-indigo-600'
+                                    : item.iconColor
+                                }`}
+                              />
+                            </div>
+                            <span
+                              className={`truncate ${
+                                isCurrentParent
+                                  ? isLight
+                                    ? 'text-indigo-950 font-bold'
+                                    : 'text-white font-bold'
+                                  : isExpanded
+                                  ? isLight
+                                    ? 'text-slate-950 font-semibold'
+                                    : 'text-indigo-200 font-semibold'
+                                  : isLight
+                                  ? 'text-slate-700 group-hover:text-slate-950'
+                                  : 'text-slate-300 group-hover:text-white'
+                              }`}
+                            >
+                              {item.label}
+                            </span>
                           </div>
-                        )}
-                      </button>
+                        </a>
+                      )}
 
                       {/* Clean Full-Width Single-Column Inline Submenu */}
                       {item.isExpandable && isExpanded && item.subItems && (
@@ -1270,12 +1407,16 @@ export const Sidebar: React.FC = () => {
                           {item.subItems.map((sub) => {
                             const SubIcon = sub.icon;
                             return (
-                              <button
+                              <a
                                 key={sub.id}
                                 id={`nav-sub-${item.id}-${sub.id}`}
-                                onClick={() => {
-                                  sub.onClick();
-                                  setIsMobileSidebarOpen(false);
+                                href={getHrefForTab(item.id, sub.id)}
+                                onClick={(e) => {
+                                  if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button !== 1) {
+                                    e.preventDefault();
+                                    sub.onClick();
+                                    setIsMobileSidebarOpen(false);
+                                  }
                                 }}
                                 title={sub.label}
                                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all group text-left relative ${
@@ -1307,14 +1448,14 @@ export const Sidebar: React.FC = () => {
                                           ? 'text-indigo-950 font-bold'
                                           : 'text-indigo-200 font-semibold'
                                         : isLight
-                                        ? 'text-slate-700 group-hover:text-slate-950'
-                                        : 'text-slate-400 group-hover:text-white'
+                                          ? 'text-slate-700 group-hover:text-slate-950'
+                                          : 'text-slate-400 group-hover:text-white'
                                     }`}
                                   >
                                     {sub.label}
                                   </span>
                                 </div>
-                              </button>
+                              </a>
                             );
                           })}
                         </div>

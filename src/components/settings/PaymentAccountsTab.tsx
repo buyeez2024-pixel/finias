@@ -12,40 +12,49 @@ interface PaymentAccount {
   isDefault: boolean;
 }
 
+const mapAccountTypeToType = (accType: 'Bank Account' | 'Cash' | 'Credit Card' | 'E-Wallet'): 'Bank' | 'Cash' | 'Card' | 'Wallet' => {
+  switch (accType) {
+    case 'Bank Account': return 'Bank';
+    case 'Cash': return 'Cash';
+    case 'Credit Card': return 'Card';
+    case 'E-Wallet': return 'Wallet';
+    default: return 'Cash';
+  }
+};
+
+const mapTypeToAccountType = (type: string): 'Bank Account' | 'Cash' | 'Credit Card' | 'E-Wallet' => {
+  switch (type) {
+    case 'Bank': return 'Bank Account';
+    case 'Cash': return 'Cash';
+    case 'Card': return 'Credit Card';
+    case 'Wallet': return 'E-Wallet';
+    default: return 'Cash';
+  }
+};
+
 export const PaymentAccountsTab: React.FC = () => {
-  const { settings, showFlashNotification } = useErp();
+  const { accounts: rawAccounts, addAccount, updateAccount, deleteAccount, settings, showFlashNotification } = useErp();
   const isLight = settings?.themeMode === 'light';
   
-  // Initial demo data
-  const [accounts, setAccounts] = useState<PaymentAccount[]>([
-    {
-      id: 'acc_1',
-      name: 'Main Company Cash',
-      accountNumber: 'CASH-01',
-      accountType: 'Cash',
-      balance: 15000,
-      note: 'Main physical cash register balance',
-      isDefault: true,
-    },
-    {
-      id: 'acc_2',
-      name: 'HSBC Corporate',
-      accountNumber: '998-123456-001',
-      accountType: 'Bank Account',
-      balance: 245000,
-      note: 'Primary corporate checking',
-      isDefault: false,
-    },
-  ]);
+  // Shadow accounts to use the dynamic ERP context accounts mapped properly
+  const accounts = (rawAccounts || []).map((acc: any) => ({
+    id: acc.id,
+    name: acc.name,
+    accountNumber: acc.accountNumber || '',
+    accountType: mapTypeToAccountType(acc.type || 'Cash'),
+    balance: Number(acc.balance) || 0,
+    note: acc.note || '',
+    isDefault: !!acc.isDefault,
+  }));
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<PaymentAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<any | null>(null);
 
-  const [formData, setFormData] = useState<Partial<PaymentAccount>>({
+  const [formData, setFormData] = useState<any>({
     name: '',
     accountNumber: '',
     accountType: 'Bank Account',
-    balance: 0,
+    balance: '',
     note: '',
     isDefault: false,
   });
@@ -56,23 +65,30 @@ export const PaymentAccountsTab: React.FC = () => {
       name: '',
       accountNumber: '',
       accountType: 'Bank Account',
-      balance: 0,
+      balance: '',
       note: '',
       isDefault: false,
     });
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (account: PaymentAccount) => {
+  const handleOpenEdit = (account: any) => {
     setEditingAccount(account);
-    setFormData({ ...account });
+    setFormData({
+      ...account,
+      balance: account.balance === undefined || account.balance === null ? '' : String(account.balance)
+    });
     setIsModalOpen(true);
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this payment account?')) {
-      setAccounts((prev) => prev.filter((a) => a.id !== id));
-      showFlashNotification('Payment account deleted successfully');
+      const res = deleteAccount(id);
+      if (res && !res.success) {
+        alert(res.message);
+      } else {
+        showFlashNotification('Payment account deleted successfully', 'success');
+      }
     }
   };
 
@@ -82,32 +98,40 @@ export const PaymentAccountsTab: React.FC = () => {
       return;
     }
 
+    const typeMapped = mapAccountTypeToType(formData.accountType || 'Bank Account');
+    const numericBalance = formData.balance === '' || formData.balance === undefined || formData.balance === null
+      ? 0
+      : Number(formData.balance);
+
+    const accountPayload = {
+      name: formData.name,
+      accountNumber: formData.accountNumber || '',
+      type: typeMapped,
+      balance: numericBalance,
+      note: formData.note || '',
+      isDefault: !!formData.isDefault,
+    };
+
     if (editingAccount) {
-      setAccounts((prev) =>
-        prev.map((a) => {
-          if (a.id === editingAccount.id) {
-            return { ...a, ...formData } as PaymentAccount;
+      // If setting this one as default, unset other accounts' isDefault in the context
+      if (formData.isDefault) {
+        rawAccounts.forEach((acc: any) => {
+          if (acc.id !== editingAccount.id && acc.isDefault) {
+            updateAccount(acc.id, { isDefault: false });
           }
-          // If this one is set as default, unset others
-          if (formData.isDefault && a.id !== editingAccount.id) {
-            return { ...a, isDefault: false };
-          }
-          return a;
-        })
-      );
-      showFlashNotification('Payment account updated successfully');
+        });
+      }
+      updateAccount(editingAccount.id, accountPayload);
     } else {
-      const newAccount: PaymentAccount = {
-        ...(formData as PaymentAccount),
-        id: `acc_${Date.now()}`,
-      };
-      setAccounts((prev) => {
-        if (newAccount.isDefault) {
-          return [...prev.map(a => ({ ...a, isDefault: false })), newAccount];
-        }
-        return [...prev, newAccount];
-      });
-      showFlashNotification('Payment account added successfully');
+      // If setting this one as default, unset other accounts' isDefault in the context
+      if (formData.isDefault) {
+        rawAccounts.forEach((acc: any) => {
+          if (acc.isDefault) {
+            updateAccount(acc.id, { isDefault: false });
+          }
+        });
+      }
+      addAccount(accountPayload);
     }
     setIsModalOpen(false);
   };
@@ -309,8 +333,9 @@ export const PaymentAccountsTab: React.FC = () => {
                     </div>
                     <input
                       type="number"
-                      value={formData.balance || 0}
-                      onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+                      step="0.01"
+                      value={formData.balance === undefined || formData.balance === null ? '' : formData.balance}
+                      onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                       disabled={!!editingAccount}
                       className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isLight ? 'bg-white border border-slate-300 text-slate-900 disabled:bg-slate-100 disabled:text-slate-500' : 'bg-slate-950 border border-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-600'}`}
                     />
