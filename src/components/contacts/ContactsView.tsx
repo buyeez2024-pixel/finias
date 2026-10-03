@@ -209,6 +209,7 @@ export const ContactsView: React.FC = () => {
         'Total Purchases ($)': s.totalPurchases || 0,
         'Pay Term': s.payTerm || '',
         'Created Date': s.createdDate || '',
+        'Contact Type': 'supplier',
       }));
       const ws = XLSX.utils.json_to_sheet(exportData);
       ws['!cols'] = Object.keys(exportData[0] || {}).map(() => ({ wch: 20 }));
@@ -241,6 +242,7 @@ export const ContactsView: React.FC = () => {
         'Credit Limit ($)': c.creditLimit || 0,
         'Pay Term': c.payTerm || '',
         'Created Date': c.createdDate || '',
+        'Contact Type': 'customer',
       }));
       const ws = XLSX.utils.json_to_sheet(exportData);
       ws['!cols'] = Object.keys(exportData[0] || {}).map(() => ({ wch: 20 }));
@@ -267,6 +269,7 @@ export const ContactsView: React.FC = () => {
         'Tax Number': s.taxNumber || '',
         'Total Payable': s.totalPayable || 0,
         'Total Purchases': s.totalPurchases || 0,
+        'Contact Type': 'supplier',
       }));
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
@@ -289,6 +292,7 @@ export const ContactsView: React.FC = () => {
         'Tax Number': c.taxNumber || '',
         'Total Due': c.totalDue || 0,
         'Total Sales': c.totalSales || 0,
+        'Contact Type': 'customer',
       }));
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();

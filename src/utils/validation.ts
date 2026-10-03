@@ -839,11 +839,32 @@ export function validateExpenseData(data: {
 }
 
 /**
- * 6. USER ACCOUNT & AUTH VALIDATOR
+ * 6. FULL NAME & USER ACCOUNT VALIDATORS
  */
+export function validateFullName(name: string): { isValid: boolean; error?: string } {
+  const trimmed = (name || '').trim();
+  if (!trimmed) {
+    return { isValid: false, error: 'Full Name is required.' };
+  }
+  if (!/^[A-Za-z\s]+$/.test(trimmed)) {
+    return {
+      isValid: false,
+      error: 'Full Name must contain only alphabetic letters (A-Z, a-z) and spaces. Numbers, symbols, and special characters are not allowed.',
+    };
+  }
+  if (trimmed.length < 4) {
+    return {
+      isValid: false,
+      error: 'Full Name must be at least 4 alphabetic characters long.',
+    };
+  }
+  return { isValid: true };
+}
+
 export function validateUserData(data: {
   username: string;
   email: string;
+  fullName?: string;
   password?: string;
   role: string;
   pin?: string;
@@ -851,16 +872,22 @@ export function validateUserData(data: {
 }): ValidationResult {
   const errors: Record<string, string> = {};
 
-  // Username: 3-30 chars, alphanumeric + underscores
-  const userRes = validateString(data.username, {
-    required: true,
-    minLength: 3,
-    maxLength: 30,
-    pattern: /^[a-zA-Z0-9._-]+$/,
-    patternMessage: 'Username can only contain letters, numbers, dots, dashes, and underscores.',
-    label: 'Username',
-  });
-  if (!userRes.isValid && userRes.error) errors.username = userRes.error;
+  if (data.fullName !== undefined) {
+    const fnRes = validateFullName(data.fullName);
+    if (!fnRes.isValid && fnRes.error) {
+      errors.fullName = fnRes.error;
+    }
+  }
+
+  // Username: Minimum 8 chars, alphanumeric + special characters
+  const trimmedUser = (data.username || '').trim();
+  if (!trimmedUser) {
+    errors.username = 'Username is required.';
+  } else if (trimmedUser.length < 8) {
+    errors.username = 'Username must be at least 8 characters long (contains alphanumeric & special characters).';
+  } else if (!/^[A-Za-z0-9@_#\.\-\$!]+$/.test(trimmedUser)) {
+    errors.username = 'Username can only contain alphanumeric characters and allowed special symbols (@, _, ., -, #, !, $).';
+  }
 
   // Email
   const emailRes = validateEmailField(data.email, {

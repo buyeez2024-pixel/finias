@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { UserSessionsManager } from './UserSessionsManager';
 import { validateEmail } from '../../utils/formatters';
+import { validateFullName } from '../../utils/validation';
 import {
   X,
   User as UserIcon,
@@ -135,11 +136,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   // Submit profile details update
   const handleSaveProfile = () => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = 'Full name is required';
+    const nameCheck = validateFullName(formData.name);
+    if (!nameCheck.isValid && nameCheck.error) {
+      errors.name = nameCheck.error;
+    }
     if (!formData.email.trim()) {
       errors.email = 'Email address is required';
     } else if (!validateEmail(formData.email)) {
       errors.email = 'Please enter a valid email address with a proper domain (e.g. name@mail.com)';
+    }
+
+    if (formData.username.trim()) {
+      if (formData.username.trim().length < 8) {
+        errors.username = 'Username must be at least 8 characters long (contains alphanumeric & special characters)';
+      } else if (!/^[A-Za-z0-9@_#\.\-\$!]+$/.test(formData.username.trim())) {
+        errors.username = 'Username can only contain alphanumeric characters and allowed special symbols (@, _, ., -, #, !, $)';
+      }
     }
 
     if (Object.keys(errors).length > 0) {
@@ -372,13 +384,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => {
+                        const cleanVal = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                        setFormData({ ...formData, name: cleanVal });
+                      }}
                       className={`w-full rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none transition-all ${
                         isLight
                           ? 'bg-slate-50 border border-slate-200 text-slate-800 focus:bg-white focus:border-indigo-500'
                           : 'bg-slate-950 border border-slate-850 text-white focus:border-indigo-500'
                       } ${formErrors.name ? 'border-rose-500 ring-1 ring-rose-500/10' : ''}`}
-                      placeholder="Jane Doe"
+                      placeholder="Jane Doe (Min 4 letters, alphabets only)"
                     />
                     {formErrors.name && (
                       <p className="text-[9px] text-rose-400 font-bold mt-1 flex items-center gap-1">
@@ -397,12 +412,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                       className={`w-full rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none transition-all ${
+                        formErrors.username ? 'border-rose-500 ring-1 ring-rose-500/20' : ''
+                      } ${
                         isLight
                           ? 'bg-slate-50 border border-slate-200 text-slate-800 focus:bg-white focus:border-indigo-500'
                           : 'bg-slate-950 border border-slate-850 text-white focus:border-indigo-500'
                       }`}
-                      placeholder="janedoe"
+                      placeholder="e.g. janedoe_staff#2026"
                     />
+                    <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Minimum 8 characters containing alphanumeric characters and special characters (@, _, ., -, #, !, $)
+                    </p>
+                    {formErrors.username && (
+                      <p className="text-[11px] text-rose-400 mt-1 font-semibold flex items-center gap-1">
+                        <span>{formErrors.username}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 

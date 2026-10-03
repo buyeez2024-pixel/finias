@@ -4,7 +4,6 @@ import { validateEmail } from '../../utils/formatters';
 import {
   Users,
   Search,
-  Plus,
   Edit,
   Trash2,
   Mail,
@@ -169,7 +168,7 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Search Bar & Quick Actions */}
+      {/* Search Bar */}
       <div className={`p-3 sm:p-4 rounded-2xl border flex flex-col sm:flex-row items-center gap-3 ${
         isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-slate-900/80 border-slate-800'
       }`}>
@@ -185,13 +184,6 @@ export const SalesCommissionAgentsView: React.FC = () => {
             }`}
           />
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 transition active:scale-95 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Agent</span>
-        </button>
       </div>
 
       {/* Mobile Card View (< md) */}

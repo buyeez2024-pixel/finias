@@ -50,11 +50,14 @@ export function getCountryConfig(countryCodeOrIso: string): CountryCodeConfig {
   return match || COUNTRY_CODES[0]; // default to +1 US
 }
 
-export function extractRawPhoneAndCountry(phone: string, defaultCountryCode: string = '+1'): { rawPhone: string; countryCode: string } {
+export function extractRawPhoneAndCountry(
+  phone: string,
+  defaultCountryCode: string = '+1'
+): { rawPhone: string; countryCode: string } {
   let trimmed = (phone || '').trim();
   if (!trimmed) return { rawPhone: '', countryCode: defaultCountryCode };
 
-  // If phone starts with '+', try matching known country codes
+  // 1. If phone starts with '+', try matching known country codes
   if (trimmed.startsWith('+')) {
     const sortedCountries = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
     for (const country of sortedCountries) {
@@ -63,6 +66,17 @@ export function extractRawPhoneAndCountry(phone: string, defaultCountryCode: str
         return { rawPhone: raw, countryCode: country.code };
       }
     }
+  }
+
+  // 2. Extract digits only for prefix detection
+  const digitsOnly = trimmed.replace(/\D/g, '');
+
+  // 3. Detect 12-digit Indian format starting with 91 (e.g. 918220038826) or 0091
+  if (digitsOnly.length === 12 && digitsOnly.startsWith('91') && /^[6-9]/.test(digitsOnly.slice(2))) {
+    return { rawPhone: digitsOnly.slice(2), countryCode: '+91' };
+  }
+  if (trimmed.startsWith('0091') && digitsOnly.length === 14) {
+    return { rawPhone: digitsOnly.slice(4), countryCode: '+91' };
   }
 
   return { rawPhone: trimmed, countryCode: defaultCountryCode };
@@ -78,11 +92,11 @@ export function validatePhoneWithCountry(
 ): PhoneValidationResult {
   const trimmed = (phone || '').trim();
 
-  // Extract raw phone if country code is prepended (e.g. "+1 5125550199")
+  // Extract raw phone if country code is prepended (e.g. "+91 8220038826" or "+1 5125550199")
   let targetPhone = trimmed;
   let targetCountryCode = countryCode;
 
-  if (trimmed.startsWith('+')) {
+  if (trimmed.startsWith('+') || trimmed.startsWith('00') || (trimmed.replace(/\D/g, '').length === 12 && trimmed.replace(/\D/g, '').startsWith('91'))) {
     const extracted = extractRawPhoneAndCountry(trimmed, countryCode);
     targetPhone = extracted.rawPhone;
     targetCountryCode = extracted.countryCode;
@@ -92,7 +106,7 @@ export function validatePhoneWithCountry(
       const selectedCountry = getCountryConfig(countryCode);
       return {
         isValid: false,
-        error: `Number starts with ${actualCountry.code} (${actualCountry.country}), but selected country code is ${selectedCountry.code} (${selectedCountry.country}). Please select ${actualCountry.code}.`,
+        error: `Input prefix matches ${actualCountry.country} (${actualCountry.code}), but country code is set to ${selectedCountry.code} (${selectedCountry.country}). Please select ${actualCountry.code} or adjust input.`,
         hint: actualCountry.hint,
         country: selectedCountry,
       };
@@ -105,7 +119,7 @@ export function validatePhoneWithCountry(
     if (required) {
       return {
         isValid: false,
-        error: 'Phone/Mobile number is required.',
+        error: 'Primary Mobile / Phone Number is required.',
         hint: country.hint,
         country,
       };
@@ -129,6 +143,16 @@ export function validatePhoneWithCountry(
     return {
       isValid: false,
       error: `Number is too long for ${country.country} (${country.code}). Maximum ${country.maxDigits} digits allowed.`,
+      hint: country.hint,
+      country,
+    };
+  }
+
+  // Verify against country-specific regex pattern if configured
+  if (country.regex && !country.regex.test(digitsOnly)) {
+    return {
+      isValid: false,
+      error: `Invalid number format for ${country.country} (${country.code}). ${country.hint}`,
       hint: country.hint,
       country,
     };

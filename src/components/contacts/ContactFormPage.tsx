@@ -359,7 +359,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         contactId: finalCustomId,
         businessName: businessName.trim() || undefined,
         phone: phone.trim() || 'N/A',
+        countryCode: countryCode || '+1',
         alternatePhone: alternatePhone.trim() || undefined,
+        altCountryCode: altCountryCode || '+1',
         email: email.trim() || 'N/A',
         taxNumber: taxNumber.trim() || undefined,
         openingBalance: parsedOpeningBal,
@@ -428,9 +430,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       } else {
         closeContactPage();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving contact:', err);
-      showFlashNotification('Error saving contact. Please check your inputs.', 'error');
+      showFlashNotification(err?.message || 'Error saving contact. Please check your inputs.', 'error');
     } finally {
       setIsSubmitting(false);
     }

@@ -38,100 +38,17 @@ export const PhoneInputWithCountry: React.FC<PhoneInputWithCountryProps> = ({
     return validatePhoneWithCountry(phoneValue, countryCode, required);
   }, [phoneValue, countryCode, required]);
 
-  // Helper to detect country based on input digits or format
-  const detectCountry = React.useCallback((input: string): { countryCode: string; rawPhone: string } | null => {
-    const trimmed = input.trim();
-    if (!trimmed) return null;
-
-    // 1. If starts with '+', extract using extractRawPhoneAndCountry
-    if (trimmed.startsWith('+')) {
-      const extracted = extractRawPhoneAndCountry(trimmed);
-      if (extracted && extracted.countryCode !== 'OTHER') {
-        return extracted;
-      }
-    }
-
-    // 2. Normalize to digits only, check for leading '00' (IDD prefix)
-    let cleanDigits = trimmed.replace(/\D/g, '');
-    if (trimmed.startsWith('00')) {
-      cleanDigits = cleanDigits.slice(2);
-      
-      // Sort country codes by descending length of numeric code so we check longer ones first
-      const sortedCountries = [...COUNTRY_CODES]
-        .filter((c) => c.code !== 'OTHER')
-        .map((c) => ({
-          ...c,
-          numericCode: c.code.replace(/\D/g, ''),
-        }))
-        .sort((a, b) => b.numericCode.length - a.numericCode.length);
-
-      // Check if starts with numeric country code prefix
-      for (const country of sortedCountries) {
-        if (cleanDigits.startsWith(country.numericCode)) {
-          const remainingDigits = cleanDigits.slice(country.numericCode.length);
-          if (remainingDigits.length >= country.minDigits && remainingDigits.length <= country.maxDigits) {
-            return {
-              countryCode: country.code,
-              rawPhone: remainingDigits,
-            };
-          }
-        }
-      }
-    }
-
-    return null;
-  }, []);
-
-  // Continuous smart country code auto-switch effect
-  React.useEffect(() => {
-    const trimmed = (phoneValue || '').trim();
-    if (!trimmed) return;
-
-    const detected = detectCountry(trimmed);
-    if (detected) {
-      if (detected.countryCode !== countryCode) {
-        onChangeCountryCode(detected.countryCode);
-        onChangePhone(detected.rawPhone);
-      } else {
-        // If country code matches but prefix is still in the input, strip it
-        const cleanDigits = trimmed.replace(/\D/g, '');
-        const numericCode = countryCode.replace(/\D/g, '');
-        const country = getCountryConfig(countryCode);
-        if (
-          numericCode &&
-          cleanDigits.startsWith(numericCode) &&
-          cleanDigits.length > country.maxDigits &&
-          cleanDigits.length === numericCode.length + detected.rawPhone.length
-        ) {
-          onChangePhone(detected.rawPhone);
-        }
-      }
-    }
-  }, [phoneValue, countryCode, onChangeCountryCode, onChangePhone, detectCountry]);
-
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     const trimmed = rawInput.trim();
 
-    const detected = detectCountry(trimmed);
-    if (detected) {
-      if (detected.countryCode !== countryCode) {
-        onChangeCountryCode(detected.countryCode);
-        onChangePhone(detected.rawPhone);
+    // If user typed/pasted explicit country prefix (+, 00, or 12-digit 91...)
+    if (trimmed.startsWith('+') || trimmed.startsWith('00') || (trimmed.replace(/\D/g, '').length === 12 && trimmed.replace(/\D/g, '').startsWith('91'))) {
+      const extracted = extractRawPhoneAndCountry(trimmed, countryCode);
+      if (extracted && extracted.countryCode && extracted.countryCode !== countryCode) {
+        onChangeCountryCode(extracted.countryCode);
+        onChangePhone(extracted.rawPhone);
         return;
-      } else {
-        const cleanDigits = trimmed.replace(/\D/g, '');
-        const numericCode = countryCode.replace(/\D/g, '');
-        const country = getCountryConfig(countryCode);
-        if (
-          numericCode &&
-          cleanDigits.startsWith(numericCode) &&
-          cleanDigits.length > country.maxDigits &&
-          cleanDigits.length === numericCode.length + detected.rawPhone.length
-        ) {
-          onChangePhone(detected.rawPhone);
-          return;
-        }
       }
     }
 

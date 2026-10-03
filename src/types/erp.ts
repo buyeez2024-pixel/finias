@@ -37,6 +37,16 @@ export type PaymentStatus = any;
 export type Unit = any;
 export type User = any;
 export type UserRole = any;
+export interface CustomRoleDefinition {
+  id: string;
+  roleKey: string;
+  title: string;
+  tier: string;
+  badgeColor: string;
+  description: string;
+  allowedModules: ErpModuleId[];
+  isCustom?: boolean;
+}
 export interface UserSession {
   id: string;
   userId: string;

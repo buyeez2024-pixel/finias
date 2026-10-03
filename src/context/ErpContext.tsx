@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { getApiUrl } from '../utils/apiBase';
 import { getCategoryName, getBrandName, applyAmountRounding } from '../utils/formatters';
-import { validatePhoneNumber } from '../utils/phoneValidation';
+import { validatePhoneNumber, validatePhoneWithCountry } from '../utils/phoneValidation';
+import { validateFullName } from '../utils/validation';
 import {
   Brand,
   BusinessSettings,
@@ -41,6 +42,7 @@ import {
   Unit,
   User,
   UserRole,
+  CustomRoleDefinition,
   UserSession,
   SalesCommissionAgent,
   SalesCommissionAgentType,
@@ -526,6 +528,10 @@ interface ErpContextType {
 
   // Role Permissions & Employee Access Control
   rolePermissions: RolePermissionsMap;
+  customRoles: CustomRoleDefinition[];
+  addCustomRole: (newRole: CustomRoleDefinition) => void;
+  updateCustomRole: (updatedRole: CustomRoleDefinition) => void;
+  deleteCustomRole: (roleId: string) => void;
   updateRolePermissions: (role: UserRole, permissions: Partial<RolePermissions>) => void;
   toggleRoleModule: (role: UserRole, moduleId: ErpModuleId) => void;
   resetRolePermissions: () => void;
@@ -4334,13 +4340,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addCustomer = (customerData: Omit<Customer, 'id' | 'totalDue' | 'totalSales' | 'loyaltyPoints' | 'createdDate'> & { id?: string; contactId?: string }) => {
     if (customerData.phone && customerData.phone !== 'N/A') {
-      const phoneVal = validatePhoneNumber(customerData.phone);
+      const code = (customerData as any).countryCode || '+1';
+      const phoneVal = validatePhoneWithCountry(customerData.phone, code);
       if (!phoneVal.isValid) {
         throw new Error(`Customer Phone Error: ${phoneVal.error}`);
       }
     }
     if (customerData.alternatePhone) {
-      const altPhoneVal = validatePhoneNumber(customerData.alternatePhone);
+      const altCode = (customerData as any).altCountryCode || (customerData as any).countryCode || '+1';
+      const altPhoneVal = validatePhoneWithCountry(customerData.alternatePhone, altCode);
       if (!altPhoneVal.isValid) {
         throw new Error(`Customer Alternate Phone Error: ${altPhoneVal.error}`);
       }
@@ -4444,13 +4452,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'totalPayable' | 'totalPurchases' | 'createdDate'> & { id?: string; contactId?: string }) => {
     if (supplierData.phone && supplierData.phone !== 'N/A') {
-      const phoneVal = validatePhoneNumber(supplierData.phone);
+      const code = (supplierData as any).countryCode || '+1';
+      const phoneVal = validatePhoneWithCountry(supplierData.phone, code);
       if (!phoneVal.isValid) {
         throw new Error(`Supplier Phone Error: ${phoneVal.error}`);
       }
     }
     if (supplierData.alternatePhone) {
-      const altPhoneVal = validatePhoneNumber(supplierData.alternatePhone);
+      const altCode = (supplierData as any).altCountryCode || (supplierData as any).countryCode || '+1';
+      const altPhoneVal = validatePhoneWithCountry(supplierData.alternatePhone, altCode);
       if (!altPhoneVal.isValid) {
         throw new Error(`Supplier Alternate Phone Error: ${altPhoneVal.error}`);
       }
@@ -8108,13 +8118,84 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!targetUser) return false;
     // Super Admin has all capabilities
     if (isUserAdmin(targetUser)) return true;
+
+    // Check user-level custom permissions overrides
+    if (targetUser.customPermissions && targetUser.customPermissions[permKey] !== undefined) {
+      return Boolean(targetUser.customPermissions[permKey]);
+    }
+
     const normRole = normalizeRole(targetUser.role);
     const perms = rolePermissions[targetUser.role] || rolePermissions[normRole];
     if (!perms) return false;
+
+    // Granular capability fallbacks for product inventory
+    if (permKey === 'canViewProducts') {
+      if (perms.canViewProducts !== undefined) return Boolean(perms.canViewProducts);
+      return Boolean(perms.canManageProducts ?? perms.allowedModules?.includes('inventory'));
+    }
+    if (permKey === 'canCreateProducts' || permKey === 'canEditProducts' || permKey === 'canDeleteProducts') {
+      if (perms[permKey] !== undefined) return Boolean(perms[permKey]);
+      return Boolean(perms.canManageProducts);
+    }
+    if (permKey === 'canManageStock') {
+      if (perms.canManageStock !== undefined) return Boolean(perms.canManageStock);
+      return Boolean(perms.canManageProducts);
+    }
+
     return Boolean(perms[permKey]);
   };
 
-  // User Management Handlers
+  const [customRoles, setCustomRoles] = useState<CustomRoleDefinition[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY}_custom_roles`);
+      if (saved) return JSON.parse(saved);
+      const fallback = localStorage.getItem('erp_custom_roles_list');
+      return fallback ? JSON.parse(fallback) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const addCustomRole = (newRole: CustomRoleDefinition) => {
+    setCustomRoles((prev) => {
+      const updated = [...prev.filter((r) => r.id !== newRole.id && r.roleKey !== newRole.roleKey), newRole];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_custom_roles`, JSON.stringify(updated));
+        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (newRole.roleKey && newRole.allowedModules) {
+      updateRolePermissions(newRole.roleKey as any, { allowedModules: newRole.allowedModules });
+    }
+  };
+
+  const updateCustomRole = (updatedRole: CustomRoleDefinition) => {
+    setCustomRoles((prev) => {
+      const updated = prev.map((r) => (r.id === updatedRole.id || r.roleKey === updatedRole.roleKey ? updatedRole : r));
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_custom_roles`, JSON.stringify(updated));
+        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (updatedRole.roleKey && updatedRole.allowedModules) {
+      updateRolePermissions(updatedRole.roleKey as any, { allowedModules: updatedRole.allowedModules });
+    }
+  };
+
+  const deleteCustomRole = (roleId: string) => {
+    setCustomRoles((prev) => {
+      const updated = prev.filter((r) => r.id !== roleId && r.roleKey !== roleId);
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_custom_roles`, JSON.stringify(updated));
+        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
   const addUser = (userData: Omit<User, 'id'>) => {
     if (userData.phone) {
       const phoneVal = validatePhoneNumber(userData.phone);
@@ -8152,6 +8233,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUser = (id: string, userData: Partial<User>) => {
+    if (userData.name !== undefined) {
+      const nameVal = validateFullName(userData.name);
+      if (!nameVal.isValid) {
+        throw new Error(`User Full Name Error: ${nameVal.error}`);
+      }
+    }
     if (userData.phone) {
       const phoneVal = validatePhoneNumber(userData.phone);
       if (!phoneVal.isValid) {
@@ -9365,6 +9452,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
         // Role Permissions & Employee Access Control
         rolePermissions,
+        customRoles,
+        addCustomRole,
+        updateCustomRole,
+        deleteCustomRole,
         updateRolePermissions,
         toggleRoleModule,
         resetRolePermissions,

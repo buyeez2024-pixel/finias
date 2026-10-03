@@ -22,6 +22,7 @@ interface ParsedContactRow {
   id: string;
   selected: boolean;
   name: string;
+  contactType?: 'customer' | 'supplier' | 'both';
   businessName?: string;
   customerGroup?: string;
   email?: string;
@@ -51,7 +52,6 @@ export const ImportContactsPage: React.FC = () => {
     showFlashNotification,
   } = useErp();
 
-  const [contactType, setContactType] = useState<'customer' | 'supplier'>('customer');
   const [file, setFile] = useState<File | null>(null);
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
@@ -61,10 +61,11 @@ export const ImportContactsPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Template Data Generator
-  const generateCustomerTemplateData = () => {
+  const generateUnifiedTemplateData = () => {
     const headers = [
       'Name',
       'Business Name',
+      'Contact Type', // 'customer' or 'supplier' or 'both'
       'Customer Group',
       'Email',
       'Phone',
@@ -85,6 +86,7 @@ export const ImportContactsPage: React.FC = () => {
       [
         'John Doe',
         'Doe Retail Enterprises',
+        'customer',
         'Retail Customer',
         'john.doe@example.com',
         '+1 555-0199',
@@ -103,6 +105,7 @@ export const ImportContactsPage: React.FC = () => {
       [
         'Sarah Smith',
         'Apex Wholesale Ltd',
+        'customer',
         'Wholesale Client',
         'sarah@apexwholesale.com',
         '+1 555-0288',
@@ -119,50 +122,10 @@ export const ImportContactsPage: React.FC = () => {
         'Bulk buyer for electronics',
       ],
       [
-        'Robert Johnson',
-        '',
-        'Walk-In Customer',
-        'robert.j@example.com',
-        '+1 555-0377',
-        '',
-        '42 Oak Lane',
-        'Austin',
-        'TX',
-        '78701',
-        'United States',
-        '',
-        '0.00',
-        '1000.00',
-        'Due on Receipt',
-        'Walk-in customer',
-      ],
-    ];
-
-    return [headers, ...sampleRows];
-  };
-
-  const generateSupplierTemplateData = () => {
-    const headers = [
-      'Name',
-      'Business Name',
-      'Email',
-      'Phone',
-      'Alternate Phone',
-      'Address',
-      'City',
-      'State',
-      'Zipcode',
-      'Country',
-      'Tax Number / GSTIN',
-      'Opening Balance',
-      'Pay Term',
-      'Notes',
-    ];
-
-    const sampleRows = [
-      [
         'Global Tech Logistics',
         'Global Tech Suppliers Inc.',
+        'supplier',
+        '',
         'sales@globaltechlogistics.com',
         '+1 800-555-0144',
         '+1 800-555-0145',
@@ -173,12 +136,15 @@ export const ImportContactsPage: React.FC = () => {
         'United States',
         'US555123987',
         '1200.00',
+        '',
         '30 Days',
         'Primary hardware and chip vendor',
       ],
       [
         'Pacific Wholesale Foods',
         'Pacific Goods Co',
+        'supplier',
+        '',
         'orders@pacificwholesale.com',
         '+1 800-555-0299',
         '',
@@ -189,6 +155,7 @@ export const ImportContactsPage: React.FC = () => {
         'United States',
         'US444987123',
         '0.00',
+        '',
         '15 Days',
         'Organic beans and specialty coffee supplier',
       ],
@@ -197,9 +164,9 @@ export const ImportContactsPage: React.FC = () => {
     return [headers, ...sampleRows];
   };
 
-  // Download Sample Files
-  const handleDownloadTemplate = (type: 'customer' | 'supplier', format: 'csv' | 'xlsx') => {
-    const data = type === 'customer' ? generateCustomerTemplateData() : generateSupplierTemplateData();
+  // Download Unified Sample Template File
+  const handleDownloadTemplate = (format: 'csv' | 'xlsx') => {
+    const data = generateUnifiedTemplateData();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     
     // Set column widths for nice appearance
@@ -207,17 +174,17 @@ export const ImportContactsPage: React.FC = () => {
     worksheet['!cols'] = cols;
 
     const workbook = XLSX.utils.book_new();
-    const sheetName = type === 'customer' ? 'Customer Import Template' : 'Supplier Import Template';
+    const sheetName = 'Contact Import Template';
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
-    const fileName = `${type}_import_template.${format}`;
+    const fileName = `contacts_import_template.${format}`;
     if (format === 'xlsx') {
       XLSX.writeFile(workbook, fileName);
     } else {
       XLSX.writeFile(workbook, fileName, { bookType: 'csv' });
     }
 
-    showFlashNotification(`Downloaded ${type === 'customer' ? 'Customer' : 'Supplier'} ${format.toUpperCase()} template file.`, 'info');
+    showFlashNotification(`Downloaded contacts ${format.toUpperCase()} template file.`, 'info');
   };
 
   // Process File Parsing
@@ -254,6 +221,17 @@ export const ImportContactsPage: React.FC = () => {
 
       const name = findVal('Name', 'Contact Name', 'Customer Name', 'Supplier Name', 'Full Name');
       const businessName = findVal('Business Name', 'Company Name', 'Company', 'Organization', 'Business');
+      const contactTypeRaw = findVal('Contact Type', 'Type', 'Category').toLowerCase().trim();
+
+      let finalContactType: 'customer' | 'supplier' | 'both' = 'customer';
+      if (contactTypeRaw.includes('supplier')) {
+        finalContactType = 'supplier';
+      } else if (contactTypeRaw.includes('both')) {
+        finalContactType = 'both';
+      } else if (contactTypeRaw.includes('customer')) {
+        finalContactType = 'customer';
+      }
+
       const customerGroup = findVal('Customer Group', 'Group', 'Pricing Group');
       const email = findVal('Email', 'Email Address', 'E-mail');
       const phone = findVal('Phone', 'Phone Number', 'Mobile', 'Mobile Number', 'Contact Number', 'Telephone');
@@ -285,7 +263,8 @@ export const ImportContactsPage: React.FC = () => {
         selected: isValid,
         name,
         businessName: businessName || undefined,
-        customerGroup: customerGroup || (contactType === 'customer' ? 'Retail Customer' : undefined),
+        contactType: finalContactType,
+        customerGroup: customerGroup || (finalContactType === 'customer' ? 'Retail Customer' : undefined),
         email: email || 'N/A',
         phone: phone || 'N/A',
         alternatePhone: alternatePhone || undefined,
@@ -372,13 +351,18 @@ export const ImportContactsPage: React.FC = () => {
       return;
     }
 
-    if (contactType === 'customer') {
-      const formattedCustomers = selectedRows.map((r) => {
+    const customersToImport: any[] = [];
+    const suppliersToImport: any[] = [];
+
+    selectedRows.forEach((r) => {
+      const isCustomer = r.contactType === 'customer' || r.contactType === 'both';
+      const isSupplier = r.contactType === 'supplier' || r.contactType === 'both';
+
+      if (isCustomer) {
         const matchedGrp = customerGroups.find(
           (g) => g.name.toLowerCase() === (r.customerGroup || '').toLowerCase()
         );
-
-        return {
+        customersToImport.push({
           name: r.name,
           businessName: r.businessName,
           customerGroup: r.customerGroup || 'Retail Customer',
@@ -396,30 +380,44 @@ export const ImportContactsPage: React.FC = () => {
           creditLimit: r.creditLimit || 0,
           payTerm: r.payTerm,
           notes: r.notes,
-        };
-      });
+        });
+      }
 
-      importCustomers(formattedCustomers);
+      if (isSupplier) {
+        suppliersToImport.push({
+          name: r.name,
+          businessName: r.businessName || r.name,
+          email: r.email || 'N/A',
+          phone: r.phone || 'N/A',
+          alternatePhone: r.alternatePhone,
+          address: r.address || 'N/A',
+          city: r.city,
+          state: r.state,
+          zipcode: r.zipcode,
+          country: r.country || 'United States',
+          taxNumber: r.taxNumber,
+          openingBalance: r.openingBalance || 0,
+          payTerm: r.payTerm,
+          notes: r.notes,
+        });
+      }
+    });
+
+    let message = '';
+    if (customersToImport.length > 0) {
+      importCustomers(customersToImport);
+      message += `Imported ${customersToImport.length} customers successfully. `;
+    }
+    if (suppliersToImport.length > 0) {
+      importSuppliers(suppliersToImport);
+      message += `Imported ${suppliersToImport.length} suppliers successfully.`;
+    }
+
+    showFlashNotification(message || 'No contacts were imported.', 'success');
+
+    if (customersToImport.length >= suppliersToImport.length) {
       navigateToContacts('customers');
     } else {
-      const formattedSuppliers = selectedRows.map((r) => ({
-        name: r.name,
-        businessName: r.businessName || r.name,
-        email: r.email || 'N/A',
-        phone: r.phone || 'N/A',
-        alternatePhone: r.alternatePhone,
-        address: r.address || 'N/A',
-        city: r.city,
-        state: r.state,
-        zipcode: r.zipcode,
-        country: r.country || 'United States',
-        taxNumber: r.taxNumber,
-        openingBalance: r.openingBalance || 0,
-        payTerm: r.payTerm,
-        notes: r.notes,
-      }));
-
-      importSuppliers(formattedSuppliers);
       navigateToContacts('suppliers');
     }
   };
@@ -434,7 +432,7 @@ export const ImportContactsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigateToContacts(contactType === 'customer' ? 'customers' : 'suppliers')}
+            onClick={() => navigateToContacts('customers')}
             className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition"
             title="Back to Contacts"
           >
@@ -446,43 +444,9 @@ export const ImportContactsPage: React.FC = () => {
               <span>Import Contacts (Bulk Upload)</span>
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Bulk import customer accounts or wholesale suppliers from standardized Excel (.xlsx) or CSV (.csv) spreadsheets.
+              Bulk import customer accounts and wholesale suppliers from a single, unified Excel (.xlsx) or CSV (.csv) spreadsheet.
             </p>
           </div>
-        </div>
-
-        {/* Contact Type Switcher */}
-        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button
-            onClick={() => {
-              setContactType('customer');
-              setParsedRows([]);
-              setFile(null);
-            }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
-              contactType === 'customer'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Customers</span>
-          </button>
-          <button
-            onClick={() => {
-              setContactType('supplier');
-              setParsedRows([]);
-              setFile(null);
-            }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
-              contactType === 'supplier'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Truck className="w-4 h-4" />
-            <span>Suppliers</span>
-          </button>
         </div>
       </div>
 
@@ -493,7 +457,7 @@ export const ImportContactsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm mb-1">
               <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs">1</span>
-              <span>Download Standard Template</span>
+              <span>Download Contact Template</span>
             </div>
             <p className="text-xs text-slate-400">
               Download the predesigned spreadsheet format with pre-formatted column headers and sample data rows. Fill in your contact list and re-upload.
@@ -501,32 +465,28 @@ export const ImportContactsPage: React.FC = () => {
 
             <div className="mt-4 p-3.5 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300">Selected Contact Category:</span>
-                <span className="font-bold text-indigo-400 uppercase tracking-wider text-[11px] bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                  {contactType === 'customer' ? 'Customers' : 'Suppliers'}
+                <span className="font-semibold text-slate-300">Supported Headers:</span>
+                <span className="font-bold text-indigo-400 uppercase tracking-wider text-[10px] bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                  Unified Form
                 </span>
               </div>
               <div className="text-[11px] text-slate-400 leading-relaxed">
-                {contactType === 'customer' ? (
-                  <span>Includes headers: Name, Business Name, Customer Group, Email, Phone, Address, City, Tax Number, Opening Balance, Credit Limit, Pay Term.</span>
-                ) : (
-                  <span>Includes headers: Name, Business Name, Email, Phone, Address, City, State, Tax Number, Opening Balance, Pay Term.</span>
-                )}
+                <span>Includes headers: Name, Business Name, Contact Type (customer/supplier), Customer Group, Email, Phone, Alternate Phone, Address, City, State, Zipcode, Country, Tax Number, Opening Balance, Credit Limit, Pay Term, Notes.</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-2 pt-2">
             <button
-              onClick={() => handleDownloadTemplate(contactType, 'xlsx')}
-              className="w-full py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20"
+              onClick={() => handleDownloadTemplate('xlsx')}
+              className="w-full py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Download {contactType === 'customer' ? 'Customer' : 'Supplier'} Excel (.xlsx)</span>
+              <span>Download Excel Template (.xlsx)</span>
             </button>
             <button
-              onClick={() => handleDownloadTemplate(contactType, 'csv')}
-              className="w-full py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 flex items-center justify-center gap-2 transition"
+              onClick={() => handleDownloadTemplate('csv')}
+              className="w-full py-2.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <FileText className="w-4 h-4 text-emerald-400" />
               <span>Download CSV Template (.csv)</span>
@@ -609,7 +569,7 @@ export const ImportContactsPage: React.FC = () => {
                     reader.readAsArrayBuffer(file);
                   }
                 }}
-                className="bg-slate-900 text-slate-100 px-3 py-1.5 rounded-lg border border-slate-700 focus:border-indigo-500 focus:outline-none"
+                className="bg-slate-900 text-slate-100 px-3 py-1.5 rounded-lg border border-slate-700 focus:border-indigo-500 focus:outline-none cursor-pointer"
               >
                 {sheetNames.map((s) => (
                   <option key={s} value={s}>
@@ -654,14 +614,14 @@ export const ImportContactsPage: React.FC = () => {
               <button
                 onClick={handleExecuteImport}
                 disabled={selectedRowsCount === 0}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition cursor-pointer ${
                   selectedRowsCount > 0
                     ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Import {selectedRowsCount} {contactType === 'customer' ? 'Customers' : 'Suppliers'}</span>
+                <span>Import {selectedRowsCount} Contacts</span>
               </button>
             </div>
           </div>
@@ -682,7 +642,8 @@ export const ImportContactsPage: React.FC = () => {
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5">Contact Name</th>
                   <th className="p-3.5">Business Name</th>
-                  {contactType === 'customer' && <th className="p-3.5">Customer Group</th>}
+                  <th className="p-3.5">Contact Type</th>
+                  <th className="p-3.5">Customer Group</th>
                   <th className="p-3.5">Phone</th>
                   <th className="p-3.5">Email</th>
                   <th className="p-3.5">Location / Address</th>
@@ -728,13 +689,30 @@ export const ImportContactsPage: React.FC = () => {
                     <td className="p-3.5 text-slate-300 whitespace-nowrap">
                       {row.businessName || <span className="text-slate-500">&mdash;</span>}
                     </td>
-                    {contactType === 'customer' && (
-                      <td className="p-3.5 whitespace-nowrap">
+                    <td className="p-3.5 whitespace-nowrap">
+                      {row.contactType === 'both' ? (
+                        <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 font-extrabold border border-indigo-500/20 uppercase text-[10px]">
+                          Both
+                        </span>
+                      ) : row.contactType === 'supplier' ? (
+                        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 font-extrabold border border-purple-500/20 uppercase text-[10px]">
+                          Supplier
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 font-extrabold border border-blue-500/20 uppercase text-[10px]">
+                          Customer
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap">
+                      {row.contactType === 'supplier' ? (
+                        <span className="text-slate-500">&mdash;</span>
+                      ) : (
                         <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold border border-slate-700 text-[11px]">
                           {row.customerGroup || 'Retail Customer'}
                         </span>
-                      </td>
-                    )}
+                      )}
+                    </td>
                     <td className="p-3.5 font-mono text-slate-300 whitespace-nowrap">
                       {row.phone !== 'N/A' ? row.phone : <span className="text-slate-500">&mdash;</span>}
                     </td>

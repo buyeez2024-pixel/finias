@@ -159,7 +159,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     closeProductPage,
     showFlashNotification,
     currentUser,
+    hasPermission,
   } = useErp();
+
+  const canCreate = hasPermission('canCreateProducts');
+  const canEdit = hasPermission('canEditProducts');
+  const canDelete = hasPermission('canDeleteProducts');
+  const canManageStock = hasPermission('canManageStock');
+  const canViewCost = hasPermission('canViewCostPrice');
 
   const [columnVisibility, setColumnVisibility] = useState<ProductTableColumnVisibility>(() => {
     try {
@@ -564,15 +571,43 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           <div className="flex items-center flex-wrap gap-2">
             <button
               id="inv-add-product-btn"
-              onClick={openAddProductPage}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 transition"
+              onClick={() => {
+                if (!canCreate) {
+                  showFlashNotification('Access Restricted: You have View Only permission for the Product Catalog. Product creation is disabled.', 'error');
+                  return;
+                }
+                openAddProductPage();
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition ${
+                canCreate
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 active:scale-95'
+                  : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80'
+              }`}
+              title={canCreate ? 'Add new product' : 'View Only Access: Product Creation Disabled'}
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Product</span>
+              {!canCreate && (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded ml-1">
+                  View Only
+                </span>
+              )}
             </button>
+
             <button
-              onClick={() => setInventorySubTab('import_products')}
-              className="px-3.5 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+              onClick={() => {
+                if (!canCreate) {
+                  showFlashNotification('Access Restricted: Bulk import is disabled for View Only access.', 'error');
+                  return;
+                }
+                setInventorySubTab('import_products');
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                canCreate
+                  ? 'bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 active:scale-95'
+                  : 'bg-slate-800 text-slate-500 border border-slate-800 cursor-not-allowed opacity-80'
+              }`}
+              title={canCreate ? 'Import bulk products' : 'View Only Access: Bulk Import Disabled'}
             >
               <Upload className="w-4 h-4" />
               <span>Import Bulk</span>
@@ -1275,20 +1310,24 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                               >
                                 <Printer className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                onClick={() => openEditProductPage(p)}
-                                className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white transition-all cursor-pointer active:scale-95"
-                                title="Edit product (Full Page)"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteTargetProduct(p)}
-                                className="p-1.5 rounded-lg bg-indigo-600 hover:bg-rose-600 shadow-lg shadow-indigo-600/30 hover:shadow-rose-600/30 text-white transition-all cursor-pointer active:scale-95"
-                                title="Delete product"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => openEditProductPage(p)}
+                                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white transition-all cursor-pointer active:scale-95"
+                                  title="Edit product (Full Page)"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => setDeleteTargetProduct(p)}
+                                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-rose-600 shadow-lg shadow-indigo-600/30 hover:shadow-rose-600/30 text-white transition-all cursor-pointer active:scale-95"
+                                  title="Delete product"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

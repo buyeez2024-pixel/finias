@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
+import { GRANULAR_CAPABILITIES } from '../../data/granularCapabilities';
 import {
   User,
   UserRole,
   ErpModuleId,
+  RolePermissions,
 } from '../../types/erp';
 import {
   Shield,
@@ -234,13 +236,17 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
   isOpen,
   onClose,
   onToast,
-  customRoles = [],
+  customRoles: propsCustomRoles = [],
   onAddCustomRole,
   onUpdateCustomRole,
   onDeleteCustomRole,
 }) => {
   const {
     rolePermissions,
+    customRoles: ctxCustomRoles = [],
+    addCustomRole,
+    updateCustomRole,
+    deleteCustomRole,
     updateRolePermissions,
     updateUser,
     updateUserRole,
@@ -262,6 +268,7 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
   const [maxSalesDiscount, setMaxSalesDiscount] = useState<string>('0');
   const [accessLocations, setAccessLocations] = useState<string[]>([]);
   const [locationId, setLocationId] = useState<string>('');
+  const [userCustomPermissions, setUserCustomPermissions] = useState<Record<string, boolean>>({});
   
   // Create / Edit custom role state
   const [newRoleTitle, setNewRoleTitle] = useState('');
@@ -270,10 +277,12 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
   const [newRoleModules, setNewRoleModules] = useState<ErpModuleId[]>(['pos', 'sales', 'contacts']);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
 
+  const activeCustomRoles = propsCustomRoles.length > 0 ? propsCustomRoles : ctxCustomRoles;
+
   // Available roles combine base presets and any custom roles
   const allRolesList: CustomRoleDefinition[] = [
     ...BASE_PRESET_ROLES.filter(r => r.roleKey !== 'supreme_admin' || currentUser?.role === 'supreme_admin'),
-    ...customRoles,
+    ...activeCustomRoles,
   ];
 
   // Sync state when modal opens or user changes
@@ -304,6 +313,7 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
       setMaxSalesDiscount(String(user.maxSalesDiscount || '0'));
       setAccessLocations(user.accessLocations || (user.locationId ? [user.locationId] : locations.map(l => l.id)));
       setLocationId(user.locationId || locations[0]?.id || '');
+      setUserCustomPermissions(user.customPermissions || {});
     }
   }, [user, rolePermissions, locations]);
 
@@ -372,7 +382,11 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
         isCustom: true,
       };
 
-      onUpdateCustomRole?.(updated);
+      if (onUpdateCustomRole) {
+        onUpdateCustomRole(updated);
+      } else {
+        updateCustomRole(updated);
+      }
       updateRolePermissions(generatedKey as any, { allowedModules: newRoleModules });
       onToast?.(`Updated custom role: ${newRoleTitle}`);
       setEditingRoleId(null);
@@ -389,7 +403,11 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
         isCustom: true,
       };
 
-      onAddCustomRole?.(newRoleDef);
+      if (onAddCustomRole) {
+        onAddCustomRole(newRoleDef);
+      } else {
+        addCustomRole(newRoleDef);
+      }
       updateRolePermissions(generatedKey as any, { allowedModules: newRoleModules });
       
       // Auto assign newly created role to the currently selected user!
@@ -427,6 +445,7 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
       accessLocations: accessLocations,
       locationId: locationId || accessLocations[0] || locations[0]?.id,
       customAllowedModules: userAllowedModules,
+      customPermissions: userCustomPermissions,
     };
 
     updateUser(user.id, updatedUserPayload);
@@ -995,7 +1014,7 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
 
               {/* Explicit Module Access Override Matrix */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                   <label className="block text-xs font-bold text-slate-400">
                     Individual Module Access Permissions ({userAllowedModules.length} / {ALL_MODULES.length} Granted)
                   </label>
@@ -1007,10 +1026,79 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                   )}
                 </div>
 
+                {/* Quick Action Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!userAllowedModules.includes('reports')) {
+                        setUserAllowedModules(prev => [...prev, 'reports']);
+                        onToast?.(`Granted Reports & P&L access to ${user.name}!`);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 px-2.5 py-1 rounded-lg border border-amber-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Reports Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!userAllowedModules.includes('inventory')) {
+                        setUserAllowedModules(prev => [...prev, 'inventory']);
+                        onToast?.(`Granted Inventory access to ${user.name}!`);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 rounded-lg border border-sky-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Inventory Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!userAllowedModules.includes('contacts')) {
+                        setUserAllowedModules(prev => [...prev, 'contacts']);
+                        onToast?.(`Granted Contacts CRM access to ${user.name}!`);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Contacts Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!userAllowedModules.includes('expenses')) {
+                        setUserAllowedModules(prev => [...prev, 'expenses']);
+                        onToast?.(`Granted Expenses access to ${user.name}!`);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-1 rounded-lg border border-purple-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Expenses Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defaultMods = rolePermissions[selectedRole]?.allowedModules || BASE_PRESET_ROLES.find(r => r.roleKey === selectedRole)?.allowedModules || ['pos', 'sales'];
+                      setUserAllowedModules(defaultMods);
+                      onToast?.('Reset permissions to base role defaults.');
+                    }}
+                    className="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer active:scale-95"
+                  >
+                    Reset Role Defaults
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800">
                   {ALL_MODULES.map((mod) => {
                     const isGranted = selectedRole === 'supreme_admin' || userAllowedModules.includes(mod.id);
                     const ModIcon = mod.icon;
+                    const baseMods = rolePermissions[selectedRole]?.allowedModules || BASE_PRESET_ROLES.find(r => r.roleKey === selectedRole)?.allowedModules || [];
+                    const isExtraGranted = isGranted && !baseMods.includes(mod.id) && selectedRole !== 'supreme_admin';
 
                     return (
                       <div
@@ -1018,17 +1106,26 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                         onClick={() => handleToggleUserModule(mod.id)}
                         className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition ${
                           isGranted
-                            ? 'bg-indigo-600/20 border-indigo-500/80 text-white'
+                            ? isExtraGranted
+                              ? 'bg-amber-950/30 border-amber-500/50 text-white'
+                              : 'bg-indigo-600/20 border-indigo-500/80 text-white'
                             : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
                         }`}
                       >
-                        <div className="flex items-center gap-2 truncate">
-                          <ModIcon className="w-4 h-4 text-indigo-400 shrink-0" />
-                          <span className="text-xs font-bold truncate">{mod.label}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ModIcon className={`w-4 h-4 shrink-0 ${isGranted ? (isExtraGranted ? 'text-amber-400' : 'text-indigo-400') : 'text-slate-500'}`} />
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold block truncate">{mod.label}</span>
+                            {isExtraGranted && (
+                              <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded border border-amber-500/30">
+                                Extra Granted
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div
                           className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                            isGranted ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-transparent'
+                            isGranted ? (isExtraGranted ? 'bg-amber-500 text-slate-950 font-black' : 'bg-indigo-600 text-white') : 'bg-slate-800 text-transparent'
                           }`}
                         >
                           <Check className="w-2.5 h-2.5" />
@@ -1037,6 +1134,158 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Granular Operational Capabilities Matrix for Individual User */}
+              <div className="pt-4 border-t border-slate-800 space-y-3">
+                {(() => {
+                  const activeCapabilities = GRANULAR_CAPABILITIES.filter(
+                    (cap) => selectedRole === 'supreme_admin' || userAllowedModules.includes(cap.module)
+                  );
+
+                  const handleUserQuickPreset = (preset: 'view' | 'edit' | 'full') => {
+                    if (selectedRole === 'supreme_admin') {
+                      onToast?.('Supreme Admin retains full authority.');
+                      return;
+                    }
+
+                    const updates: Record<string, boolean> = {};
+                    activeCapabilities.forEach((cap) => {
+                      if (preset === 'view') {
+                        updates[cap.key] = cap.accessType === 'view';
+                      } else if (preset === 'edit') {
+                        updates[cap.key] = cap.accessType === 'view' || cap.accessType === 'edit';
+                      } else {
+                        updates[cap.key] = true;
+                      }
+                    });
+
+                    setUserCustomPermissions((prev) => ({ ...prev, ...updates }));
+                    onToast?.(`Applied "${preset === 'view' ? 'View Only' : preset === 'edit' ? 'Can Edit Only' : 'Full Access'}" matrix to ${user.name}.`);
+                  };
+
+                  return (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                            Individual Operational Capabilities Matrix ({user.name})
+                          </label>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Operational capabilities for enabled modules (View Only, Edit, Delete / Full Access)
+                          </p>
+                        </div>
+
+                        {activeCapabilities.length > 0 && selectedRole !== 'supreme_admin' && (
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            <span className="text-[10px] font-bold text-slate-400 mr-1">Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleUserQuickPreset('view')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition cursor-pointer"
+                            >
+                              View Only
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUserQuickPreset('edit')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
+                            >
+                              Can Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUserQuickPreset('full')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition cursor-pointer"
+                            >
+                              Full Access
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {activeCapabilities.length === 0 ? (
+                        <div className="p-5 rounded-xl border border-slate-800 bg-slate-950/60 text-center space-y-1.5 text-slate-400">
+                          <p className="text-xs font-bold text-slate-300">No Granular Capabilities Active</p>
+                          <p className="text-[11px]">
+                            No modules are currently assigned to <span className="text-white font-semibold">{user.name}</span> in the Individual Module Access Permissions above.
+                            Enable any module (e.g., Contacts CRM, Products & Inventory, POS, Expenses) to configure its granular View, Edit, and Delete operational authority.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {activeCapabilities.map((cap) => {
+                            const roleDefaultVal = selectedRole === 'supreme_admin' || Boolean(rolePermissions[selectedRole]?.[cap.key as keyof RolePermissions]);
+                            const isExplicitUserOverride = userCustomPermissions[cap.key] !== undefined;
+                            const activeVal = isExplicitUserOverride ? Boolean(userCustomPermissions[cap.key]) : roleDefaultVal;
+
+                            return (
+                              <div
+                                key={cap.key}
+                                onClick={() => {
+                                  if (selectedRole === 'supreme_admin') {
+                                    onToast?.('Supreme Admin retains full authority.');
+                                    return;
+                                  }
+                                  const newVal = !activeVal;
+                                  setUserCustomPermissions(prev => ({ ...prev, [cap.key]: newVal }));
+                                  onToast?.(`Set "${cap.label}" to ${newVal ? 'ENABLED' : 'DISABLED'} for ${user.name}.`);
+                                }}
+                                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                                  activeVal
+                                    ? 'bg-emerald-950/20 border-emerald-700/60 text-white'
+                                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700'
+                                }`}
+                              >
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                      {cap.category}
+                                    </span>
+                                    {activeVal ? (
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        ENABLED
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                        DISABLED
+                                      </span>
+                                    )}
+                                    {isExplicitUserOverride && (
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                        User Override
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h5 className="font-extrabold text-xs leading-snug">{cap.label}</h5>
+                                  <p className="text-[10px] leading-relaxed text-slate-400 truncate">
+                                    {cap.desc}
+                                  </p>
+                                </div>
+
+                                <div className="shrink-0 mt-0.5">
+                                  <div
+                                    className={`w-8 h-4.5 rounded-full p-0.5 transition-colors duration-200 flex items-center ${
+                                      activeVal ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+                                    }`}
+                                  >
+                                    <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs flex items-center justify-center">
+                                      {activeVal ? (
+                                        <Check className="w-2 h-2 text-emerald-600" />
+                                      ) : (
+                                        <X className="w-2 h-2 text-slate-400" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}

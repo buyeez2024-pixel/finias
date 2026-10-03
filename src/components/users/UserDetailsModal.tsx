@@ -200,7 +200,9 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     (user?.businessName ? `${user.businessName} (Main Branch)` : (currentUser?.businessName ? `${currentUser.businessName} (Main Branch)` : 'Main Branch'));
   const userLocationCode = userLocation?.code || (user?.businessName ? 'MAIN' : 'HQ');
   const userPermissions = rolePermissions?.[user?.role || ''];
-  const allowedModules: ErpModuleId[] = userPermissions?.allowedModules || [];
+  const allowedModules: ErpModuleId[] = (user?.customAllowedModules && user.customAllowedModules.length > 0)
+    ? user.customAllowedModules
+    : (userPermissions?.allowedModules || []);
 
   // Generate Chronological Activity Log for THIS user
   const activities = useMemo(() => {

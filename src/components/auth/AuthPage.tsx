@@ -548,6 +548,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   // Demo accounts for 1-click test
   const demoAccounts = [
@@ -1435,6 +1436,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                               type="button"
                               onClick={() => {
                                 setForgotEmail(loginEmail);
+                                setForgotError(null);
                                 setShowForgotModal(true);
                               }}
                               className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition"
@@ -2277,6 +2279,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                 onClick={() => {
                   setShowForgotModal(false);
                   setForgotSubmitted(false);
+                  setForgotError(null);
                 }}
                 className={`transition ${isLight ? 'text-slate-400 hover:text-slate-700' : 'text-slate-400 hover:text-white'}`}
               >
@@ -2307,19 +2310,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!validateEmail(forgotEmail)) {
-                    setErrorMessage('Please enter a valid registered email address.');
+                  setForgotError(null);
+                  const cleanEmail = forgotEmail.trim().toLowerCase();
+                  if (!cleanEmail) {
+                    setForgotError('Please enter your registered email address.');
                     return;
                   }
-                  if (forgotEmail.trim()) {
-                    setForgotSubmitted(true);
+                  if (!validateEmail(cleanEmail)) {
+                    setForgotError('Please enter a valid email address format (e.g. name@domain.com).');
+                    return;
                   }
+
+                  // Verify if the email is registered in users or settings
+                  const isRegistered = (users || []).some(
+                    (u) => u.email?.toLowerCase().trim() === cleanEmail || u.username?.toLowerCase().trim() === cleanEmail
+                  ) || settings?.adminEmail?.toLowerCase().trim() === cleanEmail || settings?.email?.toLowerCase().trim() === cleanEmail;
+
+                  if (!isRegistered) {
+                    setForgotError(`Unregistered Email Address: No account found registered with "${forgotEmail.trim()}". Please enter a valid registered email.`);
+                    return;
+                  }
+
+                  setForgotSubmitted(true);
                 }}
                 className="space-y-3"
               >
                 <p className={isLight ? 'text-slate-600' : 'text-slate-300'}>
                   Enter your registered work email address and we'll send you a secure link to reset your account password.
                 </p>
+
+                {forgotError && (
+                  <div className="p-3 bg-rose-950/60 border border-rose-500/50 rounded-xl text-xs text-rose-300 font-medium flex items-start gap-2 animate-fadeIn">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
                 <div>
                   <label className={`font-semibold block mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                     Registered Email Address *

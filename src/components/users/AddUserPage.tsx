@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { UserRole } from '../../types/erp';
+import { GRANULAR_CAPABILITIES } from '../../data/granularCapabilities';
+import { UserRole, ErpModuleId, RolePermissions } from '../../types/erp';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 import { validatePhoneWithCountry } from '../../utils/phoneValidation';
 import { validateEmail } from '../../utils/formatters';
-import { validateUserData } from '../../utils/validation';
+import { validateUserData, validateFullName } from '../../utils/validation';
 import { FormFieldError } from '../common/FormFieldError';
 import {
   UserPlus,
@@ -199,6 +200,8 @@ export const AddUserPage: React.FC = () => {
     setActiveTab,
     setUserMenuSubTab,
     users,
+    rolePermissions,
+    customRoles = [],
   } = useErp();
 
   // Business-scoped locations
@@ -254,10 +257,106 @@ export const AddUserPage: React.FC = () => {
     'basic' | 'roles' | 'commission' | 'personal' | 'bank'
   >('basic');
 
+  const validateCurrentTab = (currentTab: string): boolean => {
+    if (currentTab === 'basic') {
+      const fullNameValidation = validateFullName(formData.firstName);
+      if (!fullNameValidation.isValid) {
+        showFlashNotification(fullNameValidation.error || 'Full Name is required and must be at least 4 alphabetic characters long.', 'error');
+        return false;
+      }
+
+      if (!formData.email.trim()) {
+        showFlashNotification('Email Address is required.', 'error');
+        return false;
+      }
+
+      if (!validateEmail(formData.email)) {
+        showFlashNotification('Please enter a valid email address with a proper domain (e.g. name@mail.com).', 'error');
+        return false;
+      }
+
+      if (!formData.phone.trim()) {
+        showFlashNotification('Primary Mobile / Phone Number is required.', 'error');
+        return false;
+      }
+
+      const phoneVal = validatePhoneWithCountry(formData.phone, formData.countryCode, true);
+      if (!phoneVal.isValid) {
+        showFlashNotification(`Primary Mobile Phone Error: ${phoneVal.error}`, 'error');
+        return false;
+      }
+
+      const emailClean = formData.email.trim().toLowerCase();
+      if (users.some((u) => u.email?.trim().toLowerCase() === emailClean)) {
+        showFlashNotification('Email is already registered, please sign in.', 'error');
+        return false;
+      }
+
+      if (users.some((u) => u.phone && isDuplicatePhone(u.phone, formData.phone))) {
+        showFlashNotification('Mobile number is already registered by another staff member.', 'error');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleSectionTabChange = (targetTab: 'basic' | 'roles' | 'commission' | 'personal' | 'bank') => {
+    const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+    const currentIdx = tabs.indexOf(activeSectionTab);
+    const targetIdx = tabs.indexOf(targetTab);
+
+    if (targetIdx > currentIdx) {
+      if (!validateCurrentTab(activeSectionTab)) {
+        return;
+      }
+    }
+    setActiveSectionTab(targetTab);
+  };
+
   const [isManualUsername, setIsManualUsername] = useState(false);
   const [isManualPassword, setIsManualPassword] = useState(false);
   const [showPasswordText, setShowPasswordText] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [isSaveAttempted, setIsSaveAttempted] = useState(false);
+
+  const MODULE_OPTIONS: Array<{ id: ErpModuleId; label: string; desc: string }> = [
+    { id: 'dashboard', label: 'Dashboard / Home', desc: 'KPI metrics, charts & executive summary' },
+    { id: 'pos', label: 'Point of Sale (POS)', desc: 'Checkout terminal, register & scanning' },
+    { id: 'inventory', label: 'Products & Inventory', desc: 'Stock audit, catalog & warehouse transfers' },
+    { id: 'purchases', label: 'Purchases & Inward', desc: 'Supplier POs, inward stock & bills' },
+    { id: 'sales', label: 'Sales & Invoices', desc: 'Invoices & sales transaction logs' },
+    { id: 'contacts', label: 'Contacts (CRM)', desc: 'Customers & suppliers directory' },
+    { id: 'expenses', label: 'Expenses', desc: 'Petty cash & store operational overheads' },
+    { id: 'reports', label: 'Reports & P&L', desc: 'P&L, stock reports & financial analytics' },
+    { id: 'ai', label: 'AI Intelligence', desc: 'Gemini demand forecasting & insights' },
+    { id: 'user_menu', label: 'User Profile & Menu', desc: 'Personal profile & user menu' },
+    { id: 'settings', label: 'Settings', desc: 'Tax & company configuration' },
+    { id: 'security', label: 'Security & RBAC', desc: 'Employee access permissions & roles' },
+  ];
+
+  const getRoleDefaultModules = (roleKey: string): ErpModuleId[] => {
+    if (rolePermissions && rolePermissions[roleKey]?.allowedModules) {
+      return rolePermissions[roleKey].allowedModules;
+    }
+    const customRoleDef = customRoles.find((cr) => cr.roleKey === roleKey || cr.id === roleKey);
+    if (customRoleDef?.allowedModules) {
+      return customRoleDef.allowedModules;
+    }
+    switch (roleKey) {
+      case 'supreme_admin':
+      case 'admin':
+        return ['dashboard', 'pos', 'inventory', 'purchases', 'sales', 'contacts', 'expenses', 'reports', 'ai', 'settings', 'user_menu'];
+      case 'manager':
+        return ['dashboard', 'pos', 'inventory', 'purchases', 'sales', 'contacts', 'expenses', 'reports', 'user_menu'];
+      case 'inventory_manager':
+        return ['dashboard', 'inventory', 'purchases', 'user_menu'];
+      case 'accountant':
+        return ['dashboard', 'expenses', 'reports', 'sales', 'purchases', 'user_menu'];
+      case 'cashier':
+      default:
+        return ['pos', 'sales', 'user_menu'];
+    }
+  };
 
   const [formData, setFormData] = useState({
     prefix: 'Mr',
@@ -272,6 +371,8 @@ export const AddUserPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     role: '' as any,
+    customAllowedModules: ['pos', 'sales', 'user_menu'] as ErpModuleId[],
+    customPermissions: {} as Record<string, boolean>,
     accessLocations: availableBranches.map((l) => l.id),
     locationId: defaultBranchId,
     salesCommissionPercent: '',
@@ -309,12 +410,21 @@ export const AddUserPage: React.FC = () => {
       let autoConfirm = formData.confirmPassword;
 
       if (!isManualUsername) {
+        let rawBase = '';
         if (formData.email.trim()) {
-          autoUser = formData.email.trim().split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '');
+          rawBase = formData.email.trim().split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '');
         } else if (formData.firstName.trim()) {
-          autoUser = formData.firstName.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._]/g, '');
+          rawBase = formData.firstName.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._]/g, '');
         } else {
-          autoUser = 'staff_user';
+          rawBase = 'staff_user';
+        }
+
+        if (rawBase.length < 8) {
+          autoUser = `${rawBase}_staff2026#`;
+        } else if (!/[@_#\.\-\$!]/.test(rawBase)) {
+          autoUser = `${rawBase}_staff#`;
+        } else {
+          autoUser = rawBase;
         }
       }
 
@@ -337,6 +447,21 @@ export const AddUserPage: React.FC = () => {
       }
     }
   }, [formData.allowLogin, formData.email, formData.firstName, isManualUsername, isManualPassword]);
+
+  const usernameValidationError = useMemo(() => {
+    if (!formData.allowLogin) return null;
+    const u = (formData.username || '').trim();
+    if (!u) {
+      return 'Please enter a Username.';
+    }
+    if (u.length < 8) {
+      return 'Username must be at least 8 characters long (contains alphanumeric & special characters).';
+    }
+    if (!/^[A-Za-z0-9@_#\.\-\$!]+$/.test(u)) {
+      return 'Username can only contain alphanumeric characters and allowed special symbols (@, _, ., -, #, !, $).';
+    }
+    return null;
+  }, [formData.allowLogin, formData.username]);
 
   const passwordStrength = useMemo(() => {
     return evaluatePasswordStrength(formData.password);
@@ -380,6 +505,7 @@ export const AddUserPage: React.FC = () => {
 
   const handleSaveUser = (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
+    setIsSaveAttempted(true);
 
     const fullName = formData.prefix
       ? `${formData.prefix} ${formData.firstName}`.trim()
@@ -388,10 +514,17 @@ export const AddUserPage: React.FC = () => {
     const finalUsername = formData.username.trim() || formData.email.trim().split('@')[0] || formData.firstName.trim().toLowerCase().replace(/\s+/g, '');
     const finalPassword = formData.password || 'Password@123';
 
+    if (formData.allowLogin && usernameValidationError) {
+      showFlashNotification(usernameValidationError, 'error');
+      setActiveSectionTab('basic');
+      return;
+    }
+
     // Run strict schema validation
     const schemaRes = validateUserData({
       username: finalUsername,
       email: formData.email,
+      fullName: formData.firstName,
       password: formData.allowLogin ? finalPassword : undefined,
       role: formData.role,
       isNewUser: true,
@@ -399,7 +532,7 @@ export const AddUserPage: React.FC = () => {
 
     if (!schemaRes.isValid) {
       showFlashNotification(schemaRes.firstError || 'Please fix user profile errors before saving.', 'error');
-      if (schemaRes.errors.username || schemaRes.errors.email || schemaRes.errors.password) {
+      if (schemaRes.errors.username || schemaRes.errors.email || schemaRes.errors.password || schemaRes.errors.fullName) {
         setActiveSectionTab('basic');
       } else if (schemaRes.errors.role) {
         setActiveSectionTab('roles');
@@ -407,8 +540,9 @@ export const AddUserPage: React.FC = () => {
       return;
     }
 
-    if (!formData.firstName.trim()) {
-      showFlashNotification('Full Name is required.', 'error');
+    const fullNameValidation = validateFullName(formData.firstName);
+    if (!fullNameValidation.isValid) {
+      showFlashNotification(fullNameValidation.error || 'Full Name must contain only alphabetic letters (A-Z, a-z) and be at least 4 characters long.', 'error');
       setActiveSectionTab('basic');
       return;
     }
@@ -463,9 +597,6 @@ export const AddUserPage: React.FC = () => {
     if (formData.phone.trim()) {
       const phoneVal = validatePhoneWithCountry(formData.phone, formData.countryCode);
       if (!phoneVal.isValid) {
-        if (phoneVal.error?.includes('India (+91)') || phoneVal.error?.includes('91')) {
-          setFormData((prev) => ({ ...prev, countryCode: '+91' }));
-        }
         showFlashNotification(`Mobile Phone Error: ${phoneVal.error}`, 'error');
         setActiveSectionTab('basic');
         return;
@@ -588,7 +719,7 @@ export const AddUserPage: React.FC = () => {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveSectionTab(tab.id as any)}
+              onClick={() => handleSectionTabChange(tab.id as any)}
               className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-extrabold flex items-center gap-1.5 sm:gap-2 transition whitespace-nowrap shrink-0 border active:scale-95 ${
                 isActive
                   ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
@@ -672,12 +803,36 @@ export const AddUserPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. John Doe (Min 4 letters, no numbers/symbols)"
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold"
+                    onChange={(e) => {
+                      // Filter out numeric digits, symbols, and special characters immediately
+                      const cleanVal = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                      setFormData({ ...formData, firstName: cleanVal });
+                    }}
+                    className={`w-full bg-slate-950 border ${
+                      formData.firstName && !validateFullName(formData.firstName).isValid
+                        ? 'border-rose-500 focus:border-rose-500 ring-1 ring-rose-500/20'
+                        : formData.firstName && validateFullName(formData.firstName).isValid
+                        ? 'border-emerald-500/60 focus:border-emerald-500'
+                        : 'border-slate-800 focus:border-indigo-500'
+                    } rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-bold transition`}
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">Employee's legal full name</p>
+                  {formData.firstName ? (
+                    validateFullName(formData.firstName).isValid ? (
+                      <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                        <span>✓ Valid Full Name ({formData.firstName.trim().length} alphabetic characters)</span>
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-rose-400 font-semibold mt-1 flex items-center gap-1">
+                        <span>{validateFullName(formData.firstName).error}</span>
+                      </p>
+                    )
+                  ) : (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Employee's legal full name (Min 4 characters, alphabets & spaces only. No numbers or symbols).
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -793,9 +948,14 @@ export const AddUserPage: React.FC = () => {
                         setIsManualUsername(false);
                         setIsManualPassword(false);
                         const fn = formData.firstName.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._]/g, '') || 'staff';
-                        const autoU = formData.email.trim()
+                        let autoU = formData.email.trim()
                           ? formData.email.trim().split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '')
                           : fn;
+                        if (autoU.length < 8) {
+                          autoU = `${autoU}_staff2026#`;
+                        } else if (!/[@_#\.\-\$!]/.test(autoU)) {
+                          autoU = `${autoU}_staff#`;
+                        }
                         setFormData((prev) => ({
                           ...prev,
                           username: autoU,
@@ -820,15 +980,26 @@ export const AddUserPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="johndoe"
+                      placeholder="e.g. johndoe_staff#2026"
                       value={formData.username}
                       onChange={(e) => {
                         setIsManualUsername(true);
                         setFormData({ ...formData, username: e.target.value });
                       }}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold font-mono"
+                      className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white focus:border-indigo-500 focus:outline-none font-bold font-mono ${
+                        (isSaveAttempted || isManualUsername) && usernameValidationError
+                          ? 'border-rose-500 ring-1 ring-rose-500/20'
+                          : 'border-slate-800'
+                      }`}
                     />
-                    <p className="text-[11px] text-slate-500 mt-1">Unique login handle used for signing in</p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Minimum 8 characters containing alphanumeric characters and special characters (@, _, ., -, #, !, $)
+                    </p>
+                    {(isSaveAttempted || isManualUsername) && usernameValidationError && (
+                      <span className="text-[10px] text-rose-400 font-semibold block mt-1">
+                        {usernameValidationError}
+                      </span>
+                    )}
                   </div>
 
                   {/* Password Input with Visibility and Copy */}
@@ -1018,11 +1189,13 @@ export const AddUserPage: React.FC = () => {
                   onChange={(e) => {
                     const newRole = e.target.value as UserRole;
                     const defaults = getRoleDefaults(newRole);
+                    const defaultMods = getRoleDefaultModules(newRole);
                     setFormData((prev) => ({
                       ...prev,
                       role: newRole,
                       department: defaults.department,
                       designation: defaults.designation,
+                      customAllowedModules: defaultMods,
                     }));
                   }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-extrabold focus:border-indigo-500 focus:outline-none"
@@ -1036,6 +1209,11 @@ export const AddUserPage: React.FC = () => {
                   <option value="admin">Super Admin</option>
                   <option value="inventory_manager">Inventory Specialist</option>
                   <option value="accountant">Accountant</option>
+                  {customRoles.map((cr) => (
+                    <option key={cr.id} value={cr.roleKey}>
+                      {cr.title} (Custom)
+                    </option>
+                  ))}
                 </select>
                 <p className="text-[11px] text-slate-500 mt-1">Determines system privileges, menu access, and functional permissions</p>
               </div>
@@ -1092,6 +1270,299 @@ export const AddUserPage: React.FC = () => {
                     </label>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Custom Extra Module Access & Granular Privileges */}
+            <div className="min-w-0 bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
+                <div>
+                  <h4 className="font-extrabold text-indigo-400 text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                    <span>Custom Module Access & Menu Privileges</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Grant specific extra module access (e.g. Reports) directly to this user beyond base role defaults
+                  </p>
+                </div>
+
+                {/* Quick Action Pills */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!formData.customAllowedModules.includes('reports')) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          customAllowedModules: [...prev.customAllowedModules, 'reports'],
+                        }));
+                        showFlashNotification('Granted Reports & P&L access to this user!', 'success');
+                      }
+                    }}
+                    className="text-[10px] font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 px-2.5 py-1 rounded-lg border border-amber-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Reports Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!formData.customAllowedModules.includes('inventory')) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          customAllowedModules: [...prev.customAllowedModules, 'inventory'],
+                        }));
+                        showFlashNotification('Granted Inventory access to this user!', 'success');
+                      }
+                    }}
+                    className="text-[10px] font-bold text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 px-2.5 py-1 rounded-lg border border-sky-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Inventory Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!formData.customAllowedModules.includes('contacts')) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          customAllowedModules: [...prev.customAllowedModules, 'contacts'],
+                        }));
+                        showFlashNotification('Granted Contacts CRM access to this user!', 'success');
+                      }
+                    }}
+                    className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition cursor-pointer active:scale-95"
+                  >
+                    + Grant Contacts Access
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defaultMods = getRoleDefaultModules(formData.role || 'cashier');
+                      setFormData((prev) => ({ ...prev, customAllowedModules: defaultMods }));
+                      showFlashNotification('Reset modules to base role defaults.', 'info');
+                    }}
+                    className="text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition cursor-pointer active:scale-95"
+                  >
+                    Reset Defaults
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                {MODULE_OPTIONS.map((mod) => {
+                  const isChecked = formData.customAllowedModules.includes(mod.id as any);
+                  const isBaseDefault = getRoleDefaultModules(formData.role || 'cashier').includes(mod.id as any);
+                  const isExtraCustom = isChecked && !isBaseDefault;
+
+                  return (
+                    <label
+                      key={mod.id}
+                      className={`flex items-start gap-2.5 cursor-pointer p-2.5 rounded-xl border transition ${
+                        isChecked
+                          ? isExtraCustom
+                            ? 'bg-amber-950/30 border-amber-500/50 text-white'
+                            : 'bg-indigo-950/30 border-indigo-500/50 text-white'
+                          : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              customAllowedModules: [...prev.customAllowedModules, mod.id as any],
+                            }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              customAllowedModules: prev.customAllowedModules.filter((m) => m !== mod.id),
+                            }));
+                          }
+                        }}
+                        className="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700 mt-0.5 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs">{mod.label}</span>
+                          {isExtraCustom && (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              Extra Granted
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{mod.desc}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Granular Operational Capabilities Matrix for New User */}
+              <div className="pt-4 border-t border-slate-800 space-y-3">
+                {(() => {
+                  const selectedRole = formData.role || 'cashier';
+                  const activeUserModules = selectedRole === 'supreme_admin'
+                    ? MODULE_OPTIONS.map((m) => m.id)
+                    : (formData.customAllowedModules || getRoleDefaultModules(selectedRole));
+
+                  const activeCapabilities = GRANULAR_CAPABILITIES.filter(
+                    (cap) => selectedRole === 'supreme_admin' || activeUserModules.includes(cap.module)
+                  );
+
+                  const handleNewUserQuickPreset = (preset: 'view' | 'edit' | 'full') => {
+                    if (selectedRole === 'supreme_admin') {
+                      showFlashNotification('Supreme Admin retains full authority.', 'info');
+                      return;
+                    }
+
+                    const updates: Record<string, boolean> = {};
+                    activeCapabilities.forEach((cap) => {
+                      if (preset === 'view') {
+                        updates[cap.key] = cap.accessType === 'view';
+                      } else if (preset === 'edit') {
+                        updates[cap.key] = cap.accessType === 'view' || cap.accessType === 'edit';
+                      } else {
+                        updates[cap.key] = true;
+                      }
+                    });
+
+                    setFormData((prev) => ({
+                      ...prev,
+                      customPermissions: {
+                        ...prev.customPermissions,
+                        ...updates,
+                      },
+                    }));
+                    showFlashNotification(`Applied "${preset === 'view' ? 'View Only' : preset === 'edit' ? 'Can Edit Only' : 'Full Access'}" matrix to user.`, 'info');
+                  };
+
+                  return (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                            Granular Operational Capabilities Matrix
+                          </label>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Operational capabilities for enabled modules (View Only, Edit, Delete / Full Access)
+                          </p>
+                        </div>
+
+                        {activeCapabilities.length > 0 && selectedRole !== 'supreme_admin' && (
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            <span className="text-[10px] font-bold text-slate-400 mr-1">Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleNewUserQuickPreset('view')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition cursor-pointer"
+                            >
+                              View Only
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleNewUserQuickPreset('edit')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
+                            >
+                              Can Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleNewUserQuickPreset('full')}
+                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition cursor-pointer"
+                            >
+                              Full Access
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {activeCapabilities.length === 0 ? (
+                        <div className="p-5 rounded-xl border border-slate-800 bg-slate-950/60 text-center space-y-1.5 text-slate-400">
+                          <p className="text-xs font-bold text-slate-300">No Granular Capabilities Active</p>
+                          <p className="text-[11px]">
+                            No modules are currently assigned to this account in the Module Access Permissions section above.
+                            Check any module (e.g., Contacts CRM, Products & Inventory, POS, Sales) to configure its granular View, Edit, and Delete operational capabilities.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                          {activeCapabilities.map((cap) => {
+                            const roleDefaultVal = selectedRole === 'supreme_admin' || Boolean(rolePermissions[selectedRole]?.[cap.key as keyof RolePermissions]);
+                            const isExplicitUserOverride = formData.customPermissions[cap.key] !== undefined;
+                            const activeVal = isExplicitUserOverride ? Boolean(formData.customPermissions[cap.key]) : roleDefaultVal;
+
+                            return (
+                              <div
+                                key={cap.key}
+                                onClick={() => {
+                                  if (selectedRole === 'supreme_admin') {
+                                    showFlashNotification('Supreme Admin retains full authority.', 'info');
+                                    return;
+                                  }
+                                  const newVal = !activeVal;
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    customPermissions: {
+                                      ...prev.customPermissions,
+                                      [cap.key]: newVal,
+                                    },
+                                  }));
+                                  showFlashNotification(`Set "${cap.label}" to ${newVal ? 'ENABLED' : 'DISABLED'} for this account.`, 'info');
+                                }}
+                                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                                  activeVal
+                                    ? 'bg-emerald-950/20 border-emerald-700/60 text-white'
+                                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700'
+                                }`}
+                              >
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                      {cap.category}
+                                    </span>
+                                    {activeVal ? (
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        ENABLED
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                        DISABLED
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h5 className="font-extrabold text-xs leading-snug">{cap.label}</h5>
+                                  <p className="text-[10px] leading-relaxed text-slate-400 line-clamp-2">
+                                    {cap.desc}
+                                  </p>
+                                </div>
+
+                                <div className="shrink-0 mt-0.5">
+                                  <div
+                                    className={`w-8 h-4.5 rounded-full p-0.5 transition-colors duration-200 flex items-center ${
+                                      activeVal ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start'
+                                    }`}
+                                  >
+                                    <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs flex items-center justify-center">
+                                      {activeVal ? (
+                                        <span className="text-[10px] font-bold text-emerald-600">✓</span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-400">✕</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1375,9 +1846,9 @@ export const AddUserPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+                  const tabs: Array<'basic' | 'roles' | 'commission' | 'personal' | 'bank'> = ['basic', 'roles', 'commission', 'personal', 'bank'];
                   const idx = tabs.indexOf(activeSectionTab);
-                  if (idx > 0) setActiveSectionTab(tabs[idx - 1] as any);
+                  if (idx > 0) handleSectionTabChange(tabs[idx - 1]);
                 }}
                 className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl sm:rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs text-center active:scale-95"
               >
@@ -1388,9 +1859,9 @@ export const AddUserPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+                  const tabs: Array<'basic' | 'roles' | 'commission' | 'personal' | 'bank'> = ['basic', 'roles', 'commission', 'personal', 'bank'];
                   const idx = tabs.indexOf(activeSectionTab);
-                  if (idx < tabs.length - 1) setActiveSectionTab(tabs[idx + 1] as any);
+                  if (idx < tabs.length - 1) handleSectionTabChange(tabs[idx + 1]);
                 }}
                 className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl sm:rounded-2xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs text-center active:scale-95"
               >

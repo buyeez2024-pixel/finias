@@ -62,6 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     setSelectedLocationId = () => {},
     activeTab,
     setActiveTab = () => {},
+    setUserMenuSubTab = () => {},
     cashRegister = { status: 'closed' },
     cart = [],
     resetToDefaults = () => {},
@@ -456,126 +457,46 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
 
-                {/* Switch Active User Profile */}
-                <div className="py-1 px-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-2 py-1">
-                    Switch Active User (RBAC Demo)
-                  </p>
-                  <div className="space-y-0.5 max-h-48 overflow-y-auto custom-scrollbar">
-                    {users.map((u) => (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          switchUser(u);
-                          setShowProfileMenu(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition ${
-                          currentUser?.id === u.id
-                            ? 'bg-indigo-600/20 text-indigo-300 font-bold'
-                            : 'hover:hover:bg-slate-700/60 text-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          {u.avatar ? (
-                            <img src={u.avatar} alt={u.name} loading="lazy" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-white shrink-0">
-                              {u.name.charAt(0)}
-                            </div>
-                          )}
-                          <span className="truncate">{u.name}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 capitalize shrink-0 ml-1">
-                          {u.role?.replace('_', ' ')} {u.businessName ? `• ${u.businessName.split(' ')[0]}` : ''}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* 1. Manage My Profile */}
+                <button
+                  id="profile-menu-manage-btn"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    setUserMenuSubTab('users');
+                    setActiveTab('user_menu');
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-700/80 text-slate-200 flex items-center gap-2 font-semibold transition"
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Manage My Profile</span>
+                </button>
 
-                <div className="border-t border-slate-700/80 my-1" />
-
+                {/* 2. Edit My Profile */}
                 <button
                   id="profile-menu-edit-btn"
                   onClick={() => {
                     setShowProfileMenu(false);
                     setIsEditingProfile(true);
                   }}
-                  className="w-full text-left px-4 py-2 hover:hover:bg-slate-700 text-slate-200 flex items-center gap-2 font-semibold"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-700/80 text-slate-200 flex items-center gap-2 font-semibold transition"
                 >
                   <User className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Manage My Profile</span>
-                </button>
-
-                {/* Settings & Permissions */}
-                {hasModuleAccess('settings') || hasModuleAccess('security') || hasModuleAccess('system_updates') && (
-                  <button
-                    id="profile-menu-settings-btn"
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      setActiveTab('settings');
-                    }}
-                    className="w-full text-left px-4 py-2 hover:hover:bg-slate-700 text-slate-200 flex items-center gap-2"
-                  >
-                    <SettingsIcon className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Settings & Employee Permissions</span>
-                  </button>
-                )}
-
-                {/* Links */}
-                <button
-                  onClick={() => {
-                    setShowProfileMenu(false);
-                    setActiveTab('laravel_arch');
-                  }}
-                  className="w-full text-left px-4 py-2 hover:hover:bg-slate-700 text-slate-200 flex items-center gap-2"
-                >
-                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Laravel 11 ERP Architecture</span>
-                </button>
-
-                <button
-                  id="profile-menu-reset-db-btn"
-                  onClick={() => {
-                    setShowProfileMenu(false);
-                    if (window.confirm('Reset all demo ERP data to initial factory state?')) {
-                      resetToDefaults();
-                    }
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-700/60 text-indigo-400 flex items-center gap-2"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Reset Demo Database</span>
-                </button>
-
-                <button
-                  id="profile-menu-reinstall-btn"
-                  onClick={async () => {
-                    setShowProfileMenu(false);
-                    if (window.confirm('Re-Run Setup Wizard? This will unlock the domain setup so you can configure MySQL for Universal Live Sync.')) {
-                      await resetServerInstallation();
-                      window.location.href = '/setup?reset=true';
-                    }
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-700/60 text-amber-400 flex items-center gap-2"
-                >
-                  <Database className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Re-Run Setup Wizard (Configure MySQL)</span>
+                  <span>Edit My Profile</span>
                 </button>
 
                 <div className="border-t border-slate-700/80 my-1" />
 
-                {/* Logout Button */}
+                {/* 3. Logout */}
                 <button
                   id="user-logout-btn"
                   onClick={() => {
                     setShowProfileMenu(false);
                     logout();
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-indigo-950/40 text-indigo-400 flex items-center gap-2 font-bold"
+                  className="w-full text-left px-4 py-2 hover:bg-indigo-950/40 text-rose-400 flex items-center gap-2 font-bold transition"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out / Lock Terminal</span>
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Logout</span>
                 </button>
               </div>
             )}

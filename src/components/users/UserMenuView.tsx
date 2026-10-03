@@ -36,7 +36,10 @@ export const UserMenuView: React.FC = () => {
   const hasCustomAccounts = users.some((other) => other.email && !other.email.endsWith('@royalpos.com'));
 
   const businessUsersCount = users.filter((u) => {
-    const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+    if (u.role === 'supreme_admin' || u.role === 'admin' || u.role === 'super_admin' || u.id === 'usr_admin') {
+      return true;
+    }
+    const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
     if (isDemoUser && !isCurrentDemo && hasCustomAccounts && u.id !== currentUser?.id) {
       return false;
     }

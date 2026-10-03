@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useErp } from '../../context/ErpContext';
-import { validatePhoneNumber } from '../../utils/phoneValidation';
+import { validatePhoneNumber, validatePhoneWithCountry } from '../../utils/phoneValidation';
 import { validateEmail } from '../../utils/formatters';
+import { validateFullName } from '../../utils/validation';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
 import { Phone as PhoneIcon, Mail as MailIcon, Calendar as CalendarIcon, CreditCard as CreditCardIcon, Briefcase as BriefcaseIcon, Award } from 'lucide-react';
+import { GRANULAR_CAPABILITIES } from '../../data/granularCapabilities';
 import {
   ErpModuleId,
   RolePermissions,
@@ -221,6 +223,10 @@ interface EmployeePermissionsTabProps {
 export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ initialSection }) => {
   const {
     rolePermissions,
+    customRoles,
+    addCustomRole,
+    updateCustomRole,
+    deleteCustomRole,
     updateRolePermissions,
     toggleRoleModule,
     resetRolePermissions,
@@ -262,44 +268,19 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
   const [userToManageRole, setUserToManageRole] = useState<User | null>(null);
   const [userToLock, setUserToLock] = useState<User | null>(null);
 
-  // Custom Roles state with persistent storage
-  const [customRoles, setCustomRoles] = useState<CustomRoleDefinition[]>(() => {
-    try {
-      const saved = localStorage.getItem('erp_custom_roles_list');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
+  // Custom Roles Handlers delegating to central ErpContext
   const handleAddCustomRole = (newRole: CustomRoleDefinition) => {
-    setCustomRoles((prev) => {
-      const updated = [...prev.filter((r) => r.id !== newRole.id), newRole];
-      try {
-        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    addCustomRole(newRole);
+    showToast(`Created custom role "${newRole.title}".`);
   };
 
   const handleUpdateCustomRole = (updatedRole: CustomRoleDefinition) => {
-    setCustomRoles((prev) => {
-      const updated = prev.map((r) => (r.id === updatedRole.id ? updatedRole : r));
-      try {
-        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    updateCustomRole(updatedRole);
+    showToast(`Updated custom role "${updatedRole.title}".`);
   };
 
   const handleDeleteCustomRole = (roleId: string) => {
-    setCustomRoles((prev) => {
-      const updated = prev.filter((r) => r.id !== roleId);
-      try {
-        localStorage.setItem('erp_custom_roles_list', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
+    deleteCustomRole(roleId);
     showToast('Deleted custom role template.');
   };
 
@@ -589,12 +570,55 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     showToast(`Added staff member "${fullName}" as ${formData.role.replace('_', ' ')}.`);
   };
 
+  const validateEditUserTab = (currentTab: string): boolean => {
+    if (currentTab === 'basic' && userToEdit) {
+      const nameCheck = validateFullName(userToEdit.name || '');
+      if (!nameCheck.isValid) {
+        alert(`Full Legal Name Error: ${nameCheck.error}`);
+        return false;
+      }
+      if (!userToEdit.email || !userToEdit.email.trim()) {
+        alert('Email Address is required.');
+        return false;
+      }
+      if (!validateEmail(userToEdit.email)) {
+        alert('Please enter a valid Email Address with a proper domain (e.g. name@mail.com).');
+        return false;
+      }
+      if (!userToEdit.phone || !userToEdit.phone.trim()) {
+        alert('Primary Mobile / Phone Number is required.');
+        return false;
+      }
+      const phoneVal = validatePhoneWithCountry(userToEdit.phone, userToEdit.countryCode || '+1', true);
+      if (!phoneVal.isValid) {
+        alert(`Primary Mobile / Phone Error: ${phoneVal.error}`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleEditUserTabChange = (targetTab: 'basic' | 'roles' | 'commission' | 'personal' | 'bank') => {
+    const tabs = ['basic', 'roles', 'commission', 'personal', 'bank'];
+    const currentIdx = tabs.indexOf(editUserTab);
+    const targetIdx = tabs.indexOf(targetTab);
+
+    if (targetIdx > currentIdx) {
+      if (!validateEditUserTab(editUserTab)) {
+        return;
+      }
+    }
+    setEditUserTab(targetTab);
+  };
+
   const handleUpdateExistingUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userToEdit) return;
 
-    if (!userToEdit.name || !userToEdit.name.trim()) {
-      alert('Full Legal Name is required.');
+    const nameCheck = validateFullName(userToEdit.name || '');
+    if (!nameCheck.isValid) {
+      alert(`Full Legal Name Error: ${nameCheck.error}`);
+      setEditUserTab('basic');
       return;
     }
 
@@ -647,24 +671,28 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
   };
 
   const filteredUsers = users.filter((u) => {
-    // Filter out dummy demo accounts if current user has their own real account
-    const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
-    const isCurrentDemo = currentUser?.email && currentUser.email.endsWith('@royalpos.com');
-    const hasCustomAccounts = users.some((other) => other.email && !other.email.endsWith('@royalpos.com'));
+    const isSystemAdminAccount = u.role === 'supreme_admin' || u.role === 'admin' || u.role === 'super_admin' || u.id === 'usr_admin';
 
-    if (isDemoUser && !isCurrentDemo && hasCustomAccounts && u.id !== currentUser?.id) {
-      return false;
-    }
+    if (!isSystemAdminAccount) {
+      // Filter out dummy demo accounts if current user has their own real account
+      const isDemoUser = (u.email && u.email.endsWith('@royalpos.com')) || ['usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+      const isCurrentDemo = currentUser?.email && currentUser.email.endsWith('@royalpos.com');
+      const hasCustomAccounts = users.some((other) => other.email && !other.email.endsWith('@royalpos.com'));
 
-    // Business-scoped isolation
-    if (u.id !== currentUser?.id && u.email !== currentUser?.email) {
-      if (currentBusinessId && u.businessId && u.businessId !== currentBusinessId) {
+      if (isDemoUser && !isCurrentDemo && hasCustomAccounts && u.id !== currentUser?.id) {
         return false;
       }
-      if (currentBusinessName && u.businessName) {
-        const uBiz = (u.businessName || '').trim().toLowerCase();
-        if (uBiz && uBiz !== currentBusinessName && uBiz !== 'royal posfini') {
+
+      // Business-scoped isolation
+      if (u.id !== currentUser?.id && u.email !== currentUser?.email) {
+        if (currentBusinessId && u.businessId && u.businessId !== currentBusinessId) {
           return false;
+        }
+        if (currentBusinessName && u.businessName) {
+          const uBiz = (u.businessName || '').trim().toLowerCase();
+          if (uBiz && uBiz !== currentBusinessName && uBiz !== 'royal posfini' && uBiz !== 'default business') {
+            return false;
+          }
         }
       }
     }
@@ -690,7 +718,19 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     return filteredUsers.slice(startIndex, startIndex + staffRowsPerPage);
   }, [filteredUsers, staffCurrentPage, staffRowsPerPage]);
 
-  const selectedRoleMeta = ROLES_META.find((r) => r.role === selectedRole) || ROLES_META[0];
+  const allRoleMetas = React.useMemo(() => {
+    const baseMetas = ROLES_META.filter((r) => r.role !== 'supreme_admin' || currentUser?.role === 'supreme_admin');
+    const customMetas: RoleMeta[] = (customRoles || []).map((cr) => ({
+      role: cr.roleKey as any,
+      title: cr.title,
+      tier: cr.tier || 'Custom Role',
+      badgeColor: cr.badgeColor || 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
+      description: cr.description || `Custom role: ${cr.title}`,
+    }));
+    return [...baseMetas, ...customMetas];
+  }, [currentUser?.role, customRoles]);
+
+  const selectedRoleMeta = allRoleMetas.find((r) => r.role === selectedRole) || allRoleMetas[0];
   const activePermissions = rolePermissions[selectedRole];
   const allowedModules = activePermissions?.allowedModules || [];
 
@@ -752,7 +792,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
 
         {/* Role Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {ROLES_META.filter((r) => r.role !== 'supreme_admin' || currentUser?.role === 'supreme_admin').map((r) => {
+          {allRoleMetas.map((r) => {
             const isSelected = selectedRole === r.role;
             return (
               <button
@@ -926,81 +966,159 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
         </div>
 
         {/* Operational Action Capabilities Matrix */}
-        <div className="pt-5 border-t border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className={`text-xs font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              Granular Operational Capabilities Matrix ({selectedRoleMeta.title})
-            </h4>
-            <span className="text-[11px] font-bold text-indigo-500">
-              Fine-tune operational permissions for {selectedRoleMeta.title}
-            </span>
-          </div>
+        <div className="pt-5 border-t border-slate-200 dark:border-slate-800 space-y-4">
+          {(() => {
+            const activeCapabilities = GRANULAR_CAPABILITIES.filter(
+              (action) => selectedRole === 'supreme_admin' || allowedModules.includes(action.module)
+            );
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[
-              { key: 'canEditPrices', label: 'Edit Selling Prices', desc: 'Allow overriding default item selling prices at checkout or inventory.' },
-              { key: 'canViewCostPrice', label: 'View Product Cost Price', desc: 'Display wholesale cost and margin metrics in inventory & catalog.' },
-              { key: 'canGiveDiscount', label: 'Apply Cart Discounts', desc: 'Grant line-item or custom order percentage discounts in POS.' },
-              { key: 'canApprovePurchases', label: 'Approve Inward POs', desc: 'Authorize and approve inward supplier purchase orders & bills.' },
-              { key: 'canExportReports', label: 'Export Data & Reports', desc: 'Download CSV/PDF audit trails and financial summaries.' },
-              { key: 'canManageExpenses', label: 'Manage Expense Claims', desc: 'Create, edit, and approve store petty cash & expense entries.' },
-              { key: 'canManageProducts', label: 'Manage Product Catalog', desc: 'Create, update, and categorize inventory product listings.' },
-              { key: 'canAccessAccounts', label: 'Access Bank Accounts', desc: 'View ledger accounts, payment flows, and financial balances.' },
-              { key: 'canManageUsers', label: 'Manage Staff & Roles', desc: 'Add new staff members and configure user role permissions.' },
-            ].map((action) => {
-              const activeVal = selectedRole === 'supreme_admin' || Boolean(activePermissions?.[action.key as keyof RolePermissions]);
+            const handleQuickPreset = (preset: 'view' | 'edit' | 'full') => {
+              if (selectedRole === 'supreme_admin') {
+                showToast('Supreme Admin automatically retains full operational authority.');
+                return;
+              }
+              if (selectedRole === 'admin' && currentUser?.role !== 'supreme_admin') {
+                showToast('Super Admin role permissions are locked to Supreme Admin.');
+                return;
+              }
 
-              return (
-                <div
-                  key={action.key}
-                  onClick={() => {
-                    if (selectedRole === 'supreme_admin') {
-                      showToast('Supreme Admin role automatically retains full operational authority.');
-                      return;
-                    }
-                    if (selectedRole === 'admin' && currentUser?.role !== 'supreme_admin') {
-                      showToast('Super Admin role permissions & module access control are locked and can only be modified by Supreme Admin.');
-                      return;
-                    }
-                    updateRolePermissions(selectedRole, { [action.key]: !activeVal });
-                    showToast(`Updated ${action.label} for ${selectedRoleMeta.title}.`);
-                  }}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
-                    activeVal
-                      ? isLight
-                        ? 'bg-emerald-50/50 border-emerald-200'
-                        : 'bg-emerald-950/20 border-emerald-800/60'
-                      : isLight
-                      ? 'bg-slate-50/60 border-slate-200'
-                      : 'bg-slate-950/40 border-slate-800/80'
-                  }`}
-                >
-                  <div className="space-y-0.5">
-                    <h5 className="font-extrabold text-xs">{action.label}</h5>
-                    <p className={`text-[11px] leading-snug ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {action.desc}
+              const updates: Record<string, boolean> = {};
+              activeCapabilities.forEach((cap) => {
+                if (preset === 'view') {
+                  updates[cap.key] = cap.accessType === 'view';
+                } else if (preset === 'edit') {
+                  updates[cap.key] = cap.accessType === 'view' || cap.accessType === 'edit';
+                } else {
+                  updates[cap.key] = true;
+                }
+              });
+
+              updateRolePermissions(selectedRole, updates);
+              showToast(`Applied "${preset === 'view' ? 'View Only' : preset === 'edit' ? 'Can Edit Only' : 'Full Access'}" operational matrix to ${selectedRoleMeta.title}.`);
+            };
+
+            return (
+              <>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className={`text-xs font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Granular Operational Capabilities Matrix ({selectedRoleMeta.title})
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Operational capabilities for enabled modules (View Only, Edit, Delete / Full Access)
                     </p>
                   </div>
 
-                  <div className="shrink-0 mt-0.5">
-                    <div
-                      className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center ${
-                        activeVal ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
-                      }`}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-white shadow-xs flex items-center justify-center">
-                        {activeVal ? (
-                          <Check className="w-2.5 h-2.5 text-emerald-600" />
-                        ) : (
-                          <X className="w-2.5 h-2.5 text-slate-400" />
-                        )}
-                      </div>
+                  {activeCapabilities.length > 0 && selectedRole !== 'supreme_admin' && (
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                      <span className="text-[10px] font-bold text-slate-400 mr-1">Quick Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickPreset('view')}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition cursor-pointer"
+                      >
+                        View Only
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickPreset('edit')}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition cursor-pointer"
+                      >
+                        Can Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickPreset('full')}
+                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition cursor-pointer"
+                      >
+                        Full Access
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {activeCapabilities.length === 0 ? (
+                  <div className={`p-6 rounded-2xl border text-center space-y-2 ${isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-slate-900/60 border-slate-800 text-slate-400'}`}>
+                    <p className="text-xs font-bold">No Granular Capabilities Available</p>
+                    <p className="text-[11px] max-w-md mx-auto">
+                      There are no active modules in the Assigned Modules Matrix for <span className="font-bold">{selectedRoleMeta.title}</span>.
+                      Enable a module above (such as Contacts CRM, Products & Inventory, POS, or Sales) to configure its granular View, Edit, and Delete authority.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {activeCapabilities.map((action) => {
+                      const activeVal = selectedRole === 'supreme_admin' || Boolean(activePermissions?.[action.key as keyof RolePermissions]);
+
+                      return (
+                        <div
+                          key={action.key}
+                          onClick={() => {
+                            if (selectedRole === 'supreme_admin') {
+                              showToast('Supreme Admin role automatically retains full operational authority.');
+                              return;
+                            }
+                            if (selectedRole === 'admin' && currentUser?.role !== 'supreme_admin') {
+                              showToast('Super Admin role permissions & module access control are locked and can only be modified by Supreme Admin.');
+                              return;
+                            }
+                            updateRolePermissions(selectedRole, { [action.key]: !activeVal });
+                            showToast(`Updated "${action.label}" to ${!activeVal ? 'ENABLED' : 'DISABLED'} for ${selectedRoleMeta.title}.`);
+                          }}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                            activeVal
+                              ? isLight
+                                ? 'bg-emerald-50/70 border-emerald-300 text-slate-900 shadow-2xs'
+                                : 'bg-emerald-950/30 border-emerald-700/60 text-white'
+                              : isLight
+                              ? 'bg-slate-50/60 border-slate-200 text-slate-700'
+                              : 'bg-slate-950/40 border-slate-800/80 text-slate-300'
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                {action.category}
+                              </span>
+                              {activeVal ? (
+                                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  ENABLED
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                  DISABLED
+                                </span>
+                              )}
+                            </div>
+                            <h5 className="font-extrabold text-xs leading-snug">{action.label}</h5>
+                            <p className={`text-[11px] leading-snug ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              {action.desc}
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 mt-0.5">
+                            <div
+                              className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 flex items-center ${
+                                activeVal ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                              }`}
+                            >
+                              <div className="w-4 h-4 rounded-full bg-white shadow-xs flex items-center justify-center">
+                                {activeVal ? (
+                                  <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                ) : (
+                                  <X className="w-2.5 h-2.5 text-slate-400" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
       )}
@@ -2347,7 +2465,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setEditUserTab(tab.id as any)}
+                  onClick={() => handleEditUserTabChange(tab.id as any)}
                   className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap border text-xs ${
                     editUserTab === tab.id
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
@@ -2425,9 +2543,34 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                           type="text"
                           required
                           value={userToEdit.name || ''}
-                          onChange={(e) => setUserToEdit({ ...userToEdit, name: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-bold"
+                          placeholder="Full Legal Name (Min 4 letters, no numbers/symbols)"
+                          onChange={(e) => {
+                            const cleanVal = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                            setUserToEdit({ ...userToEdit, name: cleanVal });
+                          }}
+                          className={`w-full bg-slate-950 border ${
+                            userToEdit.name && !validateFullName(userToEdit.name).isValid
+                              ? 'border-rose-500 focus:border-rose-500 ring-1 ring-rose-500/20'
+                              : userToEdit.name && validateFullName(userToEdit.name).isValid
+                              ? 'border-emerald-500/60 focus:border-emerald-500'
+                              : 'border-slate-800 focus:border-indigo-500'
+                          } rounded-xl px-3 py-2 text-white focus:outline-none font-bold transition`}
                         />
+                        {userToEdit.name ? (
+                          validateFullName(userToEdit.name).isValid ? (
+                            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                              <span>✓ Valid Full Name ({userToEdit.name.trim().length} alphabetic characters)</span>
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-rose-400 font-semibold mt-1 flex items-center gap-1">
+                              <span>{validateFullName(userToEdit.name).error}</span>
+                            </p>
+                          )
+                        ) : (
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Employee's legal full name (Min 4 characters, alphabets & spaces only. No numbers or symbols).
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
