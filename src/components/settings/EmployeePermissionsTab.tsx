@@ -391,6 +391,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     username: '',
     password: '',
     confirmPassword: '',
+    salesCommissionAgentType: 'none',
     salesCommissionPercent: '',
     maxSalesDiscount: '',
     dob: '',
@@ -442,6 +443,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       username: '',
       password: '',
       confirmPassword: '',
+      salesCommissionAgentType: 'none',
       salesCommissionPercent: '',
       maxSalesDiscount: '',
       dob: '',
@@ -553,6 +555,25 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     const activeBizId = currentUser?.businessId;
     const activeLocId = formData.locationId || defaultBranchId;
 
+    const commVal = parseFloat(formData.salesCommissionPercent) || 0;
+    const discVal = parseFloat(formData.maxSalesDiscount) || 0;
+
+    if (commVal < 0) {
+      showToast('Sales Commission Percentage cannot be negative.');
+      setAddUserTab('commission');
+      return;
+    }
+    if (discVal < 0) {
+      showToast('Max Sales Discount Percentage cannot be negative.');
+      setAddUserTab('commission');
+      return;
+    }
+    if (commVal > 0 && discVal < commVal) {
+      showToast(`Max Sales Discount (%) cannot be less than Sales Commission Percentage (${commVal}%).`);
+      setAddUserTab('commission');
+      return;
+    }
+
     addUser({
       ...formData,
       name: fullName,
@@ -560,7 +581,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       phone: formData.phone.trim() || '+1 (512) 555-0199',
       role: formData.role,
       locationId: activeLocId,
-      status: formData.isActive ? 'active' : 'suspended',
+      status: formData.role === 'supreme_admin' ? 'active' : (formData.isActive ? 'active' : 'suspended'),
       avatar: formData.avatar.trim() || randomAvatar,
       businessName: activeBizName,
       businessId: activeBizId,
@@ -592,6 +613,24 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       const phoneVal = validatePhoneWithCountry(userToEdit.phone, userToEdit.countryCode || '+1', true);
       if (!phoneVal.isValid) {
         alert(`Primary Mobile / Phone Error: ${phoneVal.error}`);
+        return false;
+      }
+    }
+
+    if (currentTab === 'commission' && userToEdit) {
+      const comm = parseFloat(String(userToEdit.salesCommissionPercent)) || 0;
+      const disc = parseFloat(String(userToEdit.maxSalesDiscount)) || 0;
+
+      if (comm < 0) {
+        alert('Sales Commission Percentage cannot be negative.');
+        return false;
+      }
+      if (disc < 0) {
+        alert('Max Sales Discount Percentage cannot be negative.');
+        return false;
+      }
+      if (comm > 0 && disc < comm) {
+        alert(`Max Sales Discount (%) cannot be less than Sales Commission Percentage (${comm}%).`);
         return false;
       }
     }
@@ -662,8 +701,22 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       return;
     }
 
+    const commVal = parseFloat(String(userToEdit.salesCommissionPercent)) || 0;
+    const discVal = parseFloat(String(userToEdit.maxSalesDiscount)) || 0;
+
+    if (commVal < 0 || discVal < 0 || (commVal > 0 && discVal < commVal)) {
+      if (commVal < 0) alert('Sales Commission Percentage cannot be negative.');
+      else if (discVal < 0) alert('Max Sales Discount Percentage cannot be negative.');
+      else alert(`Max Sales Discount (%) cannot be less than Sales Commission Percentage (${commVal}%).`);
+      setEditUserTab('commission');
+      return;
+    }
+
+    const finalStatus = userToEdit.role === 'supreme_admin' ? 'active' : (userToEdit.status || 'active');
+
     updateUser(userToEdit.id, {
       ...userToEdit,
+      status: finalStatus,
     });
 
     setUserToEdit(null);
@@ -1311,19 +1364,33 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                     </div>
 
                     {/* Status Pill */}
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                        user.status === 'active'
-                          ? isLight
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    {user.role === 'supreme_admin' ? (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 inline-flex items-center gap-1 cursor-not-allowed select-none ${
+                          isLight
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                             : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : isLight
-                          ? 'bg-rose-50 text-rose-800 border-rose-200'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                      }`}
-                    >
-                      {user.status === 'active' ? 'Active' : 'Suspended'}
-                    </span>
+                        }`}
+                        title="Supreme Admin cannot be suspended and always remains active"
+                      >
+                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Active (Permanent)</span>
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          user.status === 'active'
+                            ? isLight
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : isLight
+                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                        }`}
+                      >
+                        {user.status === 'active' ? 'Active' : 'Suspended'}
+                      </span>
+                    )}
                   </div>
 
                   {/* Middle row: Role Badge & Branch */}
@@ -1562,6 +1629,18 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                             <span>Unlock Immediately</span>
                           </button>
                         </div>
+                      ) : user.role === 'supreme_admin' ? (
+                        <span
+                          className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 cursor-not-allowed select-none ${
+                            isLight
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          }`}
+                          title="Supreme Admin cannot be suspended and always remains active"
+                        >
+                          <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>Active (Permanent)</span>
+                        </span>
                       ) : (
                         <button
                           onClick={() => {
@@ -2090,7 +2169,21 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
               {/* TAB 3: Commission & Discounts */}
               {addUserTab === 'commission' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Commission Agent Type</label>
+                      <select
+                        value={formData.salesCommissionAgentType}
+                        onChange={(e) => setFormData({ ...formData, salesCommissionAgentType: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-bold"
+                      >
+                        <option value="none">Not Commission Agent</option>
+                        <option value="percentage">Based on Sales %</option>
+                        <option value="fixed">Fixed Rate per Invoice</option>
+                      </select>
+                      <p className="text-[11px] text-slate-500 mt-1">Select if user earns incentives</p>
+                    </div>
+
                     <div>
                       <label className="block text-slate-400 font-semibold mb-1">Sales Commission Percentage (%)</label>
                       <input
@@ -2608,14 +2701,24 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-slate-400 font-semibold mb-1">Account Status</label>
-                      <select
-                        value={userToEdit.status || 'active'}
-                        onChange={(e) => setUserToEdit({ ...userToEdit, status: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-bold"
-                      >
-                        <option value="active">Active Status</option>
-                        <option value="suspended">Suspended Status</option>
-                      </select>
+                      {userToEdit.role === 'supreme_admin' ? (
+                        <div className="w-full bg-slate-950 border border-emerald-500/30 rounded-xl px-3 py-2 text-emerald-400 font-bold flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            Active (Permanent - Supreme Admin)
+                          </span>
+                          <span className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">Locked Active</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={userToEdit.status || 'active'}
+                          onChange={(e) => setUserToEdit({ ...userToEdit, status: e.target.value })}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-bold"
+                        >
+                          <option value="active">Active Status</option>
+                          <option value="suspended">Suspended Status</option>
+                        </select>
+                      )}
                     </div>
                     <div>
                       <label className="block text-slate-400 font-semibold mb-1">Enable Login?</label>
@@ -2723,7 +2826,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         type="number"
                         step="0.01"
                         placeholder="e.g. 2.50"
-                        value={userToEdit.salesCommissionPercent || ''}
+                        value={userToEdit.salesCommissionPercent ?? ''}
                         onChange={(e) => setUserToEdit({ ...userToEdit, salesCommissionPercent: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
                       />
@@ -2735,7 +2838,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         type="number"
                         step="0.1"
                         placeholder="e.g. 15.0"
-                        value={userToEdit.maxSalesDiscount || ''}
+                        value={userToEdit.maxSalesDiscount ?? ''}
                         onChange={(e) => setUserToEdit({ ...userToEdit, maxSalesDiscount: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
                       />

@@ -43,6 +43,7 @@ import { SettingsView } from './components/settings/SettingsView';
 import { SystemUpdatesPage } from './components/settings/SystemUpdatesPage';
 import { SecurityGuardView } from './components/security/SecurityGuardView';
 import { UserMenuView } from './components/users/UserMenuView';
+import { SystemDocumentationView } from './components/docs/SystemDocumentationView';
 import { AccessDeniedGuard } from './components/settings/AccessDeniedGuard';
 import { AuthPage } from './components/auth/AuthPage';
 import { SessionWarningModal } from './components/auth/SessionWarningModal';
@@ -662,6 +663,10 @@ const MainAppContent: React.FC = () => {
 
               {activeTab === 'laravel_arch' && <LaravelArchView />}
 
+              {(activeTab === 'documentation' || activeTab === 'docs' || activeTab === 'user_manual') && (
+                <SystemDocumentationView />
+              )}
+
               {(activeTab === 'installer' || activeTab === 'installation_wizard') && (
                 <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl m-6">
                   <h3 className="text-lg font-bold text-white mb-2">Installation Already Completed</h3>
@@ -759,6 +764,9 @@ const MainAppContent: React.FC = () => {
                 'system_updates',
                 'notification_templates',
                 'laravel_arch',
+                'documentation',
+                'docs',
+                'user_manual',
               ].includes(activeTab) && (
                 <>
                   {console.log("Fallback triggered for tab (no component):", activeTab)}

@@ -149,6 +149,8 @@ export const Sidebar: React.FC = () => {
       path = '/expenses';
     } else if (tab === 'system_updates') {
       path = '/system_updates';
+    } else if (tab === 'documentation' || tab === 'docs' || tab === 'user_manual') {
+      path = '/documentation';
     } else if (tab === 'list_pos_sale' || tab === 'pos_sales') {
       path = '/pos_sales';
     }
@@ -1014,6 +1016,13 @@ export const Sidebar: React.FC = () => {
           iconColor: 'text-slate-400',
           iconBg: 'bg-slate-500/10 border-slate-500/20',
         },
+        {
+          id: 'documentation',
+          label: 'System Manual & Docs',
+          icon: BookOpen,
+          iconColor: 'text-sky-400',
+          iconBg: 'bg-sky-500/10 border-sky-500/20',
+        },
       ],
     },
   ];
@@ -1023,6 +1032,7 @@ export const Sidebar: React.FC = () => {
     return moduleGroups.map((grp) => ({
       ...grp,
       items: grp.items.filter((item) => {
+        if (item.id === 'documentation') return true;
         if ((item.id === 'security' || item.id === 'system_updates') && !isUserAdmin(currentUser)) return false;
         if (item.id === 'accounts' && settings?.enableAccounts === false) return false;
         if (item.id === 'settings') return hasModuleAccess('settings');

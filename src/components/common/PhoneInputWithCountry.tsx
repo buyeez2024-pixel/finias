@@ -45,14 +45,25 @@ export const PhoneInputWithCountry: React.FC<PhoneInputWithCountryProps> = ({
     // If user typed/pasted explicit country prefix (+, 00, or 12-digit 91...)
     if (trimmed.startsWith('+') || trimmed.startsWith('00') || (trimmed.replace(/\D/g, '').length === 12 && trimmed.replace(/\D/g, '').startsWith('91'))) {
       const extracted = extractRawPhoneAndCountry(trimmed, countryCode);
-      if (extracted && extracted.countryCode && extracted.countryCode !== countryCode) {
-        onChangeCountryCode(extracted.countryCode);
+      if (extracted && extracted.countryCode) {
+        if (extracted.countryCode !== countryCode) {
+          onChangeCountryCode(extracted.countryCode);
+        }
         onChangePhone(extracted.rawPhone);
         return;
       }
     }
 
     onChangePhone(rawInput);
+  };
+
+  const handleCountryCodeChange = (newCode: string) => {
+    onChangeCountryCode(newCode);
+    // If phoneValue currently contains a leading '+' or dial prefix, strip it so it becomes raw
+    if (phoneValue && phoneValue.trim().startsWith('+')) {
+      const extracted = extractRawPhoneAndCountry(phoneValue.trim(), newCode);
+      onChangePhone(extracted.rawPhone);
+    }
   };
 
   return (
@@ -78,7 +89,7 @@ export const PhoneInputWithCountry: React.FC<PhoneInputWithCountryProps> = ({
         {/* Country Code Select */}
         <select
           value={countryCode || '+1'}
-          onChange={(e) => onChangeCountryCode(e.target.value)}
+          onChange={(e) => handleCountryCodeChange(e.target.value)}
           disabled={disabled}
           className={`border rounded-xl px-2 py-2 text-xs font-extrabold focus:outline-none focus:border-indigo-500 cursor-pointer shrink-0 max-w-[100px] sm:max-w-[130px] truncate ${
             isLight

@@ -286,6 +286,12 @@ export const AddUserPage: React.FC = () => {
         return false;
       }
 
+      const fullNameClean = formData.firstName.trim().toLowerCase();
+      if (users.some((u) => u.name?.trim().toLowerCase() === fullNameClean || u.firstName?.trim().toLowerCase() === fullNameClean)) {
+        showFlashNotification('This name is already taken. Please enter a unique name.', 'error');
+        return false;
+      }
+
       const emailClean = formData.email.trim().toLowerCase();
       if (users.some((u) => u.email?.trim().toLowerCase() === emailClean)) {
         showFlashNotification('Email is already registered, please sign in.', 'error');
@@ -294,6 +300,24 @@ export const AddUserPage: React.FC = () => {
 
       if (users.some((u) => u.phone && isDuplicatePhone(u.phone, formData.phone))) {
         showFlashNotification('Mobile number is already registered by another staff member.', 'error');
+        return false;
+      }
+    }
+
+    if (currentTab === 'commission') {
+      const comm = parseFloat(formData.salesCommissionPercent) || 0;
+      const disc = parseFloat(formData.maxSalesDiscount) || 0;
+
+      if (comm < 0) {
+        showFlashNotification('Sales Commission Percentage cannot be negative.', 'error');
+        return false;
+      }
+      if (disc < 0) {
+        showFlashNotification('Max Sales Discount Percentage cannot be negative.', 'error');
+        return false;
+      }
+      if (comm > 0 && disc < comm) {
+        showFlashNotification(`Max Sales Discount (%) cannot be less than Sales Commission Percentage (${comm}%).`, 'error');
         return false;
       }
     }
@@ -375,6 +399,7 @@ export const AddUserPage: React.FC = () => {
     customPermissions: {} as Record<string, boolean>,
     accessLocations: availableBranches.map((l) => l.id),
     locationId: defaultBranchId,
+    salesCommissionAgentType: 'none',
     salesCommissionPercent: '',
     maxSalesDiscount: '',
     dob: '',
@@ -520,6 +545,13 @@ export const AddUserPage: React.FC = () => {
       return;
     }
 
+    const fullNameClean = formData.firstName.trim().toLowerCase();
+    if (users.some((u) => u.name?.trim().toLowerCase() === fullNameClean || u.firstName?.trim().toLowerCase() === fullNameClean)) {
+      showFlashNotification('This name is already taken. Please enter a unique name.', 'error');
+      setActiveSectionTab('basic');
+      return;
+    }
+
     // Run strict schema validation
     const schemaRes = validateUserData({
       username: finalUsername,
@@ -621,6 +653,25 @@ export const AddUserPage: React.FC = () => {
       }
     }
 
+    const commVal = parseFloat(formData.salesCommissionPercent) || 0;
+    const discVal = parseFloat(formData.maxSalesDiscount) || 0;
+
+    if (commVal < 0) {
+      showFlashNotification('Sales Commission Percentage cannot be negative.', 'error');
+      setActiveSectionTab('commission');
+      return;
+    }
+    if (discVal < 0) {
+      showFlashNotification('Max Sales Discount Percentage cannot be negative.', 'error');
+      setActiveSectionTab('commission');
+      return;
+    }
+    if (commVal > 0 && discVal < commVal) {
+      showFlashNotification(`Max Sales Discount (%) cannot be less than Sales Commission Percentage (${commVal}%).`, 'error');
+      setActiveSectionTab('commission');
+      return;
+    }
+
     const defaultAvatars = [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
@@ -645,7 +696,7 @@ export const AddUserPage: React.FC = () => {
         phone: fullPhone,
         role: formData.role,
         locationId: activeLocId,
-        status: formData.isActive ? 'active' : 'suspended',
+        status: formData.role === 'supreme_admin' ? 'active' : (formData.isActive ? 'active' : 'suspended'),
         avatar: formData.avatar.trim() || randomAvatar,
         businessName: activeBizName,
         businessId: activeBizId,
@@ -1576,7 +1627,21 @@ export const AddUserPage: React.FC = () => {
               <span>Sales Commission & POS Discount Limits</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-0">
+              <div className="min-w-0">
+                <label className="block text-xs text-slate-400 font-semibold mb-1">Commission Agent Type</label>
+                <select
+                  value={formData.salesCommissionAgentType}
+                  onChange={(e) => setFormData({ ...formData, salesCommissionAgentType: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none"
+                >
+                  <option value="none">Not Commission Agent</option>
+                  <option value="percentage">Based on Sales %</option>
+                  <option value="fixed">Fixed Rate per Invoice</option>
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">Select if user earns sales incentives</p>
+              </div>
+
               <div className="min-w-0">
                 <label className="block text-xs text-slate-400 font-semibold mb-1">Sales Commission Percentage (%)</label>
                 <input

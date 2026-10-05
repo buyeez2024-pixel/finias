@@ -196,16 +196,26 @@ export const UserSessionsManager: React.FC<UserSessionsManagerProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Session Timeout */}
-            <div className="p-3.5 rounded-xl border border-slate-800/80 bg-slate-950/60 space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+            <div className={`p-3.5 rounded-xl border space-y-1.5 ${
+              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
+            }`}>
+              <label className={`text-xs font-bold flex items-center justify-between ${
+                isLight ? 'text-slate-800' : 'text-slate-300'
+              }`}>
                 <span>Inactivity Session Timeout</span>
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
               </label>
               <select
                 value={sessionTimeout}
                 onChange={(e) => setSessionTimeout(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500"
+                className={`w-full border text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-indigo-500 ${
+                  isLight
+                    ? 'bg-white border-slate-300 text-slate-900'
+                    : 'bg-slate-900 border-slate-700 text-white'
+                }`}
               >
+                <option value={2}>2 Minutes (High Security)</option>
+                <option value={5}>5 Minutes (Fast Lockdown)</option>
                 <option value={15}>15 Minutes (Strict Security)</option>
                 <option value={30}>30 Minutes (Recommended)</option>
                 <option value={60}>1 Hour (Standard Shift)</option>
@@ -214,15 +224,19 @@ export const UserSessionsManager: React.FC<UserSessionsManagerProps> = ({
                 <option value={1440}>24 Hours (POS Terminal Persistent)</option>
                 <option value={0}>Never Expire (Continuous Operations)</option>
               </select>
-              <p className="text-[10px] text-slate-500 leading-tight">
+              <p className={`text-[10px] leading-tight ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 Automatically triggers a 60-second warning modal before locking or terminating idle sessions.
               </p>
             </div>
 
             {/* Concurrent Session Control */}
-            <div className="p-3.5 rounded-xl border border-slate-800/80 bg-slate-950/60 space-y-2">
+            <div className={`p-3.5 rounded-xl border space-y-2 ${
+              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
+            }`}>
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <label className={`text-xs font-bold flex items-center gap-1.5 ${
+                  isLight ? 'text-slate-800' : 'text-slate-300'
+                }`}>
                   <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Enforce Single Active Session Per User</span>
                 </label>

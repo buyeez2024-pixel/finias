@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Customer } from '../../types/erp';
 import { formatCurrency, validateEmail } from '../../utils/formatters';
-import { validatePhoneWithCountry } from '../../utils/phoneValidation';
+import {
+  validatePhoneWithCountry,
+  extractRawPhoneAndCountry,
+  resolveCountryCodeFromContact,
+  isDuplicatePhone,
+  COUNTRY_CODES,
+} from '../../utils/phoneValidation';
 import { validateContactData } from '../../utils/validation';
 import { FormFieldError } from '../common/FormFieldError';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
@@ -59,20 +65,22 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const editingContact = editingCustomer || editingSupplier;
   const isEditMode = !!editingContact;
 
-  const isDuplicatePhone = (phoneA: string, phoneB: string) => {
-    const digitsA = phoneA.replace(/\D/g, '');
-    const digitsB = phoneB.replace(/\D/g, '');
-    if (digitsA.length < 7 || digitsB.length < 7) return false;
-    const minLen = Math.min(digitsA.length, digitsB.length);
-    const endA = digitsA.slice(-minLen);
-    const endB = digitsB.slice(-minLen);
-    return endA === endB;
-  };
-  
+  // Compute business default country dial code from system currency or settings
+  const defaultFallbackCode = useMemo(() => {
+    if (settings?.currencyCode === 'INR' || settings?.currencySymbol === '₹' || settings?.country?.toLowerCase() === 'india') {
+      return '+91';
+    }
+    if (settings?.country) {
+      const match = COUNTRY_CODES.find((c) => c.country.toLowerCase().includes(settings.country!.toLowerCase()));
+      if (match) return match.code;
+    }
+    return '+1';
+  }, [settings?.currencyCode, settings?.currencySymbol, settings?.country]);
+
   const [contactType, setContactType] = useState<'customer' | 'supplier' | 'both' | ''>(() => {
     if (editingCustomer && editingSupplier) return 'both';
-    if (editingContact) {
-      if (suppliers.some(s => s.id === (editingContact as any)?.id)) return 'both';
+    if (editingCustomer) {
+      if (suppliers.some(s => s.id === editingCustomer.id)) return 'both';
       return 'customer';
     }
     if (editingSupplier) {
@@ -80,9 +88,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       return 'supplier';
     }
     if (initialType) return initialType;
-    return '';
+    return 'customer';
   });
-
 
   // Form State
   const [name, setName] = useState(editingContact?.name || '');
@@ -102,10 +109,30 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         : '') ||
       ''
   );
-  const [phone, setPhone] = useState(editingContact?.phone || '');
-  const [countryCode, setCountryCode] = useState('+1');
-  const [alternatePhone, setAlternatePhone] = useState(editingContact?.alternatePhone || '');
-  const [altCountryCode, setAltCountryCode] = useState('+1');
+
+  const [countryCode, setCountryCode] = useState(() => {
+    return (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
+  });
+
+  const [phone, setPhone] = useState(() => {
+    if (!editingContact?.phone) return '';
+    const cCode = (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
+    const { rawPhone } = extractRawPhoneAndCountry(editingContact.phone, cCode);
+    return rawPhone;
+  });
+
+  const [altCountryCode, setAltCountryCode] = useState(() => {
+    if ((editingContact as any)?.altCountryCode) return (editingContact as any).altCountryCode;
+    return (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
+  });
+
+  const [alternatePhone, setAlternatePhone] = useState(() => {
+    if (!editingContact?.alternatePhone) return '';
+    const defCode = (editingContact as any)?.altCountryCode || (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
+    const { rawPhone } = extractRawPhoneAndCountry(editingContact.alternatePhone, defCode);
+    return rawPhone;
+  });
+
   const [email, setEmail] = useState(editingContact?.email || '');
   const [taxNumber, setTaxNumber] = useState(editingContact?.taxNumber || '');
   
@@ -121,13 +148,17 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const [state, setState] = useState(editingContact?.state || '');
   const [province, setProvince] = useState(editingContact?.province || '');
   const [zipcode, setZipcode] = useState(editingContact?.zipcode || '');
-  const [country, setCountry] = useState(editingContact?.country || 'United States');
+  const [country, setCountry] = useState(
+    editingContact?.country || (defaultFallbackCode === '+91' ? 'India' : 'United States')
+  );
 
   // Additional Information
   const [notes, setNotes] = useState(editingContact?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isZipLoading, setIsZipLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const lastContactIdRef = useRef<string | null>(editingContact?.id || null);
 
   const handleZipCodeLookup = async (zip: string) => {
     const cleanZip = zip.trim();
@@ -215,36 +246,56 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   };
 
   useEffect(() => {
-    if (editingContact) {
-      setName((editingContact as any)?.name || '');
-      setContactCustomId((editingContact as any)?.contactId || editingContact?.id || '');
-      setBusinessName((editingContact as any)?.businessName || '');
-      setCustomerGroupId(
-        (editingContact as any)?.customerGroupId ||
-          ((editingContact as any)?.customerGroup
-            ? customerGroups.find((g) => g.name.toLowerCase() === (editingContact as any)?.customerGroup?.toLowerCase())?.id
-            : '') ||
-          ''
-      );
-      setPhone((editingContact as any)?.phone || '');
-      setAlternatePhone((editingContact as any)?.alternatePhone || '');
-      setEmail((editingContact as any)?.email || '');
-      setTaxNumber((editingContact as any)?.taxNumber || '');
-      setOpeningBalance((editingContact as any)?.openingBalance?.toString() || '0');
-      setAdvanceBalance((editingContact as any)?.advanceBalance?.toString() || '0');
-      setCreditLimit((editingContact as any)?.creditLimit?.toString() || '1000.00');
-      setPayTerm((editingContact as any)?.payTerm || 'Due on Receipt');
-      setAddress((editingContact as any)?.address || '');
-      setCity((editingContact as any)?.city || '');
-      setState((editingContact as any)?.state || '');
-      setProvince((editingContact as any)?.province || '');
-      setZipcode((editingContact as any)?.zipcode || '');
-      setCountry((editingContact as any)?.country || 'United States');
-      setNotes((editingContact as any)?.notes || '');
-    } else if (settings.autoGenerateContactId !== false) {
-      setContactCustomId(generateNextContactId(contactType === 'supplier' ? 'supplier' : 'customer'));
+    const contactId = editingContact?.id || null;
+    if (contactId !== lastContactIdRef.current) {
+      lastContactIdRef.current = contactId;
+      if (editingContact) {
+        setName((editingContact as any)?.name || '');
+        setContactCustomId((editingContact as any)?.contactId || editingContact?.id || '');
+        setBusinessName((editingContact as any)?.businessName || '');
+        setCustomerGroupId(
+          (editingContact as any)?.customerGroupId ||
+            ((editingContact as any)?.customerGroup
+              ? customerGroups.find((g) => g.name.toLowerCase() === (editingContact as any)?.customerGroup?.toLowerCase())?.id
+              : '') ||
+            ''
+        );
+        const resolvedCountryCode = (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
+        const rawPhoneData = extractRawPhoneAndCountry(
+          (editingContact as any)?.phone || '',
+          resolvedCountryCode
+        );
+        setCountryCode(resolvedCountryCode);
+        setPhone(rawPhoneData.rawPhone);
+
+        const resolvedAltCountryCode = (editingContact as any)?.altCountryCode || (editingContact as any)?.countryCode || resolvedCountryCode;
+        const rawAltData = extractRawPhoneAndCountry(
+          (editingContact as any)?.alternatePhone || '',
+          resolvedAltCountryCode
+        );
+        setAltCountryCode(resolvedAltCountryCode);
+        setAlternatePhone(rawAltData.rawPhone);
+
+        setEmail((editingContact as any)?.email || '');
+        setTaxNumber((editingContact as any)?.taxNumber || '');
+        setOpeningBalance((editingContact as any)?.openingBalance?.toString() || '0');
+        setAdvanceBalance((editingContact as any)?.advanceBalance?.toString() || '0');
+        setCreditLimit((editingContact as any)?.creditLimit?.toString() || '1000.00');
+        setPayTerm((editingContact as any)?.payTerm || 'Due on Receipt');
+        setAddress((editingContact as any)?.address || '');
+        setCity((editingContact as any)?.city || '');
+        setState((editingContact as any)?.state || '');
+        setProvince((editingContact as any)?.province || '');
+        setZipcode((editingContact as any)?.zipcode || '');
+        setCountry(
+          (editingContact as any)?.country || (resolvedCountryCode === '+91' ? 'India' : 'United States')
+        );
+        setNotes((editingContact as any)?.notes || '');
+      } else if (settings.autoGenerateContactId !== false) {
+        setContactCustomId(generateNextContactId(contactType === 'supplier' ? 'supplier' : 'customer'));
+      }
     }
-  }, [editingContact, customerGroups, contactType, settings.autoGenerateContactId, settings.customerPrefix, settings.supplierPrefix]);
+  }, [editingContact?.id, editingContact, defaultFallbackCode, customerGroups, contactType, settings.autoGenerateContactId, settings.customerPrefix, settings.supplierPrefix, generateNextContactId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,6 +392,32 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       }
     }
 
+    // GST / TAX Number unique check across all companies (customers & suppliers)
+    if (taxNumber && taxNumber.trim()) {
+      const cleanTax = taxNumber.trim().toLowerCase();
+      const dupCustomer = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax);
+      const dupSupplier = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax);
+      if (dupCustomer || dupSupplier) {
+        const conflictingCompany = dupCustomer
+          ? (dupCustomer.businessName || dupCustomer.name)
+          : (dupSupplier!.businessName || dupSupplier!.name);
+        const errMsg = `GST / TAX Number "${taxNumber.trim()}" is already registered to "${conflictingCompany}". No two companies can share the same GST / TAX Number.`;
+        setFieldErrors(prev => ({ ...prev, taxNumber: errMsg }));
+        showFlashNotification(errMsg, 'error');
+        return;
+      }
+    }
+
+    // Opening Balance non-negative check
+    if (openingBalance !== undefined && openingBalance !== '') {
+      const parsedOpening = parseFloat(openingBalance);
+      if (isNaN(parsedOpening) || parsedOpening < 0) {
+        setFieldErrors(prev => ({ ...prev, openingBalance: 'Opening balance cannot be negative. Must be 0 or greater.' }));
+        showFlashNotification('Opening balance cannot be negative. Must be 0 or greater.', 'error');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -354,14 +431,19 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
       const finalCustomId = contactCustomId.trim() || undefined;
 
+      const cleanPhone = phone.trim().replace(/^\+\d+\s*/, '');
+      const cleanAltPhone = alternatePhone.trim().replace(/^\+\d+\s*/, '');
+      const finalFormattedPhone = cleanPhone ? `${countryCode} ${cleanPhone}` : 'N/A';
+      const finalFormattedAltPhone = cleanAltPhone ? `${altCountryCode} ${cleanAltPhone}` : undefined;
+
       const baseData = {
         name: name.trim(),
         contactId: finalCustomId,
         businessName: businessName.trim() || undefined,
-        phone: phone.trim() || 'N/A',
-        countryCode: countryCode || '+1',
-        alternatePhone: alternatePhone.trim() || undefined,
-        altCountryCode: altCountryCode || '+1',
+        phone: finalFormattedPhone,
+        countryCode: countryCode || defaultFallbackCode,
+        alternatePhone: finalFormattedAltPhone,
+        altCountryCode: altCountryCode || defaultFallbackCode,
         email: email.trim() || 'N/A',
         taxNumber: taxNumber.trim() || undefined,
         openingBalance: parsedOpeningBal,
@@ -370,9 +452,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         address: address.trim() || 'N/A',
         city: city.trim() || undefined,
         state: state.trim() || undefined,
-        province: province.trim() || undefined,
+        province: province.trim() || state.trim() || undefined,
         zipcode: zipcode.trim() || undefined,
-        country: country.trim() || 'United States',
+        country: country.trim() || (countryCode === '+91' ? 'India' : 'United States'),
         notes: notes.trim() || undefined,
       };
 
@@ -696,7 +778,28 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   setPhone(val);
                   if (fieldErrors.mobile) setFieldErrors(prev => ({ ...prev, mobile: '' }));
                 }}
-                onChangeCountryCode={setCountryCode}
+                onChangeCountryCode={(code) => {
+                  setCountryCode(code);
+                  if (fieldErrors.mobile) setFieldErrors(prev => ({ ...prev, mobile: '' }));
+                  const cfg = COUNTRY_CODES.find(c => c.code === code);
+                  if (cfg) {
+                    if (code === '+91') setCountry('India');
+                    else if (code === '+1') setCountry('United States');
+                    else if (code === '+44') setCountry('United Kingdom');
+                    else if (code === '+61') setCountry('Australia');
+                    else if (code === '+971') setCountry('UAE');
+                    else if (code === '+966') setCountry('Saudi Arabia');
+                    else if (code === '+92') setCountry('Pakistan');
+                    else if (code === '+880') setCountry('Bangladesh');
+                    else if (code === '+60') setCountry('Malaysia');
+                    else if (code === '+65') setCountry('Singapore');
+                    else if (code === '+49') setCountry('Germany');
+                    else if (code === '+33') setCountry('France');
+                    else if (code === '+27') setCountry('South Africa');
+                    else if (code === '+234') setCountry('Nigeria');
+                    else setCountry(cfg.country);
+                  }
+                }}
                 showHint={true}
                 required={true}
               />
@@ -719,7 +822,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                   setAlternatePhone(val);
                   if (fieldErrors.alternatePhone) setFieldErrors(prev => ({ ...prev, alternatePhone: '' }));
                 }}
-                onChangeCountryCode={setAltCountryCode}
+                onChangeCountryCode={(code) => {
+                  setAltCountryCode(code);
+                  if (fieldErrors.alternatePhone) setFieldErrors(prev => ({ ...prev, alternatePhone: '' }));
+                }}
                 showHint={true}
               />
               <FormFieldError error={fieldErrors.alternatePhone} />
@@ -799,8 +905,37 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 required={contactType === 'supplier' || contactType === 'both'}
                 value={taxNumber}
                 onChange={(e) => {
-                  setTaxNumber(e.target.value);
+                  const val = e.target.value;
+                  setTaxNumber(val);
                   if (fieldErrors.taxNumber) setFieldErrors(prev => ({ ...prev, taxNumber: '' }));
+                  if (val.trim()) {
+                    const clean = val.trim().toLowerCase();
+                    const currentId = editingContact?.id;
+                    const dupCust = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
+                    const dupSupp = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
+                    if (dupCust || dupSupp) {
+                      const conflict = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+                      setFieldErrors(prev => ({
+                        ...prev,
+                        taxNumber: `GST / TAX Number "${val.trim()}" is already registered to "${conflict}". Numbers must be unique.`
+                      }));
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  if (taxNumber.trim()) {
+                    const clean = taxNumber.trim().toLowerCase();
+                    const currentId = editingContact?.id;
+                    const dupCust = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
+                    const dupSupp = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
+                    if (dupCust || dupSupp) {
+                      const conflict = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+                      setFieldErrors(prev => ({
+                        ...prev,
+                        taxNumber: `GST / TAX Number is already registered to "${conflict}". Each company must have a unique GST / TAX Number.`
+                      }));
+                    }
+                  }
                 }}
                 placeholder="e.g. GSTIN27AABCU9603R1ZM"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition uppercase font-mono ${
@@ -814,8 +949,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               <FormFieldError error={fieldErrors.taxNumber} />
               <p className="text-[10px] text-slate-400 mt-1">
                 {(contactType === 'supplier' || contactType === 'both')
-                  ? 'Mandatory government tax & GST registration identifier for suppliers'
-                  : 'Tax identifier for B2B customer invoice generation'}
+                  ? 'Mandatory unique government tax & GST registration identifier for suppliers'
+                  : 'Unique tax identifier for B2B company contact invoice generation'}
               </p>
             </div>
 
@@ -825,16 +960,27 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 isLight ? 'text-slate-700' : 'text-slate-300'
               }`}>
                 <span>Opening Balance ({currencySymbol})</span>
-                <span className="text-[10px] text-amber-500 font-bold">Previous Due</span>
+                <span className="text-[10px] text-amber-500 font-bold">Non-negative (≥ 0)</span>
               </label>
               <input
                 type="number"
+                min="0"
                 step="0.01"
                 id="input-customer-opening-balance"
                 value={openingBalance}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 onChange={(e) => {
-                  setOpeningBalance(e.target.value);
-                  if (fieldErrors.openingBalance) setFieldErrors(prev => ({ ...prev, openingBalance: '' }));
+                  const val = e.target.value;
+                  setOpeningBalance(val);
+                  if (val !== '' && parseFloat(val) < 0) {
+                    setFieldErrors(prev => ({ ...prev, openingBalance: 'Opening balance cannot be negative. Must be 0 or greater.' }));
+                  } else {
+                    if (fieldErrors.openingBalance) setFieldErrors(prev => ({ ...prev, openingBalance: '' }));
+                  }
                 }}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
                   fieldErrors.openingBalance
@@ -847,7 +993,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               <FormFieldError error={fieldErrors.openingBalance} />
               <div className="flex items-start gap-1 mt-1 text-[10px] text-slate-400 leading-tight">
                 <HelpCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-                <span>Any previous balance owed before system setup.</span>
+                <span>Any previous balance owed before system setup (must be 0 or positive).</span>
               </div>
             </div>
 

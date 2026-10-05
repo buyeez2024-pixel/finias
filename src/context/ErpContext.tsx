@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { getApiUrl } from '../utils/apiBase';
 import { getCategoryName, getBrandName, applyAmountRounding } from '../utils/formatters';
-import { validatePhoneNumber, validatePhoneWithCountry } from '../utils/phoneValidation';
+import { validatePhoneNumber, validatePhoneWithCountry, resolveCountryCodeFromContact, extractRawPhoneAndCountry } from '../utils/phoneValidation';
 import { validateFullName } from '../utils/validation';
 import {
   Brand,
@@ -1647,7 +1647,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         if (showSessionWarning) setShowSessionWarning(false);
       }
-    }, 10000);
+    }, 2000);
 
     return () => {
       window.removeEventListener('mousemove', handleActivity);
@@ -4273,15 +4273,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAddSupplierPage = openAddContactPage;
 
   const openEditCustomerPage = (customer: Customer) => {
-    setEditingCustomer(customer);
+    const sysDefaultCode = (settings?.countryCode || settings.currencySymbol === '₹' || settings.currencyCode === 'INR' || settings.country?.toLowerCase() === 'india') ? '+91' : '+1';
+    const resolvedCode = customer.countryCode || resolveCountryCodeFromContact(customer, sysDefaultCode);
+    const enrichedCust = {
+      ...customer,
+      countryCode: customer.countryCode || resolvedCode,
+    };
+    setEditingCustomer(enrichedCust);
     setContactsSubTab('edit_customer');
     handleSmartSetActiveTab('edit_contact');
   };
 
-  
-
   const openEditSupplierPage = (supplier: Supplier) => {
-    setEditingSupplier(supplier);
+    const sysDefaultCode = (settings?.countryCode || settings.currencySymbol === '₹' || settings.currencyCode === 'INR' || settings.country?.toLowerCase() === 'india') ? '+91' : '+1';
+    const resolvedCode = supplier.countryCode || resolveCountryCodeFromContact(supplier, sysDefaultCode);
+    const enrichedSupp = {
+      ...supplier,
+      countryCode: supplier.countryCode || resolvedCode,
+    };
+    setEditingSupplier(enrichedSupp);
     setContactsSubTab('edit_supplier');
     handleSmartSetActiveTab('edit_contact');
   };
@@ -4380,7 +4390,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const openingBal = Number(customerData.openingBalance) || 0;
+    if (customerData.openingBalance !== undefined && Number(customerData.openingBalance) < 0) {
+      throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
+    }
+
+    if (customerData.taxNumber && customerData.taxNumber.trim()) {
+      const taxClean = customerData.taxNumber.trim().toLowerCase();
+      const dupCust = customers.find(c => c.id !== customerData.id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
+      const dupSupp = suppliers.find(s => s.id !== customerData.id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
+      if (dupCust || dupSupp) {
+        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+        throw new Error(`GST / TAX Number "${customerData.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
+      }
+    }
+
+    const openingBal = Math.max(0, Number(customerData.openingBalance) || 0);
     const autoGen = settings.autoGenerateContactId ?? true;
     const finalContactId = customerData.contactId || (autoGen ? generateNextContactId('customer') : undefined);
     const newCust: Customer = {
@@ -4407,15 +4431,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const importCustomers = (newCustomersList: Array<Omit<Customer, 'id' | 'totalDue' | 'totalSales' | 'loyaltyPoints' | 'createdDate'> & { contactId?: string }>) => {
     const prefix = settings.customerPrefix?.trim() || 'CUST-';
+    const sysDefaultCode = (settings.currencySymbol === '₹' || settings.currencyCode === 'INR' || settings.country?.toLowerCase() === 'india') ? '+91' : '+1';
     const formatted = newCustomersList.map((c, index) => {
-      const openingBal = Number(c.openingBalance) || 0;
+      const openingBal = Math.max(0, Number(c.openingBalance) || 0);
       const cid = c.contactId || `${prefix}${String(customers.length + index + 1).padStart(4, '0')}`;
+      const cCode = (c as any).countryCode || resolveCountryCodeFromContact(c, sysDefaultCode);
       return {
         ...c,
         id: `cust_${Date.now()}_${index}`,
         contactId: cid,
         name: c.name?.trim() || 'Unnamed Customer',
         phone: c.phone?.trim() || 'N/A',
+        countryCode: cCode,
         email: c.email?.trim() || 'N/A',
         address: c.address?.trim() || 'N/A',
         creditLimit: Number(c.creditLimit) || 0,
@@ -4433,9 +4460,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const importSuppliers = (newSuppliersList: Array<Omit<Supplier, 'id' | 'totalPayable' | 'totalPurchases' | 'createdDate'> & { contactId?: string }>) => {
     const prefix = settings.supplierPrefix?.trim() || 'SUP-';
+    const sysDefaultCode = (settings.currencySymbol === '₹' || settings.currencyCode === 'INR' || settings.country?.toLowerCase() === 'india') ? '+91' : '+1';
     const formatted = newSuppliersList.map((s, index) => {
-      const openingBal = Number(s.openingBalance) || 0;
+      const openingBal = Math.max(0, Number(s.openingBalance) || 0);
       const cid = s.contactId || `${prefix}${String(suppliers.length + index + 1).padStart(4, '0')}`;
+      const sCode = (s as any).countryCode || resolveCountryCodeFromContact(s, sysDefaultCode);
       return {
         ...s,
         id: `sup_${Date.now()}_${index}`,
@@ -4443,6 +4472,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: s.name?.trim() || 'Unnamed Supplier',
         businessName: s.businessName?.trim() || s.name?.trim() || 'N/A',
         phone: s.phone?.trim() || 'N/A',
+        countryCode: sCode,
         email: s.email?.trim() || 'N/A',
         address: s.address?.trim() || 'N/A',
         totalPayable: openingBal,
@@ -4457,11 +4487,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCustomer = (id: string, data: Partial<Customer>) => {
+    if (data.openingBalance !== undefined && Number(data.openingBalance) < 0) {
+      throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
+    }
+    if (data.taxNumber && data.taxNumber.trim()) {
+      const taxClean = data.taxNumber.trim().toLowerCase();
+      const dupCust = customers.find(c => c.id !== id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
+      const dupSupp = suppliers.find(s => s.id !== id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
+      if (dupCust || dupSupp) {
+        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+        throw new Error(`GST / TAX Number "${data.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
+      }
+    }
     setCustomers((prev) => {
       const updated = prev.map((c) => (c.id === id ? { ...c, ...data } : c));
       triggerImmediateSyncPush({ customers: updated });
       return updated;
     });
+    setEditingCustomer((prev) => (prev && prev.id === id ? { ...prev, ...data } : prev));
   };
 
   const deleteCustomer = (id: string) => {
@@ -4492,7 +4535,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const openingBal = Number(supplierData.openingBalance) || 0;
+    if (supplierData.openingBalance !== undefined && Number(supplierData.openingBalance) < 0) {
+      throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
+    }
+
+    if (supplierData.taxNumber && supplierData.taxNumber.trim()) {
+      const taxClean = supplierData.taxNumber.trim().toLowerCase();
+      const dupCust = customers.find(c => c.id !== supplierData.id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
+      const dupSupp = suppliers.find(s => s.id !== supplierData.id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
+      if (dupCust || dupSupp) {
+        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+        throw new Error(`GST / TAX Number "${supplierData.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
+      }
+    }
+
+    const openingBal = Math.max(0, Number(supplierData.openingBalance) || 0);
     const autoGen = settings.autoGenerateContactId ?? true;
     const finalContactId = supplierData.contactId || (autoGen ? generateNextContactId('supplier') : undefined);
     const newSup: Supplier = {
@@ -4512,11 +4569,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSupplier = (id: string, data: Partial<Supplier>) => {
+    if (data.openingBalance !== undefined && Number(data.openingBalance) < 0) {
+      throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
+    }
+    if (data.taxNumber && data.taxNumber.trim()) {
+      const taxClean = data.taxNumber.trim().toLowerCase();
+      const dupCust = customers.find(c => c.id !== id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
+      const dupSupp = suppliers.find(s => s.id !== id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
+      if (dupCust || dupSupp) {
+        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+        throw new Error(`GST / TAX Number "${data.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
+      }
+    }
     setSuppliers((prev) => {
       const updated = prev.map((s) => (s.id === id ? { ...s, ...data } : s));
       triggerImmediateSyncPush({ suppliers: updated });
       return updated;
     });
+    setEditingSupplier((prev) => (prev && prev.id === id ? { ...prev, ...data } : prev));
   };
 
   const deleteSupplier = (id: string) => {
@@ -8252,7 +8322,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       businessName: resolvedBusinessName,
       businessId: resolvedBusinessId,
       locationId: resolvedLocationId,
-      status: userData.status || 'active',
+      status: userData.role === 'supreme_admin' ? 'active' : (userData.status || 'active'),
       lastLogin: 'Never',
     };
     setUsers((prev) => [newUser, ...prev]);
@@ -8274,7 +8344,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers((prev) =>
       prev.map((u) => {
         if (u.id !== id) return u;
-        const updated = { ...u, ...userData };
+        const finalRole = userData.role !== undefined ? userData.role : u.role;
+        const finalStatus = (finalRole === 'supreme_admin' || u.role === 'supreme_admin')
+          ? 'active'
+          : (userData.status !== undefined ? userData.status : u.status);
+        const updated = { ...u, ...userData, role: finalRole, status: finalStatus };
         if (currentUser?.id === id) {
           setCurrentUser(updated);
         }
@@ -8315,6 +8389,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers((prev) =>
       prev.map((u) => {
         if (u.id !== id) return u;
+        if (u.role === 'supreme_admin') {
+          // Supreme admin status is immutable and must always remain active
+          return { ...u, status: 'active' };
+        }
         const newStatus = u.status === 'active' ? 'suspended' : 'active';
         const updated: User = { ...u, status: newStatus };
         if (currentUser?.id === id) {

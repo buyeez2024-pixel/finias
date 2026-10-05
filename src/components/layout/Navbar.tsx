@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { RoyalLogo } from '../common/RoyalLogo';
 import { NetworkSyncStatusBadge } from '../common/NetworkSyncStatusBadge';
@@ -37,6 +37,7 @@ import {
   Lock,
   Unlock,
   Mail,
+  BookOpen,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -85,6 +86,41 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showOfflineManager, setShowOfflineManager] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown and notifications when user clicks anywhere outside or presses Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setShowProfileMenu(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowProfileMenu(false);
+        setShowNotifications(false);
+      }
+    };
+
+    if (showProfileMenu || showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showProfileMenu, showNotifications]);
 
   const lockedUsers = (users || []).filter((u) => u.status === 'locked');
   const unlockRequestedUsers = lockedUsers.filter((u) => u.unlockRequested);
@@ -238,6 +274,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
+          {/* System Documentation / User Manual */}
+          <button
+            id="nav-documentation-btn"
+            type="button"
+            onClick={() => setActiveTab('documentation')}
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition active:scale-95 shrink-0 cursor-pointer ${
+              activeTab === 'documentation'
+                ? 'bg-sky-600 text-white border-sky-500 shadow-md shadow-sky-600/30'
+                : isLight
+                ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-200'
+                : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border-slate-700'
+            }`}
+            title="System Documentation & User Manual"
+            aria-label="System Documentation"
+          >
+            <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-sky-400" />
+            <span className="hidden lg:inline text-xs font-bold">Manual</span>
+          </button>
+
           {/* Theme Mode Toggle (Light & Dark) */}
           <button
             id="nav-theme-toggle-btn"
@@ -265,7 +320,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Admin Security & Lockout Notifications Bell */}
-          <div className="relative shrink-0">
+          <div className="relative shrink-0" ref={notificationsRef}>
             <button
               id="admin-security-bell-btn"
               onClick={() => {
@@ -392,7 +447,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* User Profile Menu */}
-          <div className="relative">
+          <div className="relative" ref={profileMenuRef}>
             <button
               id="user-profile-btn"
               onClick={() => setShowProfileMenu(!showProfileMenu)}

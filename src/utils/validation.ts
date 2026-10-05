@@ -451,9 +451,11 @@ export function validateContactData(data: {
     if (!bRes.isValid && bRes.error) errors.businessName = bRes.error;
   }
 
-  // 8. Opening Balance (must be valid finite number)
+  // 8. Opening Balance (must be valid non-negative number)
   if (data.openingBalance !== undefined && data.openingBalance !== '') {
     const balRes = validateNumber(data.openingBalance, {
+      min: 0,
+      allowNegative: false,
       label: 'Opening Balance',
     });
     if (!balRes.isValid && balRes.error) errors.openingBalance = balRes.error;
@@ -494,18 +496,19 @@ export function validateContactData(data: {
   });
   if (!addrRes.isValid && addrRes.error) errors.address = addrRes.error;
 
-  // Zip / Postal Code: MANDATORY (3-12 alphanumeric/digits)
+  // Zip / Postal Code: (3-12 alphanumeric/digits, or fallback)
   const rawZip = (data.zipcode || data.zipCode || '').trim();
-  const zipRes = validateString(rawZip, {
-    required: true,
-    minLength: 3,
-    maxLength: 12,
-    pattern: /^[a-zA-Z0-9\s\-]+$/,
-    patternMessage: 'Postal / Zip code must contain only letters, numbers, hyphens, and spaces.',
-    requiredMessage: 'Zip / Postal Code is mandatory. Please enter a valid code.',
-    label: 'Zip / Postal Code',
-  });
-  if (!zipRes.isValid && zipRes.error) errors.zipcode = zipRes.error;
+  if (rawZip) {
+    const zipRes = validateString(rawZip, {
+      required: false,
+      minLength: 3,
+      maxLength: 12,
+      pattern: /^[a-zA-Z0-9\s\-]+$/,
+      patternMessage: 'Postal / Zip code must contain only letters, numbers, hyphens, and spaces.',
+      label: 'Zip / Postal Code',
+    });
+    if (!zipRes.isValid && zipRes.error) errors.zipcode = zipRes.error;
+  }
 
   // City: MANDATORY (2-80 chars)
   const rawCity = (data.city || '').trim();
@@ -518,16 +521,17 @@ export function validateContactData(data: {
   });
   if (!cityRes.isValid && cityRes.error) errors.city = cityRes.error;
 
-  // Province / District: MANDATORY (2-80 chars)
-  const rawProvince = (data.province || '').trim();
-  const provRes = validateString(rawProvince, {
-    required: true,
-    minLength: 2,
-    maxLength: 80,
-    requiredMessage: 'Province / District is mandatory. Please enter province or district.',
-    label: 'Province / District',
-  });
-  if (!provRes.isValid && provRes.error) errors.province = provRes.error;
+  // Province / District: (fallback to state if not provided)
+  const rawProvince = (data.province || data.state || data.city || '').trim();
+  if (rawProvince) {
+    const provRes = validateString(rawProvince, {
+      required: false,
+      minLength: 2,
+      maxLength: 80,
+      label: 'Province / District',
+    });
+    if (!provRes.isValid && provRes.error) errors.province = provRes.error;
+  }
 
   // State / Region: MANDATORY (2-80 chars)
   const rawState = (data.state || '').trim();
@@ -1306,7 +1310,8 @@ export function validatePaymentAccountData(data: {
 
   if (data.openingBalance !== undefined && data.openingBalance !== '') {
     const balRes = validateNumber(data.openingBalance, {
-      allowNegative: true,
+      min: 0,
+      allowNegative: false,
       label: 'Opening Balance',
     });
     if (!balRes.isValid && balRes.error) errors.openingBalance = balRes.error;

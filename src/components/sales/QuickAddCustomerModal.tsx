@@ -33,7 +33,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
   onCustomerCreated,
   initialName = '',
 }) => {
-  const { addCustomer, customerGroups = [], settings, showFlashNotification } = useErp();
+  const { addCustomer, customers = [], suppliers = [], customerGroups = [], settings, showFlashNotification } = useErp();
 
   const [name, setName] = useState(initialName);
   const [businessName, setBusinessName] = useState('');
@@ -96,12 +96,35 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
       }
     }
 
+    if (openingBalance !== undefined && openingBalance !== '') {
+      const parsedOpening = parseFloat(openingBalance);
+      if (isNaN(parsedOpening) || parsedOpening < 0) {
+        setFieldErrors(prev => ({ ...prev, openingBalance: 'Opening balance cannot be negative. Must be 0 or greater.' }));
+        showFlashNotification('Opening balance cannot be negative. Must be 0 or greater.', 'error');
+        return;
+      }
+    }
+
+    if (taxNumber.trim()) {
+      const cleanTax = taxNumber.trim().toLowerCase();
+      const dupCustomer = customers.find(c => c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax);
+      const dupSupplier = suppliers.find(s => s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax);
+      if (dupCustomer || dupSupplier) {
+        const conflict = dupCustomer ? (dupCustomer.businessName || dupCustomer.name) : (dupSupplier!.businessName || dupSupplier!.name);
+        const errMsg = `GST / TAX Number "${taxNumber.trim()}" is already registered to "${conflict}". Numbers must be unique.`;
+        setFieldErrors(prev => ({ ...prev, taxNumber: errMsg }));
+        showFlashNotification(errMsg, 'error');
+        return;
+      }
+    }
+
     try {
       const selectedGroup = customerGroups.find((g) => g.id === customerGroupId);
       const newCustomer = addCustomer({
         name: name.trim(),
         businessName: businessName.trim() || undefined,
         phone: phone.trim() ? `${countryCode} ${phone.trim()}` : 'N/A',
+        countryCode: countryCode || '+1',
         email: email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@client.com`,
         customerGroupId: customerGroupId || undefined,
         customerGroup: selectedGroup ? selectedGroup.name : 'Standard Retail',
@@ -271,6 +294,11 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
                 min="0"
                 step="1"
                 value={openingBalance}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 onChange={(e) => setOpeningBalance(e.target.value)}
                 className="w-full bg-slate-950 text-amber-400 font-mono font-bold px-4 py-3 rounded-xl border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-xs"
               />

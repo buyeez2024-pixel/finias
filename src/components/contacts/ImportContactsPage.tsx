@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { useErp } from '../../context/ErpContext';
 import { Customer, Supplier } from '../../types/erp';
+import { isDuplicatePhone, resolveCountryCodeFromContact, extractRawPhoneAndCountry, COUNTRY_CODES } from '../../utils/phoneValidation';
 import {
   FileSpreadsheet,
   Download,
@@ -27,6 +28,7 @@ interface ParsedContactRow {
   customerGroup?: string;
   email?: string;
   phone?: string;
+  countryCode?: string;
   alternatePhone?: string;
   address?: string;
   city?: string;
@@ -40,16 +42,21 @@ interface ParsedContactRow {
   notes?: string;
   isValid: boolean;
   validationError?: string;
+  alreadyExists?: boolean;
+  duplicateReason?: string;
   raw: Record<string, any>;
 }
 
 export const ImportContactsPage: React.FC = () => {
   const {
+    customers,
+    suppliers,
     importCustomers,
     importSuppliers,
     customerGroups,
     navigateToContacts,
     showFlashNotification,
+    settings,
   } = useErp();
 
   const [file, setFile] = useState<File | null>(null);
@@ -250,6 +257,10 @@ export const ImportContactsPage: React.FC = () => {
       const openingBalance = openingBalStr ? parseFloat(openingBalStr) || 0 : 0;
       const creditLimit = creditLimitStr ? parseFloat(creditLimitStr) || 0 : 0;
 
+      // Auto-resolve country dial code
+      const sysDefaultCode = (settings?.countryCode || settings?.currencySymbol === '₹' || settings?.currencyCode === 'INR' || settings?.country?.toLowerCase() === 'india') ? '+91' : '+1';
+      const rowCountryCode = resolveCountryCodeFromContact({ phone, country }, sysDefaultCode);
+
       let isValid = true;
       let validationError = '';
 
@@ -258,21 +269,89 @@ export const ImportContactsPage: React.FC = () => {
         validationError = 'Missing Contact Name';
       }
 
+      // Check if this contact record already exists in the database
+      let alreadyExists = false;
+      let duplicateReason = '';
+
+      const isCustomer = finalContactType === 'customer' || finalContactType === 'both';
+      const isSupplier = finalContactType === 'supplier' || finalContactType === 'both';
+
+      if (name) {
+        const cleanName = name.trim().toLowerCase();
+        const cleanEmail = email ? email.trim().toLowerCase() : '';
+        const cleanTax = taxNumber ? taxNumber.trim().toLowerCase() : '';
+
+        // Check against existing customers
+        if (isCustomer) {
+          const dupCust = customers.find((c) => {
+            if (phone && phone !== 'N/A' && c.phone && isDuplicatePhone(c.phone, phone)) {
+              duplicateReason = `Customer with phone "${phone}" already exists (${c.name})`;
+              return true;
+            }
+            if (cleanEmail && cleanEmail !== 'n/a' && c.email && c.email.trim().toLowerCase() === cleanEmail) {
+              duplicateReason = `Customer with email "${email}" already exists (${c.name})`;
+              return true;
+            }
+            if (c.name && c.name.trim().toLowerCase() === cleanName) {
+              duplicateReason = `Customer with name "${name}" already exists`;
+              return true;
+            }
+            if (cleanTax && c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax) {
+              duplicateReason = `Customer with Tax/GST "${taxNumber}" already exists (${c.name})`;
+              return true;
+            }
+            return false;
+          });
+
+          if (dupCust) {
+            alreadyExists = true;
+          }
+        }
+
+        // Check against existing suppliers
+        if (isSupplier && !alreadyExists) {
+          const dupSupp = suppliers.find((s) => {
+            if (phone && phone !== 'N/A' && s.phone && isDuplicatePhone(s.phone, phone)) {
+              duplicateReason = `Supplier with phone "${phone}" already exists (${s.name})`;
+              return true;
+            }
+            if (cleanEmail && cleanEmail !== 'n/a' && s.email && s.email.trim().toLowerCase() === cleanEmail) {
+              duplicateReason = `Supplier with email "${email}" already exists (${s.name})`;
+              return true;
+            }
+            if (s.name && s.name.trim().toLowerCase() === cleanName) {
+              duplicateReason = `Supplier with name "${name}" already exists`;
+              return true;
+            }
+            if (cleanTax && s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax) {
+              duplicateReason = `Supplier with Tax/GST "${taxNumber}" already exists (${s.name})`;
+              return true;
+            }
+            return false;
+          });
+
+          if (dupSupp) {
+            alreadyExists = true;
+          }
+        }
+      }
+
       return {
         id: `row_${index}_${Date.now()}`,
-        selected: isValid,
+        selected: isValid && !alreadyExists,
         name,
         businessName: businessName || undefined,
         contactType: finalContactType,
         customerGroup: customerGroup || (finalContactType === 'customer' ? 'Retail Customer' : undefined),
         email: email || 'N/A',
         phone: phone || 'N/A',
+        countryCode: rowCountryCode,
         alternatePhone: alternatePhone || undefined,
         address: address || 'N/A',
         city: city || undefined,
         state: state || undefined,
         zipcode: zipcode || undefined,
-        country: country || 'United States',
+        country: country || (rowCountryCode === '+91' ? 'India' : 'United States'),
         taxNumber: taxNumber || undefined,
         openingBalance,
         creditLimit,
@@ -280,6 +359,8 @@ export const ImportContactsPage: React.FC = () => {
         notes: notes || undefined,
         isValid,
         validationError,
+        alreadyExists,
+        duplicateReason,
         raw: row,
       };
     });
@@ -341,22 +422,115 @@ export const ImportContactsPage: React.FC = () => {
   };
 
   const handleSelectAllToggle = (selectAll: boolean) => {
-    setParsedRows((prev) => prev.map((r) => ({ ...r, selected: selectAll ? r.isValid : false })));
+    setParsedRows((prev) => prev.map((r) => ({ ...r, selected: selectAll ? (r.isValid && !r.alreadyExists) : false })));
   };
 
   const handleExecuteImport = () => {
-    const selectedRows = parsedRows.filter((r) => r.selected && r.name);
+    const selectedRows = parsedRows.filter((r) => r.selected && r.name && r.isValid);
     if (selectedRows.length === 0) {
-      showFlashNotification('No valid rows selected for import.', 'error');
+      showFlashNotification('No valid, un-imported rows selected for import.', 'error');
+      return;
+    }
+
+    // Double check with database in real-time to avoid duplicate contacts
+    const newRowsToImport: ParsedContactRow[] = [];
+    const duplicateRowsLeft: ParsedContactRow[] = [];
+
+    selectedRows.forEach((r) => {
+      const isCustomer = r.contactType === 'customer' || r.contactType === 'both';
+      const isSupplier = r.contactType === 'supplier' || r.contactType === 'both';
+      const cleanName = r.name.trim().toLowerCase();
+      const cleanEmail = r.email && r.email !== 'N/A' ? r.email.trim().toLowerCase() : '';
+      const cleanTax = r.taxNumber ? r.taxNumber.trim().toLowerCase() : '';
+
+      let isDuplicate = false;
+      let reason = '';
+
+      if (isCustomer) {
+        const dupCust = customers.find((c) => {
+          if (r.phone && r.phone !== 'N/A' && c.phone && isDuplicatePhone(c.phone, r.phone)) {
+            reason = `Customer with phone "${r.phone}" already exists in database`;
+            return true;
+          }
+          if (cleanEmail && c.email && c.email.trim().toLowerCase() === cleanEmail) {
+            reason = `Customer with email "${r.email}" already exists in database`;
+            return true;
+          }
+          if (c.name && c.name.trim().toLowerCase() === cleanName) {
+            reason = `Customer "${r.name}" already exists in database`;
+            return true;
+          }
+          if (cleanTax && c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax) {
+            reason = `Customer with Tax ID "${r.taxNumber}" already exists in database`;
+            return true;
+          }
+          return false;
+        });
+        if (dupCust) isDuplicate = true;
+      }
+
+      if (isSupplier && !isDuplicate) {
+        const dupSupp = suppliers.find((s) => {
+          if (r.phone && r.phone !== 'N/A' && s.phone && isDuplicatePhone(s.phone, r.phone)) {
+            reason = `Supplier with phone "${r.phone}" already exists in database`;
+            return true;
+          }
+          if (cleanEmail && s.email && s.email.trim().toLowerCase() === cleanEmail) {
+            reason = `Supplier with email "${r.email}" already exists in database`;
+            return true;
+          }
+          if (s.name && s.name.trim().toLowerCase() === cleanName) {
+            reason = `Supplier "${r.name}" already exists in database`;
+            return true;
+          }
+          if (cleanTax && s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax) {
+            reason = `Supplier with Tax ID "${r.taxNumber}" already exists in database`;
+            return true;
+          }
+          return false;
+        });
+        if (dupSupp) isDuplicate = true;
+      }
+
+      if (isDuplicate) {
+        duplicateRowsLeft.push({ ...r, alreadyExists: true, duplicateReason: reason });
+      } else {
+        newRowsToImport.push(r);
+      }
+    });
+
+    // If duplicate records exist, leave them in the Review section and mark them
+    if (duplicateRowsLeft.length > 0) {
+      setParsedRows((prev) =>
+        prev.map((r) => {
+          const matchedDup = duplicateRowsLeft.find((d) => d.id === r.id);
+          if (matchedDup) {
+            return {
+              ...r,
+              selected: false,
+              alreadyExists: true,
+              duplicateReason: matchedDup.duplicateReason,
+            };
+          }
+          return r;
+        })
+      );
+    }
+
+    if (newRowsToImport.length === 0) {
+      showFlashNotification(`All ${selectedRows.length} selected records already exist in the database. Duplicates were left and not imported.`, 'error');
       return;
     }
 
     const customersToImport: any[] = [];
     const suppliersToImport: any[] = [];
 
-    selectedRows.forEach((r) => {
+    newRowsToImport.forEach((r) => {
       const isCustomer = r.contactType === 'customer' || r.contactType === 'both';
       const isSupplier = r.contactType === 'supplier' || r.contactType === 'both';
+
+      const cleanPhone = (r.phone || '').trim().replace(/^\+\d+\s*/, '');
+      const formattedPhone = cleanPhone && cleanPhone !== 'N/A' ? `${r.countryCode || '+1'} ${cleanPhone}` : (r.phone || 'N/A');
 
       if (isCustomer) {
         const matchedGrp = customerGroups.find(
@@ -368,13 +542,14 @@ export const ImportContactsPage: React.FC = () => {
           customerGroup: r.customerGroup || 'Retail Customer',
           customerGroupId: matchedGrp?.id,
           email: r.email || 'N/A',
-          phone: r.phone || 'N/A',
+          phone: formattedPhone,
+          countryCode: r.countryCode || '+1',
           alternatePhone: r.alternatePhone,
           address: r.address || 'N/A',
           city: r.city,
           state: r.state,
           zipcode: r.zipcode,
-          country: r.country || 'United States',
+          country: r.country || (r.countryCode === '+91' ? 'India' : 'United States'),
           taxNumber: r.taxNumber,
           openingBalance: r.openingBalance || 0,
           creditLimit: r.creditLimit || 0,
@@ -388,13 +563,14 @@ export const ImportContactsPage: React.FC = () => {
           name: r.name,
           businessName: r.businessName || r.name,
           email: r.email || 'N/A',
-          phone: r.phone || 'N/A',
+          phone: formattedPhone,
+          countryCode: r.countryCode || '+1',
           alternatePhone: r.alternatePhone,
           address: r.address || 'N/A',
           city: r.city,
           state: r.state,
           zipcode: r.zipcode,
-          country: r.country || 'United States',
+          country: r.country || (r.countryCode === '+91' ? 'India' : 'United States'),
           taxNumber: r.taxNumber,
           openingBalance: r.openingBalance || 0,
           payTerm: r.payTerm,
@@ -406,15 +582,20 @@ export const ImportContactsPage: React.FC = () => {
     let message = '';
     if (customersToImport.length > 0) {
       importCustomers(customersToImport);
-      message += `Imported ${customersToImport.length} customers successfully. `;
+      message += `Imported ${customersToImport.length} customer(s). `;
     }
     if (suppliersToImport.length > 0) {
       importSuppliers(suppliersToImport);
-      message += `Imported ${suppliersToImport.length} suppliers successfully.`;
+      message += `Imported ${suppliersToImport.length} supplier(s). `;
     }
 
-    showFlashNotification(message || 'No contacts were imported.', 'success');
+    if (duplicateRowsLeft.length > 0) {
+      message += `${duplicateRowsLeft.length} duplicate record(s) already existed and were left behind.`;
+    }
 
+    showFlashNotification(message || 'Contacts processed successfully.', 'success');
+
+    // Push remaining imported records accordingly to their respective menus
     if (customersToImport.length >= suppliersToImport.length) {
       navigateToContacts('customers');
     } else {
@@ -422,7 +603,8 @@ export const ImportContactsPage: React.FC = () => {
     }
   };
 
-  const validRowsCount = parsedRows.filter((r) => r.isValid).length;
+  const validNewRowsCount = parsedRows.filter((r) => r.isValid && !r.alreadyExists).length;
+  const duplicateRowsCount = parsedRows.filter((r) => r.alreadyExists).length;
   const selectedRowsCount = parsedRows.filter((r) => r.selected).length;
   const invalidRowsCount = parsedRows.filter((r) => !r.isValid).length;
 
@@ -599,13 +781,19 @@ export const ImportContactsPage: React.FC = () => {
             {/* Quick Stats & Import CTA */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-                <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                <span className="flex items-center gap-1 text-emerald-400 font-bold" title="New contacts ready to import">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {validRowsCount} Valid
+                  {validNewRowsCount} New
                 </span>
-                {invalidRowsCount > 0 && (
-                  <span className="flex items-center gap-1 text-amber-400 font-bold pl-2 border-l border-slate-800">
+                {duplicateRowsCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-400 font-bold pl-2 border-l border-slate-800" title="Existing in database (will be skipped and left behind)">
                     <AlertTriangle className="w-3.5 h-3.5" />
+                    {duplicateRowsCount} Already in DB (Left)
+                  </span>
+                )}
+                {invalidRowsCount > 0 && (
+                  <span className="flex items-center gap-1 text-rose-400 font-bold pl-2 border-l border-slate-800" title="Missing required info">
+                    <X className="w-3.5 h-3.5" />
                     {invalidRowsCount} Invalid
                   </span>
                 )}
@@ -634,7 +822,7 @@ export const ImportContactsPage: React.FC = () => {
                   <th className="p-3.5 w-10 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedRowsCount > 0 && selectedRowsCount === validRowsCount}
+                      checked={selectedRowsCount > 0 && selectedRowsCount === validNewRowsCount}
                       onChange={(e) => handleSelectAllToggle(e.target.checked)}
                       className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
                     />
@@ -657,7 +845,9 @@ export const ImportContactsPage: React.FC = () => {
                     key={row.id}
                     className={`hover:bg-slate-800/40 transition ${
                       !row.isValid
-                        ? 'bg-amber-500/5'
+                        ? 'bg-rose-500/5'
+                        : row.alreadyExists
+                        ? 'bg-amber-500/10'
                         : row.selected
                         ? 'bg-indigo-600/5'
                         : 'opacity-60'
@@ -667,18 +857,22 @@ export const ImportContactsPage: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={row.selected}
-                        disabled={!row.isValid}
+                        disabled={!row.isValid || row.alreadyExists}
                         onChange={() => handleSelectRowToggle(row.id)}
                         className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-30"
                       />
                     </td>
                     <td className="p-3.5 whitespace-nowrap">
-                      {row.isValid ? (
+                      {row.alreadyExists ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" title={row.duplicateReason}>
+                          <AlertTriangle className="w-3 h-3" /> Already in DB (Left)
+                        </span>
+                      ) : row.isValid ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3" /> Ready
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                           <AlertTriangle className="w-3 h-3" /> {row.validationError || 'Invalid'}
                         </span>
                       )}

@@ -3,6 +3,7 @@ import { useErp } from '../../context/ErpContext';
 import { validateEmail } from '../../utils/formatters';
 import {
   Users,
+  User,
   Search,
   Edit,
   Trash2,
@@ -17,6 +18,23 @@ import {
 } from 'lucide-react';
 import { SalesCommissionAgent } from '../../types/erp';
 
+// Helper to reliably retrieve agent full name
+const getAgentName = (agent: any) => {
+  if (!agent) return '';
+  if (agent.fullName && agent.fullName.trim()) return agent.fullName.trim();
+  const combined = `${agent.firstName || ''} ${agent.lastName || ''}`.trim();
+  return combined || agent.name || 'Sales Representative';
+};
+
+const getAgentInitials = (agent: any) => {
+  const name = getAgentName(agent);
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || 'SR';
+};
+
 export const SalesCommissionAgentsView: React.FC = () => {
   const { settings, salesCommissionAgents, addSalesCommissionAgent, updateSalesCommissionAgent, deleteSalesCommissionAgent } = useErp();
   const isLight = settings?.themeMode === 'light';
@@ -28,8 +46,7 @@ export const SalesCommissionAgentsView: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
     contactNo: '',
     address: '',
@@ -38,7 +55,7 @@ export const SalesCommissionAgentsView: React.FC = () => {
   });
 
   const [formErrors, setFormErrors] = useState<{
-    firstName?: string;
+    fullName?: string;
     email?: string;
     commissionPercentage?: string;
   }>({});
@@ -66,10 +83,9 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
   const filteredAgents = salesCommissionAgents.filter(
     (agent) =>
-      agent.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.contactNo.includes(searchQuery)
+      getAgentName(agent).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (agent.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (agent.contactNo || '').includes(searchQuery)
   );
 
   const totalPages = Math.ceil(filteredAgents.length / rowsPerPage) || 1;
@@ -80,8 +96,7 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
   const handleOpenAdd = () => {
     setFormData({
-      firstName: '',
-      lastName: '',
+      fullName: '',
       email: '',
       contactNo: '',
       address: '',
@@ -95,12 +110,11 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
   const handleOpenEdit = (agent: SalesCommissionAgent) => {
     setFormData({
-      firstName: agent.firstName,
-      lastName: agent.lastName,
-      email: agent.email,
-      contactNo: agent.contactNo,
-      address: agent.address,
-      commissionPercentage: agent.commissionPercentage.toString(),
+      fullName: getAgentName(agent),
+      email: agent.email || '',
+      contactNo: agent.contactNo || '',
+      address: agent.address || '',
+      commissionPercentage: (agent.commissionPercentage ?? '').toString(),
       avatar: agent.avatar || '',
     });
     setFormErrors({});
@@ -110,8 +124,8 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
   const handleSave = () => {
     const errors: typeof formErrors = {};
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
     }
     if (!formData.email.trim()) {
       errors.email = 'Email address is required';
@@ -132,9 +146,16 @@ export const SalesCommissionAgentsView: React.FC = () => {
       return;
     }
 
+    const trimmedFullName = formData.fullName.trim();
+    const nameParts = trimmedFullName.split(' ').filter(Boolean);
+    const firstName = nameParts[0] || trimmedFullName;
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     const payload = {
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
+      fullName: trimmedFullName,
+      name: trimmedFullName,
+      firstName,
+      lastName,
       email: formData.email.trim(),
       contactNo: formData.contactNo.trim(),
       address: formData.address.trim(),
@@ -202,18 +223,18 @@ export const SalesCommissionAgentsView: React.FC = () => {
                   {agent.avatar ? (
                     <img
                       src={agent.avatar}
-                      alt={`${agent.firstName} ${agent.lastName}`}
+                      alt={getAgentName(agent)}
                       className="w-11 h-11 rounded-2xl object-cover border border-slate-300 dark:border-slate-700 shrink-0"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs">
-                      {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
+                      {getAgentInitials(agent)}
                     </div>
                   )}
                   <div className="min-w-0">
                     <h4 className={`font-bold text-sm truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      {agent.firstName} {agent.lastName}
+                      {getAgentName(agent)}
                     </h4>
                     <span className="text-xs text-slate-400 block truncate">{agent.email}</span>
                   </div>
@@ -307,18 +328,18 @@ export const SalesCommissionAgentsView: React.FC = () => {
                         {agent.avatar ? (
                           <img
                             src={agent.avatar}
-                            alt={`${agent.firstName} ${agent.lastName}`}
+                            alt={getAgentName(agent)}
                             className="w-10 h-10 rounded-full object-cover border border-slate-300 dark:border-slate-800"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
-                            {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
+                            {getAgentInitials(agent)}
                           </div>
                         )}
                         <div>
                           <div className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                            {agent.firstName} {agent.lastName}
+                            {getAgentName(agent)}
                           </div>
                         </div>
                       </div>
@@ -583,47 +604,35 @@ export const SalesCommissionAgentsView: React.FC = () => {
 
                 {/* Column 2: Personal Registry & Contacts */}
                 <div className="md:col-span-8 space-y-3 sm:space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
-                        First Name <span className="text-rose-500">*</span>
-                      </label>
+                  {/* Single Full Name field to maintain uniformity */}
+                  <div>
+                    <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
+                      Full Name <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-slate-400" />
+                      </span>
                       <input
                         type="text"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className={`w-full border rounded-xl px-3.5 py-2 text-xs focus:outline-none font-semibold transition-colors ${
-                          formErrors.firstName
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        className={`w-full border rounded-xl pl-10 pr-3.5 py-2 text-xs focus:outline-none font-semibold transition-colors ${
+                          formErrors.fullName
                             ? 'border-rose-500 ring-1 ring-rose-500/20'
                             : isLight
                             ? 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
                             : 'bg-slate-950 border-slate-800 text-white focus:border-indigo-500'
                         }`}
-                        placeholder="John"
-                      />
-                      {formErrors.firstName && (
-                        <p className="text-[9px] text-rose-500 font-bold mt-1 flex items-center gap-1">
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                          {formErrors.firstName}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className={`w-full border rounded-xl px-3.5 py-2 text-xs focus:outline-none font-semibold transition-colors ${
-                          isLight
-                            ? 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
-                            : 'bg-slate-950 border-slate-800 text-white focus:border-indigo-500'
-                        }`}
-                        placeholder="Doe"
+                        placeholder="e.g. John Doe"
                       />
                     </div>
+                    {formErrors.fullName && (
+                      <p className="text-[9px] text-rose-500 font-bold mt-1 flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        {formErrors.fullName}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-3 sm:space-y-4">
