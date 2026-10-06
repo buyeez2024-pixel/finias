@@ -43,6 +43,8 @@ import {
   Unlock,
   ShieldAlert,
   ExternalLink,
+  Boxes,
+  Info,
   Maximize,
   Minimize,
   Building,
@@ -131,6 +133,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [showSuspendedDrawer, setShowSuspendedDrawer] = useState(false);
   const [lotSelectionProduct, setLotSelectionProduct] = useState<Product | null>(null);
+  const [variationSelectionProduct, setVariationSelectionProduct] = useState<Product | null>(null);
   const [showSyncManager, setShowSyncManager] = useState(false);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -209,8 +212,15 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       const name = String(p.name || '').toLowerCase();
       const sku = String(p.sku || '').toLowerCase();
       const barcode = String(p.barcode || '').toLowerCase();
+      const matchVariation = p.variations?.some((v: any) => {
+        const vSku = String(v.sku || '').toLowerCase();
+        const vName = String(v.name || '').toLowerCase();
+        const vVal = String(v.value || '').toLowerCase();
+        const vBarcode = String(v.barcode || '').toLowerCase();
+        return vSku.includes(query) || vName.includes(query) || vVal.includes(query) || vBarcode.includes(query);
+      });
 
-      return name.includes(query) || sku.includes(query) || barcode.includes(query);
+      return name.includes(query) || sku.includes(query) || barcode.includes(query) || matchVariation;
     });
   }, [products, selectedCategory, selectedBrand, searchQuery]);
 
@@ -288,14 +298,53 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
     const cleanCode = code.trim();
     if (!cleanCode) return;
 
-    // 1. Search for a direct Product match (SKU or Barcode)
+    // 1. Search if code matches a variation SKU or barcode
+    let foundVariation: any = undefined;
+    let matchedProduct: Product | undefined = undefined;
+
+    for (const p of products) {
+      if (p.variations && Array.isArray(p.variations)) {
+        const vMatch = p.variations.find(
+          (v: any) =>
+            (v.sku && v.sku.toLowerCase() === cleanCode.toLowerCase()) ||
+            (v.barcode && v.barcode.toLowerCase() === cleanCode.toLowerCase())
+        );
+        if (vMatch) {
+          matchedProduct = p;
+          foundVariation = vMatch;
+          break;
+        }
+      }
+    }
+
+    if (foundVariation && matchedProduct) {
+      const varStock = Number(foundVariation.locationStocks?.[selectedLocationId] ?? foundVariation.currentStock ?? foundVariation.openingStock ?? 0);
+      if (!settings?.allowOverselling && varStock <= 0) {
+        soundEffects.playScanError();
+        showFlashNotification(`Out of Stock: ${matchedProduct.name} (${foundVariation.value || foundVariation.name}) (0 available)`, 'error');
+        return;
+      }
+
+      const added = addToCart(matchedProduct, 1, undefined, foundVariation.id);
+      if (added) {
+        soundEffects.playScanSuccess();
+        showFlashNotification(
+          `⚡ Scanned Variant: ${matchedProduct.name} (${foundVariation.value || foundVariation.name}) - SKU: ${foundVariation.sku}`,
+          'success'
+        );
+      }
+      setBarcodeInput('');
+      return;
+    }
+
+    // 2. Search for a direct Product match (SKU or Barcode)
     let target = products.find(
       (p) =>
         p.barcode === cleanCode ||
         p.sku.toLowerCase() === cleanCode.toLowerCase()
     );
 
-    // 2. If no direct product match, search if the code is a Lot Number
+    // 3. If no direct product match, search if the code is a Lot Number
     let foundLotId: string | undefined = undefined;
     if (!target) {
       for (const p of products) {
@@ -309,6 +358,15 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
     }
 
     if (target) {
+      const isVariable = target.type === 'variable' || (target.variations && target.variations.length > 0);
+      if (isVariable) {
+        setVariationSelectionProduct(target);
+        soundEffects.playScanSuccess();
+        showFlashNotification(`Product "${target.name}" has ${target.variations.length} variations. Please select a variant below.`, 'info');
+        setBarcodeInput('');
+        return;
+      }
+
       const locStock = target.locationStocks?.[selectedLocationId] ?? target.currentStock;
       if (!settings?.allowOverselling && locStock <= 0) {
         soundEffects.playScanError();
@@ -743,6 +801,104 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         </div>
       )}
 
+      {/* Variation Selection Modal in POS */}
+      {variationSelectionProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-scaleIn">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/30">
+                  <Boxes className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight">Select Product Variation</h3>
+                  <p className="text-xs text-slate-400 font-medium">{variationSelectionProduct.name} • ({variationSelectionProduct.variations?.length || 0} variations)</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setVariationSelectionProduct(null)}
+                className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-3">
+                <Info className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-purple-200 leading-relaxed">
+                  This product has multiple variation options. Select the variant you wish to add to the POS cart.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {variationSelectionProduct.variations?.map((v: any, vIdx: number) => {
+                  const varStock = Number(v.locationStocks?.[selectedLocationId] ?? v.currentStock ?? v.openingStock ?? 0);
+                  const isVarOutOfStock = varStock <= 0;
+                  const isVarDisabled = isVarOutOfStock && !settings.allowOverselling;
+                  const varPrice = Number(v.sellingPrice) || Number(variationSelectionProduct.sellingPrice) || 0;
+                  const varLabel = v.value || v.name || `Variation ${vIdx + 1}`;
+                  const varSku = v.sku || `${variationSelectionProduct.sku}-${vIdx + 1}`;
+
+                  return (
+                    <button
+                      key={v.id || v.sku || vIdx}
+                      disabled={isVarDisabled}
+                      onClick={() => {
+                        addToCart(variationSelectionProduct, 1, undefined, v.id);
+                        soundEffects.playScanSuccess();
+                        setVariationSelectionProduct(null);
+                        showFlashNotification(`Added ${variationSelectionProduct.name} (${varLabel}) to cart`, 'success');
+                      }}
+                      className={`w-full flex items-center justify-between p-4 border rounded-2xl transition group relative overflow-hidden ${
+                        isVarDisabled 
+                          ? 'bg-slate-900/50 border-slate-800 cursor-not-allowed opacity-60' 
+                          : 'bg-slate-800 hover:bg-slate-750 border-slate-700 hover:border-purple-500/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="w-8 h-8 rounded-xl bg-purple-950/80 border border-purple-800/60 flex items-center justify-center text-purple-300 font-bold text-xs shrink-0">
+                          {vIdx + 1}
+                        </div>
+                        <div>
+                          <span className={`text-xs font-bold ${isVarOutOfStock ? 'text-slate-500' : 'text-slate-100 group-hover:text-purple-300'}`}>
+                            {varLabel}
+                          </span>
+                          <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                            SKU: {varSku}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className={`text-base font-black font-mono tracking-tight ${isVarOutOfStock ? 'text-slate-600' : 'text-emerald-400'}`}>
+                            {settings.currencySymbol}{varPrice.toFixed(2)}
+                          </div>
+                          <div className={`text-[10px] font-bold uppercase tracking-wider ${isVarOutOfStock ? 'text-rose-500' : 'text-slate-400'}`}>
+                            Stock: {varStock} {isVarOutOfStock ? '(OUT)' : ''}
+                          </div>
+                        </div>
+                        <ChevronRight className={`w-5 h-5 transition ${isVarOutOfStock ? 'text-slate-800' : 'text-slate-600 group-hover:text-purple-400'}`} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-800/30 border-t border-slate-800 flex justify-end gap-3">
+              <button
+                onClick={() => setVariationSelectionProduct(null)}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast notification banner */}
       {notification && (
         <div
@@ -887,9 +1043,9 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   <span className="text-[11px] font-mono">
                     {cashRegister.status === 'open'
                       ? `Drawer: ${settings.currencySymbol}${(
-                          cashRegister.openingCash +
-                          cashRegister.cashSales -
-                          cashRegister.totalExpenses
+                          (Number(cashRegister?.openingCash) || 0) +
+                          (Number(cashRegister?.cashSales) || 0) -
+                          (Number(cashRegister?.totalExpenses) || 0)
                         ).toFixed(2)}`
                       : 'Shift Closed'}
                   </span>
@@ -990,10 +1146,14 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
               {filteredProducts.map((product) => {
-                const locStock = product.locationStocks?.[selectedLocationId] ?? product.currentStock;
+                const isVariable = product.type === 'variable' || (product.variations && product.variations.length > 0);
+                const totalVarStock = isVariable && product.variations
+                  ? product.variations.reduce((sum: number, v: any) => sum + (Number(v.locationStocks?.[selectedLocationId] ?? v.currentStock ?? v.openingStock ?? 0)), 0)
+                  : 0;
+                const locStock = isVariable ? totalVarStock : (product.locationStocks?.[selectedLocationId] ?? product.currentStock);
                 const isOutOfStock = locStock <= 0;
                 const canAdd = !isOutOfStock || settings.allowOverselling;
-                const isLowStock = locStock > 0 && locStock <= product.alertQuantity;
+                const isLowStock = locStock > 0 && locStock <= (product.alertQuantity || 5);
 
                 return (
                   <div
@@ -1001,7 +1161,9 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                     id={`pos-item-${product.id}`}
                     onClick={() => {
                       if (canAdd) {
-                        if (product.lots && product.lots.length > 1) {
+                        if (isVariable) {
+                          setVariationSelectionProduct(product);
+                        } else if (product.lots && product.lots.length > 1) {
                           setLotSelectionProduct(product);
                         } else {
                           addToCart(product, 1);
@@ -1030,7 +1192,12 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                           {locStock} {product.unit}
                         </span>
                       )}
-                      {product.lots && product.lots.length > 1 && (
+                      {isVariable && (
+                        <span className="text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-purple-600 text-white border border-purple-400 shadow-sm animate-pulse">
+                          {product.variations.length} VARIATIONS
+                        </span>
+                      )}
+                      {product.lots && product.lots.length > 1 && !isVariable && (
                         <span className="text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-indigo-600 text-white border border-indigo-400 shadow-sm animate-pulse">
                           {product.lots.length} BATCHES
                         </span>
@@ -1242,8 +1409,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           ) : (
             cart.map((item) => (
               <div
-                key={`${item.productId}-${item.lotId || 'no-lot'}`}
-                id={`cart-item-${item.productId}-${item.lotId || 'no-lot'}`}
+                key={`${item.productId}-${item.lotId || 'no-lot'}-${item.variationId || item.sku || 'no-var'}`}
+                id={`cart-item-${item.productId}-${item.lotId || 'no-lot'}-${item.variationId || item.sku || 'no-var'}`}
                 className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800/90 flex flex-col gap-2 shadow-sm hover:border-slate-700 transition"
               >
                 {/* Item Name and Total */}
@@ -1254,6 +1421,11 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                     </h5>
                     <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
                       <span>{item.sku}</span>
+                      {item.variationName && (
+                        <span className="text-purple-300 font-bold bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-800/40 text-[9px]">
+                          Var: {item.variationName}
+                        </span>
+                      )}
                       {item.lotNumber && (
                         <span className="text-amber-400 font-bold bg-amber-950/50 px-1 py-0.2 rounded border border-amber-800/40">
                           Lot: {item.lotNumber}
@@ -1274,7 +1446,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                   {/* Quantity Stepper */}
                   <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-1 rounded-lg border border-slate-800 shrink-0">
                     <button
-                      onClick={() => updateCartQty(item.productId, item.quantity - 1, item.lotId)}
+                      onClick={() => updateCartQty(item.productId, item.quantity - 1, item.lotId, item.variationId)}
                       className="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded transition"
                       title="Decrease quantity"
                     >
@@ -1284,7 +1456,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => updateCartQty(item.productId, item.quantity + 1, item.lotId)}
+                      onClick={() => updateCartQty(item.productId, item.quantity + 1, item.lotId, item.variationId)}
                       className="text-slate-400 hover:text-white hover:bg-slate-800 p-1 rounded transition"
                       title="Increase quantity"
                     >
@@ -1308,7 +1480,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                           updateCartPrice(
                             item.productId,
                             parseFloat(e.target.value) || 0,
-                            item.lotId
+                            item.lotId,
+                            item.variationId
                           )
                         }
                         className={`w-14 bg-slate-950 px-1 py-0.2 rounded border text-xs font-bold font-mono text-right ${
@@ -1321,7 +1494,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                     </div>
 
                     <button
-                      onClick={() => removeFromCart(item.productId, item.lotId)}
+                      onClick={() => removeFromCart(item.productId, item.lotId, item.variationId)}
                       className="text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 p-1.5 rounded-lg transition"
                       title="Remove item from cart"
                     >

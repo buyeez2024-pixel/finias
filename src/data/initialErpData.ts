@@ -1,4 +1,63 @@
-export const initialProducts = [];
+export const initialProducts = [
+  {
+    id: 'prod_sol_inverter',
+    name: 'Solar Hybrid Inverter 5kW',
+    sku: 'INV-5KW',
+    barcode: '8901234567890',
+    type: 'variable',
+    unit: 'Pc',
+    category: 'Electronics',
+    brand: 'Standard',
+    costPrice: 450,
+    sellingPrice: 650,
+    taxRate: 0,
+    alertQuantity: 5,
+    currentStock: 25,
+    stock: 25,
+    locationStocks: {
+      loc_main: 25,
+    },
+    image: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80',
+    description: 'High-efficiency pure sine wave solar hybrid inverter with multi-phase variants',
+    attributes: [
+      { id: 'attr_1', name: 'Phase Type', values: ['Single Phase', 'Three Phase'] }
+    ],
+    variations: [
+      {
+        id: 'var_inv_1ph',
+        name: 'Phase Type: Single Phase',
+        value: 'Single Phase',
+        attributeName: 'Phase Type',
+        sku: 'INV-5KW-1PH',
+        costPrice: 450,
+        costPriceIncTax: 450,
+        margin: 44.44,
+        sellingPrice: 650,
+        sellingPriceIncTax: 650,
+        openingStock: 15,
+        currentStock: 15,
+        alertQuantity: 3,
+        locationStocks: { loc_main: 15 },
+      },
+      {
+        id: 'var_inv_3ph',
+        name: 'Phase Type: Three Phase',
+        value: 'Three Phase',
+        attributeName: 'Phase Type',
+        sku: 'INV-5KW-3PH',
+        costPrice: 550,
+        costPriceIncTax: 550,
+        margin: 45.45,
+        sellingPrice: 800,
+        sellingPriceIncTax: 800,
+        openingStock: 10,
+        currentStock: 10,
+        alertQuantity: 2,
+        locationStocks: { loc_main: 10 },
+      }
+    ]
+  }
+];
 export const initialCustomers = [
   {
     id: 'cust_walkin',
@@ -251,6 +310,30 @@ export const initialBrands = [
     status: 'active',
     createdDate: '2026-01-01',
   },
+  {
+    id: 'brd_apex',
+    name: 'Apex Tech',
+    code: 'BRD-APEX',
+    shortCode: 'APEX',
+    description: 'Premium electronics, gadgets, smart devices, and accessories',
+    originCountry: 'United States',
+    website: 'https://apextech.io',
+    color: '#f59e0b',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
+  {
+    id: 'brd_nike',
+    name: 'Nike',
+    code: 'BRD-NIKE',
+    shortCode: 'NIKE',
+    description: 'Athletic footwear, sportswear, apparel, and lifestyle accessories',
+    originCountry: 'United States',
+    website: 'https://nike.com',
+    color: '#f43f5e',
+    status: 'active',
+    createdDate: '2026-01-01',
+  },
 ];
 export const initialUnits = [];
 export const initialSettings = {
@@ -286,6 +369,7 @@ export const initialSettings = {
   enableRacks: true,
   enableUnits: true,
   enablePriceTax: true,
+  enablePriceAndTaxInfo: true,
   enableProductExpiry: true,
   name: 'Royal POSfini',
   businessName: 'Royal POSfini',
@@ -509,6 +593,7 @@ export const initialCashRegister = {
   id: 'reg_default',
   openingCash: 0,
   cashSales: 0,
+  cardSales: 0,
   totalExpenses: 0,
   isOpen: false,
   status: 'closed',

@@ -47,7 +47,10 @@ export const PosRegisterLockModal: React.FC<PosRegisterLockModalProps> = ({
 
   const expectedCashInDrawer = useMemo(() => {
     if (!cashRegister) return 0;
-    return Math.max(0, cashRegister.openingCash + (cashRegister.cashSales || 0) - (cashRegister.totalExpenses || 0));
+    const opening = Number(cashRegister.openingCash) || 0;
+    const sales = Number(cashRegister.cashSales) || 0;
+    const expenses = Number(cashRegister.totalExpenses) || 0;
+    return Math.max(0, opening + sales - expenses);
   }, [cashRegister]);
 
   // Set default counted cash once opened
@@ -160,19 +163,19 @@ export const PosRegisterLockModal: React.FC<PosRegisterLockModalProps> = ({
             <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
               <div className="text-[10px] text-slate-400">Opening Float</div>
               <div className="text-xs font-bold text-slate-200 mt-0.5">
-                {settings.currencySymbol}{cashRegister.openingCash.toFixed(2)}
+                {settings.currencySymbol}{(Number(cashRegister?.openingCash) || 0).toFixed(2)}
               </div>
             </div>
             <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
               <div className="text-[10px] text-emerald-400">Cash Sales</div>
               <div className="text-xs font-bold text-emerald-400 mt-0.5">
-                +{settings.currencySymbol}{cashRegister.cashSales.toFixed(2)}
+                +{settings.currencySymbol}{(Number(cashRegister?.cashSales) || 0).toFixed(2)}
               </div>
             </div>
             <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
               <div className="text-[10px] text-rose-400">Paid Out</div>
               <div className="text-xs font-bold text-rose-400 mt-0.5">
-                -{settings.currencySymbol}{cashRegister.totalExpenses.toFixed(2)}
+                -{settings.currencySymbol}{(Number(cashRegister?.totalExpenses) || 0).toFixed(2)}
               </div>
             </div>
           </div>

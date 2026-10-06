@@ -48,6 +48,7 @@ import {
   SalesCommissionAgentType,
   Warranty,
   WarrantyDurationType,
+  VariationTemplate,
   QueuedTransaction,
   SyncLogEntry,
   OfflineSyncStats,
@@ -308,6 +309,13 @@ interface ErpContextType {
   deleteRack: (id: string, cascadeReassignToId?: string) => { success: boolean; message?: string };
   assignRackPositionToProducts: (productIds: string[], rack: string, row?: string, position?: string) => void;
 
+  // Variation Templates Management (finias POS Products & Inventory -> Variations / variation-templates)
+  variationTemplates: VariationTemplate[];
+  addVariationTemplate: (template: Omit<VariationTemplate, 'id'>) => VariationTemplate;
+  updateVariationTemplate: (id: string, template: Partial<VariationTemplate>) => void;
+  deleteVariationTemplate: (id: string) => { success: boolean; message?: string };
+  duplicateVariationTemplate: (id: string) => VariationTemplate | undefined;
+
   inventorySubTab: 'matrix' | 'categories' | 'brands' | 'warranties' | 'racks' | 'units' | 'adjustments' | 'transfers' | 'add_product' | 'edit_product' | 'import_products' | 'product_history' | 'variations' | 'batch_guide';
   setInventorySubTab: (tab: 'matrix' | 'categories' | 'brands' | 'warranties' | 'racks' | 'units' | 'adjustments' | 'transfers' | 'add_product' | 'edit_product' | 'import_products' | 'product_history' | 'variations' | 'batch_guide') => void;
   navigateToInventory: (subTab?: 'matrix' | 'categories' | 'brands' | 'warranties' | 'racks' | 'units' | 'adjustments' | 'transfers' | 'add_product' | 'edit_product' | 'import_products' | 'product_history' | 'variations' | 'batch_guide') => void;
@@ -364,11 +372,11 @@ interface ErpContextType {
   cart: CartItem[];
   selectedCustomer: Customer | null;
   setSelectedCustomer: (customer: Customer | null) => void;
-  addToCart: (product: Product, quantity?: number, lotId?: string) => boolean;
-  updateCartQty: (productId: string, quantity: number, lotId?: string) => void;
-  updateCartDiscount: (productId: string, discount: number, lotId?: string) => void;
-  updateCartPrice: (productId: string, unitPrice: number, lotId?: string) => void;
-  removeFromCart: (productId: string, lotId?: string) => void;
+  addToCart: (product: Product, quantity?: number, lotId?: string, variationId?: string) => boolean;
+  updateCartQty: (productId: string, quantity: number, lotId?: string, variationId?: string) => void;
+  updateCartDiscount: (productId: string, discount: number, lotId?: string, variationId?: string) => void;
+  updateCartPrice: (productId: string, unitPrice: number, lotId?: string, variationId?: string) => void;
+  removeFromCart: (productId: string, lotId?: string, variationId?: string) => void;
   clearCart: () => void;
   suspendedSales: SuspendedSale[];
   holdCart: (note?: string) => void;
@@ -816,6 +824,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         import_product: 'inventory',
         product_history: 'inventory',
         variations: 'inventory',
+        'variation-templates': 'inventory',
+        'variation_templates': 'inventory',
+        'variation-template': 'inventory',
         batch_guide: 'inventory',
         categories: 'inventory',
         category: 'inventory',
@@ -904,6 +915,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (validSubs.includes(route.main)) {
       return route.main as any;
+    }
+    if (['variation-templates', 'variation_templates', 'variation-template'].includes(route.main) || ['variation-templates', 'variation_templates', 'variation-template'].includes(route.sub)) {
+      return 'variations';
     }
 
     const saved = localStorage.getItem(`${STORAGE_KEY}_inventory_sub_tab`);
@@ -1057,6 +1071,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
         if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
       }
+      if ((sanitized.type === 'variable' || (sanitized.variations && sanitized.variations.length > 0)) && sanitized.variations) {
+        const totalVarStock = sanitized.variations.reduce((s: number, v: any) => s + (Number(v.currentStock ?? v.openingStock ?? 0)), 0);
+        if (totalVarStock > 0 || stock === 0) stock = totalVarStock;
+      }
       return { ...sanitized, lots, currentStock: stock, stock };
     });
   });
@@ -1081,6 +1099,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (lots.length > 0) {
           const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
           if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
+        }
+        if ((sanitized.type === 'variable' || (sanitized.variations && sanitized.variations.length > 0)) && sanitized.variations) {
+          const totalVarStock = sanitized.variations.reduce((s: number, v: any) => s + (Number(v.currentStock ?? v.openingStock ?? 0)), 0);
+          if (totalVarStock > 0 || stock === 0) stock = totalVarStock;
         }
         return { ...sanitized, lots, currentStock: stock, stock };
       });
@@ -1137,6 +1159,108 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem(`${STORAGE_KEY}_units`);
     return saved ? JSON.parse(saved) : initialUnits;
   });
+
+  const initialVariationTemplatesList: VariationTemplate[] = [
+    {
+      id: 'var_size',
+      name: 'Size',
+      values: ['Small (S)', 'Medium (M)', 'Large (L)', 'Extra Large (XL)', 'XXL'],
+    },
+    {
+      id: 'var_color',
+      name: 'Color',
+      values: ['Midnight Black', 'Pearl White', 'Ocean Blue', 'Crimson Red', 'Space Gray', 'Gold'],
+    },
+    {
+      id: 'var_wire_gauge',
+      name: 'Wire Gauge / Thickness',
+      values: ['0.75 sq mm', '1.0 sq mm', '1.5 sq mm', '2.5 sq mm', '4.0 sq mm', '6.0 sq mm', '10.0 sq mm'],
+    },
+    {
+      id: 'var_voltage',
+      name: 'Voltage Rating',
+      values: ['12V DC', '24V DC', '110V AC', '220V - 240V AC', '415V 3-Phase'],
+    },
+    {
+      id: 'var_length',
+      name: 'Cable Length',
+      values: ['1 Meter', '3 Meters', '5 Meters', '10 Meters', '90 Meters Coil', '100 Meters Roll'],
+    },
+    {
+      id: 'var_phase',
+      name: 'Phase Type',
+      values: ['Single Phase', 'Three Phase'],
+    },
+    {
+      id: 'var_material',
+      name: 'Material / Conductor',
+      values: ['100% Electrolytic Copper', 'Aluminum Alloy', 'Stainless Steel', 'Polycarbonate', 'Brass'],
+    },
+    {
+      id: 'var_dram',
+      name: 'DRAM / Storage Capacity',
+      values: ['128GB', '256GB', '512GB', '1TB NVMe'],
+    },
+    {
+      id: 'var_flavor',
+      name: 'Flavor',
+      values: ['Chocolate Velvet', 'Vanilla Bean', 'Strawberry Burst', 'Mango Delight'],
+    },
+  ];
+
+  const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_variation_templates`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse variation_templates', e);
+      }
+    }
+    return initialVariationTemplatesList;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_variation_templates`, JSON.stringify(variationTemplates));
+  }, [variationTemplates]);
+
+  const addVariationTemplate = (template: Omit<VariationTemplate, 'id'>): VariationTemplate => {
+    const newTmpl: VariationTemplate = {
+      ...template,
+      id: `tmpl_${Date.now()}`,
+    };
+    setVariationTemplates((prev) => [...prev, newTmpl]);
+    showFlashNotification(`Created variation template "${newTmpl.name}"`, 'success');
+    return newTmpl;
+  };
+
+  const updateVariationTemplate = (id: string, template: Partial<VariationTemplate>) => {
+    setVariationTemplates((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...template } : t))
+    );
+    showFlashNotification('Variation template updated successfully', 'success');
+  };
+
+  const deleteVariationTemplate = (id: string) => {
+    const target = variationTemplates.find((t) => t.id === id);
+    setVariationTemplates((prev) => prev.filter((t) => t.id !== id));
+    showFlashNotification(`Deleted variation template "${target?.name || ''}"`, 'success');
+    return { success: true };
+  };
+
+  const duplicateVariationTemplate = (id: string): VariationTemplate | undefined => {
+    const target = variationTemplates.find((t) => t.id === id);
+    if (!target) return undefined;
+    const dup: VariationTemplate = {
+      id: `tmpl_${Date.now()}`,
+      name: `${target.name} (Copy)`,
+      values: [...target.values],
+    };
+    setVariationTemplates((prev) => [...prev, dup]);
+    showFlashNotification(`Duplicated variation template "${dup.name}"`, 'success');
+    return dup;
+  };
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_customers`);
@@ -1264,7 +1388,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [cashRegister, setCashRegister] = useState<CashRegister>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_register`);
-    return saved ? JSON.parse(saved) : initialCashRegister;
+    const reg = saved ? JSON.parse(saved) : initialCashRegister;
+    return {
+      ...reg,
+      openingCash: Number(reg?.openingCash) || 0,
+      cashSales: Number(reg?.cashSales) || 0,
+      cardSales: Number(reg?.cardSales) || 0,
+      totalExpenses: Number(reg?.totalExpenses) || 0,
+      status: reg?.status || 'closed',
+    };
   });
 
   // Tax Rates & Tax Groups State
@@ -2413,6 +2545,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         import_product: 'inventory',
         product_history: 'inventory',
         variations: 'inventory',
+        'variation-templates': 'inventory',
+        'variation_templates': 'inventory',
+        'variation-template': 'inventory',
         batch_guide: 'inventory',
         categories: 'inventory',
         category: 'inventory',
@@ -3295,7 +3430,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else if ((productData as any).source !== 'purchase' && (productData as any).creationSource !== 'direct_purchase') {
           lots = [{
             id: `lot_${Date.now()}_${idx}`,
-            lotNumber: `LOT-${new Date().getFullYear()}-${String(idx + 1).padStart(3, '0')}`,
+            lotNumber: `LOT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
             costPrice: productData.costPrice,
             sellingPrice: productData.sellingPrice,
             currentStock: totalStock,
@@ -3319,42 +3454,60 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addProduct = (productData: Omit<Product, 'id' | 'currentStock'>) => {
-    const totalStock = Object.values(productData.locationStocks || {}).reduce((a: any, b: any) => a + b, 0) as number;
-    const newId = `prod_${Date.now()}`;
+    const isCombo = productData.type === 'combo';
+    let totalStock = Object.values(productData.locationStocks || {}).reduce((a: any, b: any) => a + Number(b || 0), 0) as number;
     
-    // Create initial lot if not provided
-    let lots = productData.lots && productData.lots.length > 0 ? [...productData.lots] : [];
-    if (lots.length === 0) {
-      const itemLotNum = (productData as any).lotNumber;
-      if (itemLotNum) {
-        lots = [{
-          id: `lot_${Date.now()}`,
-          lotNumber: itemLotNum,
-          costPrice: productData.costPrice,
-          sellingPrice: productData.sellingPrice,
-          currentStock: totalStock,
-          createdDate: new Date().toISOString().slice(0, 10),
-        }];
-      } else if ((productData as any).source !== 'purchase') {
-        lots = [{
-          id: `lot_${Date.now()}`,
-          lotNumber: `LOT-${new Date().getFullYear()}-001`,
-          costPrice: productData.costPrice,
-          sellingPrice: productData.sellingPrice,
-          currentStock: totalStock,
-          createdDate: new Date().toISOString().slice(0, 10),
-        }];
-      }
+    // For combo products, calculate dynamic stock from component availability
+    if (isCombo && productData.comboItems && productData.comboItems.length > 0) {
+      const possibleComboCounts = productData.comboItems.map((ci: any) => {
+        const componentProd = products.find((p) => p.id === ci.productId);
+        const compStock = Number(componentProd?.currentStock ?? componentProd?.stock) || 0;
+        const requiredQty = Number(ci.quantity) || 1;
+        return Math.floor(compStock / requiredQty);
+      });
+      totalStock = possibleComboCounts.length > 0 ? Math.min(...possibleComboCounts) : 0;
     }
 
-    // Check if initial lot already exists when creating
-    if (lots && lots.length > 0) {
-      const duplicate = products.find(p =>
-        p.lots?.some(l => lots.some((newLot: any) => newLot.lotNumber.toLowerCase() === l.lotNumber.toLowerCase()))
-      );
-      if (duplicate) {
-        showFlashNotification(`Lot Number already exists in product "${duplicate.name}". Please use a unique lot number.`, 'error');
-        return;
+    const newId = `prod_${Date.now()}`;
+    
+    // Create initial lot only for non-combo products
+    let lots: ProductLot[] = [];
+    if (!isCombo) {
+      lots = productData.lots && productData.lots.length > 0 ? [...productData.lots] : [];
+      if (lots.length === 0) {
+        const itemLotNum = (productData as any).lotNumber;
+        if (itemLotNum && itemLotNum.trim()) {
+          lots = [{
+            id: `lot_${Date.now()}`,
+            lotNumber: itemLotNum.trim(),
+            costPrice: productData.costPrice,
+            sellingPrice: productData.sellingPrice,
+            currentStock: totalStock,
+            createdDate: new Date().toISOString().slice(0, 10),
+            source: 'opening_stock',
+          }];
+        } else if ((productData as any).source !== 'purchase') {
+          lots = [{
+            id: `lot_${Date.now()}`,
+            lotNumber: `LOT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+            costPrice: productData.costPrice,
+            sellingPrice: productData.sellingPrice,
+            currentStock: totalStock,
+            createdDate: new Date().toISOString().slice(0, 10),
+            source: 'opening_stock',
+          }];
+        }
+      }
+
+      // Check if initial lot already exists when creating single/variable product
+      if (lots && lots.length > 0) {
+        const duplicate = products.find(p =>
+          p.type !== 'combo' && p.lots?.some(l => lots.some((newLot: any) => newLot.lotNumber && l.lotNumber && newLot.lotNumber.toLowerCase() === l.lotNumber.toLowerCase()))
+        );
+        if (duplicate) {
+          showFlashNotification(`Lot Number already exists in product "${duplicate.name}". Please use a unique lot number.`, 'error');
+          return;
+        }
       }
     }
 
@@ -3362,6 +3515,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...productData,
       id: newId,
       currentStock: totalStock as number,
+      stock: totalStock as number,
       lots: lots,
     } as Product;
     const updatedProducts = [newProduct, ...products];
@@ -3377,14 +3531,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updated = prev.map((p) => {
         if (p.id !== id) return p;
         
-        // Check if price or cost changed to trigger lot creation
-        const priceChanged = 
+        const isCombo = (updateData.type || p.type) === 'combo';
+
+        // Check if price or cost changed to trigger lot creation (skip for combo)
+        const priceChanged = !isCombo && (
           (updateData.sellingPrice !== undefined && Number(updateData.sellingPrice) !== Number(p.sellingPrice)) ||
-          (updateData.costPrice !== undefined && Number(updateData.costPrice) !== Number(p.costPrice));
+          (updateData.costPrice !== undefined && Number(updateData.costPrice) !== Number(p.costPrice))
+        );
 
         let updatedLots = updateData.lots ? [...updateData.lots] : (p.lots ? [...p.lots] : []);
 
-        if (priceChanged) {
+        if (isCombo) {
+          updatedLots = [];
+        } else if (priceChanged) {
           // If no lots exist, create a lot for the CURRENT (now old) price first
           if (updatedLots.length === 0) {
             updatedLots.push({
@@ -3397,7 +3556,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
 
-          const newLotNum = updateData.manualLotNumber || `LOT-${new Date().getFullYear()}-${updatedLots.length + 1}`;
+          const newLotNum = updateData.manualLotNumber || `LOT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
           
           const newLot: ProductLot = {
             id: `lot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -3773,56 +3932,65 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Brand Management (finias POS Products & Inventory -> Brands)
   const addBrand = (brandData: Omit<Brand, 'id' | 'createdDate'>): Brand => {
+    const trimmedName = (brandData.name || '').trim();
+    const cleanCode = (brandData.code || `BRD-${trimmedName.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase() || 'GEN'}`).trim().toUpperCase();
     const newBrand: Brand = {
       ...brandData,
       id: `brd_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: brandData.name.trim(),
-      code: (brandData.code || `BRD-${brandData.name.substring(0, 4).toUpperCase().replace(/\s+/g, '')}`).trim().toUpperCase(),
-      shortCode: brandData.shortCode?.trim().toUpperCase() || '',
-      description: brandData.description?.trim() || '',
-      website: brandData.website?.trim() || '',
-      originCountry: brandData.originCountry?.trim() || '',
+      name: trimmedName,
+      code: cleanCode,
+      shortCode: (brandData.shortCode || '').trim().toUpperCase(),
+      description: (brandData.description || '').trim(),
+      website: (brandData.website || '').trim(),
+      originCountry: (brandData.originCountry || '').trim(),
       color: brandData.color || '#6366f1',
       logo: brandData.logo || '',
       status: brandData.status || 'active',
       createdDate: new Date().toISOString().slice(0, 10),
     };
-    const updated = [...brands, newBrand];
-    setBrands(updated);
-    try {
-      localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
-      triggerImmediateSyncPush({ brands: updated });
-    } catch {}
+    setBrands((prev) => {
+      const updated = [newBrand, ...prev.filter(b => b.id !== newBrand.id)];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
+        triggerImmediateSyncPush({ brands: updated });
+      } catch {}
+      return updated;
+    });
     return newBrand;
   };
 
   const updateBrand = (id: string, brandData: Partial<Brand>) => {
-    const currentBrand = brands.find((b) => b.id === id);
-    const oldName = currentBrand?.name;
-    const newName = brandData.name !== undefined ? brandData.name.trim() : oldName;
+    let oldName = '';
+    let newName = '';
+    setBrands((prev) => {
+      const currentBrand = prev.find((b) => b.id === id);
+      oldName = currentBrand?.name || '';
+      newName = brandData.name !== undefined ? brandData.name.trim() : oldName;
 
-    const updated = brands.map((b) => {
-      if (b.id !== id) return b;
-      return {
-        ...b,
-        ...brandData,
-        name: newName || b.name,
-        code: brandData.code !== undefined ? brandData.code.trim().toUpperCase() : b.code,
-        shortCode: brandData.shortCode !== undefined ? brandData.shortCode.trim().toUpperCase() : b.shortCode,
-        description: brandData.description !== undefined ? brandData.description.trim() : b.description,
-        website: brandData.website !== undefined ? brandData.website.trim() : b.website,
-        originCountry: brandData.originCountry !== undefined ? brandData.originCountry.trim() : b.originCountry,
-        color: brandData.color !== undefined ? brandData.color : b.color,
-        logo: brandData.logo !== undefined ? brandData.logo : b.logo,
-        status: brandData.status !== undefined ? brandData.status : b.status,
-      };
+      const updated = prev.map((b) => {
+        if (b.id !== id) return b;
+        return {
+          ...b,
+          ...brandData,
+          name: newName || b.name,
+          code: brandData.code !== undefined ? (brandData.code || '').trim().toUpperCase() : (b.code || ''),
+          shortCode: brandData.shortCode !== undefined ? (brandData.shortCode || '').trim().toUpperCase() : (b.shortCode || ''),
+          description: brandData.description !== undefined ? (brandData.description || '').trim() : (b.description || ''),
+          website: brandData.website !== undefined ? (brandData.website || '').trim() : (b.website || ''),
+          originCountry: brandData.originCountry !== undefined ? (brandData.originCountry || '').trim() : (b.originCountry || ''),
+          color: brandData.color !== undefined ? brandData.color : (b.color || '#6366f1'),
+          logo: brandData.logo !== undefined ? brandData.logo : (b.logo || ''),
+          status: brandData.status !== undefined ? brandData.status : (b.status || 'active'),
+        };
+      });
+
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
+        triggerImmediateSyncPush({ brands: updated });
+      } catch {}
+
+      return updated;
     });
-
-    setBrands(updated);
-    try {
-      localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
-      triggerImmediateSyncPush({ brands: updated });
-    } catch {}
 
     // Synchronize brand name in products if updated
     if (oldName && newName && oldName !== newName) {
@@ -5077,7 +5245,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // POS Cart Operations
-  const addToCart = (product: Product, quantity = 1, lotId?: string): boolean => {
+  const addToCart = (product: Product, quantity = 1, lotId?: string, variationId?: string): boolean => {
     // If product has multiple lots but no lotId was provided, we should ideally not allow adding it
     // directly without a choice, but for backward compatibility we take the newest lot if not specified.
     // However, the POS UI is already handling the popup.
@@ -5086,20 +5254,30 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const effectiveLotId = lotId || (product.lots && product.lots.length > 0 ? product.lots[product.lots.length - 1].id : undefined);
 
     const selectedLot = effectiveLotId ? product.lots?.find(l => l.id === effectiveLotId) : null;
-    const baseSellingPrice = selectedLot ? selectedLot.sellingPrice : product.sellingPrice;
+    const selectedVariation = variationId && product.variations ? product.variations.find(v => v.id === variationId || v.sku === variationId) : null;
+    const baseSellingPrice = selectedVariation ? Number(selectedVariation.sellingPrice) : (selectedLot ? selectedLot.sellingPrice : product.sellingPrice);
     const priceToUse = getCustomerGroupPrice(baseSellingPrice, selectedCustomer);
-    const costPriceToUse = selectedLot ? selectedLot.costPrice : product.costPrice;
+    const costPriceToUse = selectedVariation ? Number(selectedVariation.costPrice) : (selectedLot ? selectedLot.costPrice : product.costPrice);
     const lotNumber = selectedLot ? selectedLot.lotNumber : undefined;
+    const varLabel = selectedVariation ? (selectedVariation.value || selectedVariation.name?.replace(/^.*:\s*/, '')) : undefined;
+    const finalSku = selectedVariation ? (selectedVariation.sku || product.sku) : product.sku;
 
-    // Strict Stock Check for Lot & Product if overselling is disabled
+    // Strict Stock Check for Variation, Lot & Product if overselling is disabled
     const locStock = product.locationStocks?.[selectedLocationId] ?? product.currentStock;
+    const effectiveStock = selectedVariation ? Number(selectedVariation.currentStock ?? selectedVariation.openingStock ?? 0) : locStock;
+
     if (!settings.allowOverselling) {
+      if (selectedVariation && effectiveStock <= 0) {
+        showFlashNotification(`${product.name} (${varLabel || selectedVariation.sku}) is Out of Stock. Cannot add to cart.`, 'error');
+        return false;
+      }
+
       if (selectedLot && selectedLot.currentStock <= 0) {
         showFlashNotification(`Batch ${selectedLot.lotNumber} is Out of Stock. Cannot add to cart.`, 'error');
         return false;
       }
 
-      if (locStock <= 0) {
+      if (!selectedVariation && locStock <= 0) {
         showFlashNotification(`${product.name} is Out of Stock.`, 'error');
         return false;
       }
@@ -5115,19 +5293,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCart((prev) => {
       const existing = additionMethod === 'add_to_existing_qty'
-        ? prev.find((item) => item.productId === product.id && item.lotId === lotId)
+        ? prev.find((item) => item.productId === product.id && item.lotId === lotId && (!variationId || (item as any).variationId === variationId || item.sku === finalSku))
         : undefined;
 
       if (existing) {
         const nextQty = existing.quantity + quantity;
-        if (!settings.allowOverselling && nextQty > locStock) return prev; // Cannot exceed available stock
+        if (!settings.allowOverselling && nextQty > effectiveStock) return prev; // Cannot exceed available stock
         const nextCalc = calculateItemTax(existing.unitPrice, nextQty, existing.discount, {
           taxRate: existing.taxRate,
           taxGroupId: existing.taxGroupId,
         });
 
         return prev.map((item) =>
-          item.productId === product.id && item.lotId === lotId
+          item.productId === product.id && item.lotId === lotId && (!variationId || (item as any).variationId === variationId || item.sku === finalSku)
             ? {
                 ...item,
                 quantity: nextQty,
@@ -5147,8 +5325,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const warObj = product.warrantyId ? warranties.find((w) => w.id === product.warrantyId) : undefined;
         const newItem: CartItem = {
           productId: product.id,
-          productName: product.name,
-          sku: product.sku,
+          productName: selectedVariation ? `${product.name} (${varLabel})` : product.name,
+          sku: finalSku,
           hsnCode: product.hsnCode,
           taxGroupId: product.taxGroupId,
           unit: product.unit,
@@ -5165,9 +5343,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           igstAmount: calculated.igstAmount,
           discount: 0,
           total: lineTotal,
-          maxStock: locStock,
+          maxStock: effectiveStock,
           lotId: lotId,
           lotNumber: lotNumber,
+          variationId: selectedVariation?.id,
+          variationName: varLabel,
           warrantyId: product.warrantyId,
           warrantyName: warObj?.name,
           warrantyDuration: warObj?.duration,
@@ -5181,14 +5361,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const updateCartQty = (productId: string, quantity: number, lotId?: string) => {
+  const updateCartQty = (productId: string, quantity: number, lotId?: string, variationId?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId, lotId);
+      removeFromCart(productId, lotId, variationId);
       return;
     }
     setCart((prev) =>
       prev.map((item) => {
-        if (item.productId !== productId || item.lotId !== lotId) return item;
+        if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
         const validQty = settings.allowOverselling ? quantity : Math.min(quantity, item.maxStock);
         const nextCalc = calculateItemTax(item.unitPrice, validQty, item.discount, {
           taxRate: item.taxRate,
@@ -5210,10 +5390,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateCartDiscount = (productId: string, discount: number, lotId?: string) => {
+  const updateCartDiscount = (productId: string, discount: number, lotId?: string, variationId?: string) => {
     setCart((prev) =>
       prev.map((item) => {
-        if (item.productId !== productId || item.lotId !== lotId) return item;
+        if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
         const validDiscount = Math.max(0, discount);
         const nextCalc = calculateItemTax(item.unitPrice, item.quantity, validDiscount, {
           taxRate: item.taxRate,
@@ -5235,7 +5415,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateCartPrice = (productId: string, unitPrice: number, lotId?: string) => {
+  const updateCartPrice = (productId: string, unitPrice: number, lotId?: string, variationId?: string) => {
     const prod = products.find((p) => p.id === productId);
     const minFloorPrice = prod ? (prod.minSellingPrice ?? prod.sellingPrice) : 0;
     const isMinPriceEnabled = settings.salesPriceIsMinPrice ?? true;
@@ -5251,7 +5431,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCart((prev) =>
       prev.map((item) => {
-        if (item.productId !== productId || item.lotId !== lotId) return item;
+        if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
         const nextCalc = calculateItemTax(validPrice, item.quantity, item.discount, {
           taxRate: item.taxRate,
           taxGroupId: item.taxGroupId,
@@ -5272,8 +5452,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const removeFromCart = (productId: string, lotId?: string) => {
-    setCart((prev) => prev.filter((item) => !(item.productId === productId && item.lotId === lotId)));
+  const removeFromCart = (productId: string, lotId?: string, variationId?: string) => {
+    setCart((prev) => prev.filter((item) => !(item.productId === productId && item.lotId === lotId && (!variationId || (item as any).variationId === variationId))));
   };
 
   const clearCart = () => {
@@ -5446,6 +5626,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const prod = products.find(p => p.id === item.productId);
         if (!prod) continue;
         
+        if (item.variationId || (prod.variations && prod.variations.length > 0)) {
+          const matchingVar = prod.variations?.find((v: any) => v.id === item.variationId || v.sku === item.sku);
+          if (matchingVar) {
+            const varStock = matchingVar.locationStocks?.[targetLocId] ?? matchingVar.currentStock ?? matchingVar.openingStock ?? 0;
+            if (varStock < item.quantity) {
+              showFlashNotification(`Checkout failed: ${prod.name} (${matchingVar.value || matchingVar.name}) has insufficient stock (${varStock} available).`, 'error');
+              throw new Error('Insufficient variation stock');
+            }
+            continue;
+          }
+        }
+
         const locStock = prod.locationStocks?.[targetLocId] ?? prod.currentStock;
         if (locStock < item.quantity) {
           showFlashNotification(`Checkout failed: ${prod.name} has insufficient total stock (${locStock} available in this location).`, 'error');
@@ -5672,13 +5864,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           });
 
+          // Update individual variations stock if variable product
+          let updatedVariations = p.variations ? [...p.variations] : undefined;
+          if (updatedVariations && updatedVariations.length > 0) {
+            updatedVariations = updatedVariations.map((v: any) => {
+              const matchingVarItems = soldItemsForThisProduct.filter(
+                (item: any) => item.variationId === v.id || item.sku === v.sku
+              );
+              if (matchingVarItems.length === 0) return v;
+              const varQty = matchingVarItems.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0);
+
+              const vLocStocks = { ...(v.locationStocks || {}) };
+              const vCurrentLoc = vLocStocks[targetLocId] ?? (Number(v.currentStock) || 0);
+              const vNewLoc = isReturn
+                ? vCurrentLoc + varQty
+                : (settings.allowOverselling ? vCurrentLoc - varQty : Math.max(0, vCurrentLoc - varQty));
+              vLocStocks[targetLocId] = vNewLoc;
+
+              const vTotal = (Object.values(vLocStocks) as number[]).reduce((a: number, b: number) => a + (Number(b) || 0), 0);
+              const vFinalStock = isReturn
+                ? (Number(v.currentStock) || 0) + varQty
+                : (settings.allowOverselling ? (Number(v.currentStock) || 0) - varQty : Math.max(0, (Number(v.currentStock) || 0) - varQty));
+
+              return {
+                ...v,
+                locationStocks: vLocStocks,
+                currentStock: isNaN(vTotal) ? vFinalStock : vTotal,
+              };
+            });
+          }
+
           const total = (Object.values(newLocationStocks) as number[]).reduce((a: any, b: any) => a + b, 0) as number;
+          const varTotalStock = updatedVariations && updatedVariations.length > 0
+            ? updatedVariations.reduce((acc: number, v: any) => acc + (Number(v.currentStock) || 0), 0)
+            : total;
 
           return {
             ...p,
             locationStocks: newLocationStocks,
-            currentStock: total,
+            currentStock: p.type === 'variable' ? varTotalStock : total,
             lots: updatedLots,
+            variations: updatedVariations,
           };
         })
       );
@@ -7101,7 +7327,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const totalReceivables = customers.reduce((sum, c) => sum + c.totalDue, 0);
     const totalPayables = suppliers.reduce((sum, s) => sum + s.totalPayable, 0);
 
-    const cashInHand = (cashRegister.openingCash + cashRegister.cashSales) - cashRegister.totalExpenses;
+    const cashInHand = ((Number(cashRegister?.openingCash) || 0) + (Number(cashRegister?.cashSales) || 0)) - (Number(cashRegister?.totalExpenses) || 0);
     const bankAcc = accounts.find((a) => a.type === 'Bank');
     const bankBalance = bankAcc ? bankAcc.balance : 84250.00;
 
@@ -8642,10 +8868,16 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         { id: 'cat_care', name: 'Health & Personal Care', code: 'HPC', description: 'Soaps, hand wash, paper goods and organic essentials' },
       ];
       const demoBrands: Brand[] = [
-        { id: 'br_nestle', name: 'Nestlé', description: 'Global nutrition, food and premium coffee' },
-        { id: 'br_pepsi', name: 'PepsiCo', description: 'Artisan beverages and refreshments' },
-        { id: 'br_unilever', name: 'Unilever', description: 'Sustainable dairy and personal care staples' },
-        { id: 'br_kraft', name: 'Kraft Heinz', description: 'Specialty condiments, grains and pantry goods' },
+        { id: 'brd_apple', name: 'Apple', code: 'BRD-APPL', shortCode: 'AAPL', originCountry: 'United States', website: 'https://apple.com', color: '#6366f1', status: 'active', createdDate: '2026-01-01', description: 'Consumer electronics, laptops, and smartphones' },
+        { id: 'brd_samsung', name: 'Samsung', code: 'BRD-SAMS', shortCode: 'SMSNG', originCountry: 'South Korea', website: 'https://samsung.com', color: '#0ea5e9', status: 'active', createdDate: '2026-01-01', description: 'Displays, smartphones, appliances, and memory' },
+        { id: 'brd_sony', name: 'Sony', code: 'BRD-SONY', shortCode: 'SONY', originCountry: 'Japan', website: 'https://sony.com', color: '#8b5cf6', status: 'active', createdDate: '2026-01-01', description: 'Audio, cameras, gaming, and entertainment electronics' },
+        { id: 'brd_logitech', name: 'Logitech', code: 'BRD-LOGI', shortCode: 'LOGI', originCountry: 'Switzerland', website: 'https://logitech.com', color: '#10b981', status: 'active', createdDate: '2026-01-01', description: 'Computer peripherals, keyboards, mice, and webcams' },
+        { id: 'brd_apex', name: 'Apex Tech', code: 'BRD-APEX', shortCode: 'APEX', originCountry: 'United States', website: 'https://apextech.io', color: '#f59e0b', status: 'active', createdDate: '2026-01-01', description: 'Premium electronics, gadgets, smart devices, and accessories' },
+        { id: 'brd_nike', name: 'Nike', code: 'BRD-NIKE', shortCode: 'NIKE', originCountry: 'United States', website: 'https://nike.com', color: '#f43f5e', status: 'active', createdDate: '2026-01-01', description: 'Athletic footwear, sportswear, apparel, and lifestyle accessories' },
+        { id: 'br_nestle', name: 'Nestlé', code: 'BRD-NSTL', shortCode: 'NSTL', originCountry: 'Switzerland', website: 'https://nestle.com', color: '#6366f1', status: 'active', createdDate: '2026-01-01', description: 'Global nutrition, food and premium coffee' },
+        { id: 'br_pepsi', name: 'PepsiCo', code: 'BRD-PEPS', shortCode: 'PEPS', originCountry: 'United States', website: 'https://pepsico.com', color: '#0ea5e9', status: 'active', createdDate: '2026-01-01', description: 'Artisan beverages and refreshments' },
+        { id: 'br_unilever', name: 'Unilever', code: 'BRD-UNLV', shortCode: 'UNLV', originCountry: 'United Kingdom', website: 'https://unilever.com', color: '#10b981', status: 'active', createdDate: '2026-01-01', description: 'Sustainable dairy and personal care staples' },
+        { id: 'br_kraft', name: 'Kraft Heinz', code: 'BRD-KRFT', shortCode: 'KRFT', originCountry: 'United States', website: 'https://kraftheinz.com', color: '#f59e0b', status: 'active', createdDate: '2026-01-01', description: 'Specialty condiments, grains and pantry goods' },
       ];
       const demoUnits: Unit[] = [
         { id: 'unit_pc', name: 'Pieces', shortName: 'pc', allowDecimal: false },
@@ -9428,6 +9660,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateRack,
         deleteRack,
         assignRackPositionToProducts,
+        // Variation Templates Management
+        variationTemplates,
+        addVariationTemplate,
+        updateVariationTemplate,
+        deleteVariationTemplate,
+        duplicateVariationTemplate,
         inventorySubTab,
         setInventorySubTab,
         navigateToInventory,

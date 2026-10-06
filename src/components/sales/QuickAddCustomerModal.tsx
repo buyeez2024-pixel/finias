@@ -125,7 +125,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
         businessName: businessName.trim() || undefined,
         phone: phone.trim() ? `${countryCode} ${phone.trim()}` : 'N/A',
         countryCode: countryCode || '+1',
-        email: email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@client.com`,
+        email: email.trim() && email.trim().toUpperCase() !== 'N/A' ? email.trim() : undefined,
         customerGroupId: customerGroupId || undefined,
         customerGroup: selectedGroup ? selectedGroup.name : 'Standard Retail',
         creditLimit: parseFloat(creditLimit) || 5000,
@@ -179,7 +179,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Customer Name */}
             <div className="space-y-1.5 sm:col-span-2">

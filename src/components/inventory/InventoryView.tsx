@@ -260,6 +260,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [openingStockProduct, setOpeningStockProduct] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [deleteTargetProduct, setDeleteTargetProduct] = useState<Product | null>(null);
+  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(new Set());
 
   // Bulk Product Selection for Batch Actions & Export
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
@@ -1104,7 +1105,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 </thead>
                 <tbody className="text-slate-200">
                   {paginatedProducts.map((p) => {
-                    const currentStock = p.currentStock ?? 0;
+                    const isVariable = p.type === 'variable' || (Array.isArray(p.variations) && p.variations.length > 0);
+                    const varList = isVariable && p.variations ? p.variations : [];
+                    const varPrices = varList.map((v) => Number(v.sellingPrice) || 0);
+                    const minVarPrice = varPrices.length > 0 ? Math.min(...varPrices) : (p.sellingPrice ?? 0);
+                    const maxVarPrice = varPrices.length > 0 ? Math.max(...varPrices) : (p.sellingPrice ?? 0);
+                    const totalVarStock = varList.length > 0
+                      ? varList.reduce((sum, v) => sum + (Number(v.currentStock ?? v.openingStock) || 0), 0)
+                      : (p.currentStock ?? 0);
+                    const currentStock = isVariable && varList.length > 0 ? totalVarStock : (p.currentStock ?? 0);
                     const alertQty = p.alertQuantity ?? 5;
                     const cost = p.costPrice ?? 0;
                     const price = p.sellingPrice ?? 0;
@@ -1112,13 +1121,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     const isLow = currentStock > 0 && currentStock <= alertQty;
                     const matchedRack = racks.find((r) => r.name === p.rack);
                     const isSelected = selectedProductIds.has(p.id);
+                    const isExpanded = expandedProductIds.has(p.id);
 
                     return (
+                      <React.Fragment key={p.id}>
                       <tr
-                        key={p.id}
                         className={`hover:bg-slate-850/80 transition-colors border-b border-slate-800 ${
                           isSelected ? 'bg-indigo-950/25 border-indigo-900/50' : ''
-                        }`}
+                        } ${isExpanded ? 'bg-slate-900/70 border-b-0' : ''}`}
                       >
                         <td className={`py-3 px-3 text-center border-r border-slate-800 ${isSelected ? 'bg-indigo-950/40' : ''}`}>
                           <input
@@ -1154,12 +1164,25 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                         )}
                         {columnVisibility.name && (
                           <td className="py-3 px-3 border-r border-slate-800">
-                            <div className="font-bold text-white line-clamp-1 flex items-center gap-2">
-                              <span>{p.name}</span>
-                              {p.type === 'variable' && (
-                                <span className="text-[9px] font-bold text-purple-300 bg-purple-950/80 border border-purple-500/40 px-1.5 py-0.2 rounded-md shrink-0">
-                                  Variable ({p.variations?.length || 0})
-                                </span>
+                            <div className="font-bold text-white flex items-center gap-2">
+                              <span className="line-clamp-1">{p.name}</span>
+                              {isVariable && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setExpandedProductIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(p.id)) next.delete(p.id);
+                                      else next.add(p.id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="text-[10px] font-bold text-purple-300 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-sm"
+                                  title={isExpanded ? "Hide variation lines" : "Click to view line-wise variants"}
+                                >
+                                  <span>Variants ({varList.length})</span>
+                                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
                               )}
                               {p.type === 'combo' && (
                                 <span className="text-[9px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-md shrink-0">
@@ -1190,7 +1213,20 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                         )}
                         {columnVisibility.sellingPrice && (
                           <td className="py-3 px-3 text-right font-mono font-bold text-indigo-400 border-r border-slate-800">
-                            {formatCurrency(price, settings)}
+                            {isVariable && varList.length > 0 ? (
+                              <div>
+                                <span>
+                                  {minVarPrice === maxVarPrice
+                                    ? formatCurrency(minVarPrice, settings)
+                                    : `${formatCurrency(minVarPrice, settings)} - ${formatCurrency(maxVarPrice, settings)}`}
+                                </span>
+                                <span className="block text-[9px] font-normal text-slate-400 font-sans">
+                                  {varList.length} variants
+                                </span>
+                              </div>
+                            ) : (
+                              formatCurrency(price, settings)
+                            )}
                           </td>
                         )}
                         {columnVisibility.tax && (
@@ -1256,7 +1292,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
                         {columnVisibility.currentStock && (
                           <td className="py-3 px-3 text-center font-mono font-extrabold text-white text-sm border-r border-slate-800">
-                            {currentStock} <span className="text-[10px] text-slate-400 font-normal">{p.unit || 'Pcs'}</span>
+                            <div>
+                              <span>{currentStock}</span> <span className="text-[10px] text-slate-400 font-normal">{p.unit || 'Pcs'}</span>
+                              {isVariable && varList.length > 0 && (
+                                <span className="block text-[9px] font-semibold text-purple-400 font-sans">
+                                  Total across variants
+                                </span>
+                              )}
+                            </div>
                           </td>
                         )}
 
@@ -1332,6 +1375,97 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                           </td>
                         )}
                       </tr>
+
+                      {/* Expandable Line-wise Variations Row for Variable Products */}
+                      {isExpanded && isVariable && varList.length > 0 && (
+                        <tr className="bg-slate-950/95 border-b border-indigo-900/40 animate-fadeIn">
+                          <td colSpan={25} className="p-4 pl-8 sm:pl-12">
+                            <div className="bg-slate-900 rounded-xl border border-indigo-900/50 overflow-hidden shadow-inner space-y-3 p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-purple-300">
+                                    Line-wise Variations for: <span className="text-white">{p.name}</span> ({p.sku})
+                                  </span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-semibold">
+                                    {varList.length} variants captured
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingProduct(p)}
+                                  className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer hover:underline"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Open Full Product View Modal</span>
+                                </button>
+                              </div>
+
+                              <div className="overflow-x-auto rounded-lg border border-slate-800">
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-[#4caf50] text-white font-bold text-[11px] uppercase tracking-wider">
+                                    <tr>
+                                      <th className="py-2.5 px-3">Variation</th>
+                                      <th className="py-2.5 px-3">SKU</th>
+                                      <th className="py-2.5 px-3 text-right">Purchase Price (Exc. Tax)</th>
+                                      <th className="py-2.5 px-3 text-right">Purchase Price (Inc. Tax)</th>
+                                      <th className="py-2.5 px-3 text-center">Margin %</th>
+                                      <th className="py-2.5 px-3 text-right">Selling Price (Exc. Tax)</th>
+                                      <th className="py-2.5 px-3 text-right">Selling Price (Inc. Tax)</th>
+                                      <th className="py-2.5 px-3 text-center">Current Stock</th>
+                                      <th className="py-2.5 px-3 text-right">Stock Value</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-800 bg-slate-950 font-mono text-[11px]">
+                                    {varList.map((v, vIdx) => {
+                                      const vCost = v.costPrice ?? (p.costPrice || 0);
+                                      const vCostInc = v.costPriceIncTax ?? (p.taxRate ? vCost * (1 + p.taxRate / 100) : vCost);
+                                      const vPrice = v.sellingPrice ?? (p.sellingPrice || 0);
+                                      const vPriceInc = v.sellingPriceIncTax ?? (p.taxRate ? vPrice * (1 + p.taxRate / 100) : vPrice);
+                                      const vMargin = v.margin !== undefined ? Number(v.margin).toFixed(2) : (vPrice > 0 ? (((vPrice - vCost) / vPrice) * 100).toFixed(2) : '25.00');
+                                      const vStock = Number(v.currentStock ?? v.openingStock ?? 0);
+                                      const vStockVal = vStock * vPrice;
+                                      const vSku = v.sku || `${p.sku}-${vIdx + 1}`;
+                                      const vVal = v.value || v.name?.replace(/^.*:\s*/, '') || `Variant ${vIdx + 1}`;
+
+                                      return (
+                                        <tr key={v.id || vIdx} className="hover:bg-slate-900/50">
+                                          <td className="py-2 px-3 font-sans font-bold text-white">
+                                            <span className="inline-block px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 text-xs">
+                                              {vVal}
+                                            </span>
+                                          </td>
+                                          <td className="py-2 px-3 font-bold text-indigo-400">{vSku}</td>
+                                          <td className="py-2 px-3 text-right text-slate-300">{formatCurrency(vCost, settings)}</td>
+                                          <td className="py-2 px-3 text-right text-slate-300">{formatCurrency(vCostInc, settings)}</td>
+                                          <td className="py-2 px-3 text-center text-indigo-300 font-bold">{vMargin}%</td>
+                                          <td className="py-2 px-3 text-right font-bold text-emerald-400">{formatCurrency(vPrice, settings)}</td>
+                                          <td className="py-2 px-3 text-right font-bold text-emerald-400">{formatCurrency(vPriceInc, settings)}</td>
+                                          <td className="py-2 px-3 text-center font-bold text-white">
+                                            {vStock.toFixed(2)} {p.unit || 'Pcs'}
+                                          </td>
+                                          <td className="py-2 px-3 text-right font-bold text-amber-400">{formatCurrency(vStockVal, settings)}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                    <tr className="bg-slate-900 font-bold text-white border-t-2 border-slate-700">
+                                      <td className="py-2.5 px-3 font-sans text-purple-300">Total Variations</td>
+                                      <td className="py-2.5 px-3 text-slate-400">{varList.length} items</td>
+                                      <td colSpan={5} className="py-2.5 px-3 text-right text-slate-400 font-sans">Combined Total Stock:</td>
+                                      <td className="py-2.5 px-3 text-center text-emerald-400 font-bold">
+                                        {totalVarStock.toFixed(2)} {p.unit || 'Pcs'}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right text-amber-400 font-bold">
+                                        {formatCurrency(varList.reduce((s, v) => s + (Number(v.currentStock ?? v.openingStock ?? 0) * (v.sellingPrice ?? 0)), 0), settings)}
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

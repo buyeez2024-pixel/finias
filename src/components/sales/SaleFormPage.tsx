@@ -128,6 +128,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showFullProductModal, setShowFullProductModal] = useState(false);
   const [lotSelectionProduct, setLotSelectionProduct] = useState<Product | null>(null);
+  const [variationSelectionProduct, setVariationSelectionProduct] = useState<Product | null>(null);
 
   // Items State
   const [items, setItems] = useState<TransactionItem[]>(() => {
@@ -242,31 +243,137 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return customers.find(c => c.id === customerId) || customers[0];
   }, [customers, customerId]);
 
-  // Filtered Products for Search Dropdown (Safely handles missing or non-string fields)
+  // Filtered Products / Variations for Search Dropdown (handles Single products, Variable parents, and individual Variation SKUs)
   const filteredProducts = useMemo(() => {
     if (!productSearch || !productSearch.trim()) return [];
     const query = productSearch.toLowerCase().trim();
     if (!products || !Array.isArray(products)) return [];
 
-    return products
-      .filter((p) => {
-        if (!p) return false;
-        const name = String(p.name || '').toLowerCase();
-        const sku = String(p.sku || '').toLowerCase();
-        const category = String(p.category || '').toLowerCase();
-        const brand = String(p.brand || '').toLowerCase();
-        const barcode = String(p.barcode || '').toLowerCase();
+    const results: Array<{
+      id: string;
+      product: Product;
+      variation?: any;
+      isVariation: boolean;
+      isVariableParent: boolean;
+      displayName: string;
+      displaySku: string;
+      category: string;
+      unit: string;
+      stock: number;
+      price: number;
+      variationCount?: number;
+    }> = [];
 
-        return (
-          name.includes(query) ||
-          sku.includes(query) ||
-          category.includes(query) ||
-          brand.includes(query) ||
-          barcode.includes(query)
+    for (const p of products) {
+      if (!p) continue;
+      const isVariable = p.type === 'variable' || (p.variations && p.variations.length > 0);
+      const name = String(p.name || '').toLowerCase();
+      const sku = String(p.sku || '').toLowerCase();
+      const category = String(p.category || '').toLowerCase();
+      const brand = String(p.brand || '').toLowerCase();
+      const barcode = String(p.barcode || '').toLowerCase();
+
+      const parentMatch =
+        name.includes(query) ||
+        sku.includes(query) ||
+        category.includes(query) ||
+        brand.includes(query) ||
+        barcode.includes(query);
+
+      if (isVariable && p.variations && p.variations.length > 0) {
+        // Find matching variations for this product
+        const matchingVariations = p.variations.filter((v: any) => {
+          const vSku = String(v.sku || '').toLowerCase();
+          const vName = String(v.name || '').toLowerCase();
+          const vVal = String(v.value || '').toLowerCase();
+          const vBarcode = String(v.barcode || '').toLowerCase();
+          return vSku.includes(query) || vName.includes(query) || vVal.includes(query) || vBarcode.includes(query);
+        });
+
+        const totalVarStock = p.variations.reduce(
+          (sum: number, v: any) => sum + (Number(v.locationStocks?.[locationId] ?? v.currentStock ?? v.openingStock ?? 0)),
+          0
         );
-      })
-      .slice(0, 12);
-  }, [productSearch, products]);
+
+        // If specific variations matched the query (e.g. user typed a variation SKU)
+        if (matchingVariations.length > 0) {
+          matchingVariations.forEach((v: any) => {
+            const vStock = Number(v.locationStocks?.[locationId] ?? v.currentStock ?? v.openingStock ?? 0);
+            results.push({
+              id: `${p.id}-var-${v.id || v.sku}`,
+              product: p,
+              variation: v,
+              isVariation: true,
+              isVariableParent: false,
+              displayName: `${p.name} (${v.value || v.name})`,
+              displaySku: v.sku || `${p.sku}-${v.value}`,
+              category: p.category || 'General',
+              unit: p.unit || 'Pc',
+              stock: vStock,
+              price: Number(v.sellingPrice) || Number(p.sellingPrice) || 0,
+            });
+          });
+        }
+
+        // If parent product itself matched the query
+        if (parentMatch) {
+          const minPrice = Math.min(...p.variations.map((v: any) => Number(v.sellingPrice) || Number(p.sellingPrice) || 0));
+          results.push({
+            id: `${p.id}-parent`,
+            product: p,
+            isVariation: false,
+            isVariableParent: true,
+            displayName: p.name,
+            displaySku: p.sku || 'N/A',
+            category: p.category || 'General',
+            unit: p.unit || 'Pc',
+            stock: totalVarStock,
+            price: isFinite(minPrice) ? minPrice : (Number(p.sellingPrice) || 0),
+            variationCount: p.variations.length,
+          });
+
+          // Also, if no specific variation matched by SKU, list the individual variations so user can pick immediately
+          if (matchingVariations.length === 0) {
+            p.variations.forEach((v: any) => {
+              const vStock = Number(v.locationStocks?.[locationId] ?? v.currentStock ?? v.openingStock ?? 0);
+              results.push({
+                id: `${p.id}-var-${v.id || v.sku}`,
+                product: p,
+                variation: v,
+                isVariation: true,
+                isVariableParent: false,
+                displayName: `↳ ${v.value || v.name}`,
+                displaySku: v.sku || `${p.sku}-${v.value}`,
+                category: p.category || 'General',
+                unit: p.unit || 'Pc',
+                stock: vStock,
+                price: Number(v.sellingPrice) || Number(p.sellingPrice) || 0,
+              });
+            });
+          }
+        }
+      } else if (parentMatch) {
+        // Standard single product
+        const locStock = p.locationStocks?.[locationId] ?? p.currentStock ?? 0;
+        results.push({
+          id: p.id,
+          product: p,
+          isVariation: false,
+          isVariableParent: false,
+          displayName: p.name,
+          displaySku: p.sku || 'N/A',
+          category: p.category || 'General',
+          unit: p.unit || 'Pc',
+          stock: locStock,
+          price: Number(p.sellingPrice) || 0,
+        });
+      }
+
+      if (results.length >= 25) break;
+    }
+
+    return results;
+  }, [productSearch, products, locationId]);
 
   const isTaxEnabled = settings.enableTax && settings.taxSystem !== 'disabled';
   const showInlineTax = settings.enableTax && settings.taxSystem !== 'disabled' && (settings.enableInlineTax ?? true);
@@ -313,17 +420,34 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return list;
   }, [taxGroups, taxRates, settings.defaultTaxRate]);
 
-  // Add Product to Items table
-  const addProductToItems = (prod: Product, selectedLotId?: string) => {
+  // Add Product or Variation to Items table
+  const addProductToItems = (prod: Product, selectedLotId?: string, selectedVariation?: any) => {
     if (!prod) return;
-    const locStock = prod.locationStocks?.[locationId] ?? prod.currentStock ?? 0;
 
-    if (!settings.allowOverselling && locStock <= 0) {
-      showFlashNotification(`${prod.name} is Out of Stock (${locStock} available).`, 'error');
+    // If it is a variable product and no specific variation was chosen, prompt selection
+    const isVariable = prod.type === 'variable' || (prod.variations && prod.variations.length > 0);
+    if (isVariable && !selectedVariation) {
+      if (prod.variations && prod.variations.length === 1) {
+        selectedVariation = prod.variations[0];
+      } else {
+        setVariationSelectionProduct(prod);
+        setProductSearch('');
+        setShowSearchResults(false);
+        return;
+      }
+    }
+
+    const effectiveStock = selectedVariation
+      ? (selectedVariation.locationStocks?.[locationId] ?? selectedVariation.currentStock ?? selectedVariation.openingStock ?? 0)
+      : (prod.locationStocks?.[locationId] ?? prod.currentStock ?? 0);
+
+    if (!settings.allowOverselling && effectiveStock <= 0) {
+      const varLabel = selectedVariation ? ` (${selectedVariation.value || selectedVariation.name})` : '';
+      showFlashNotification(`${prod.name}${varLabel} is Out of Stock (${effectiveStock} available).`, 'error');
       return;
     }
 
-    if (prod.lots && prod.lots.length > 1 && !selectedLotId) {
+    if (prod.lots && prod.lots.length > 1 && !selectedLotId && !selectedVariation) {
       setLotSelectionProduct(prod);
       setProductSearch('');
       setShowSearchResults(false);
@@ -333,28 +457,41 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     const selectedLot = selectedLotId && prod.lots ? prod.lots.find((l) => l.id === selectedLotId) : null;
     const additionMethod = settings.salesItemAdditionMethod || 'add_to_existing_qty';
     const existingIdx = additionMethod === 'add_to_existing_qty'
-      ? items.findIndex((item) => item.productId === prod.id && (!selectedLotId || item.lotId === selectedLotId))
+      ? items.findIndex((item) =>
+          item.productId === prod.id &&
+          (!selectedLotId || item.lotId === selectedLotId) &&
+          (!selectedVariation || item.variationId === selectedVariation.id || item.sku === selectedVariation.sku)
+        )
       : -1;
 
     if (existingIdx >= 0) {
       handleQtyChange(existingIdx, items[existingIdx].quantity + 1);
     } else {
       const selectedCust = customers.find((c) => c.id === customerId);
-      const basePrice = selectedLot ? Number(selectedLot.sellingPrice) : (Number(prod.sellingPrice) || 0);
-      const unitPrice = getCustomerGroupPrice(basePrice, selectedCust);
+      const rawBasePrice = selectedVariation
+        ? Number(selectedVariation.sellingPrice)
+        : (selectedLot ? Number(selectedLot.sellingPrice) : (Number(prod.sellingPrice) || 0));
+      const unitPrice = getCustomerGroupPrice(rawBasePrice, selectedCust);
       // Default tax selection is "None" (0%) as requested
       const taxRate = 0;
       const taxAmt = 0;
       const lineTotal = unitPrice;
 
+      const varLabel = selectedVariation ? (selectedVariation.value || selectedVariation.name?.replace(/^.*:\s*/, '')) : undefined;
+      const finalProdName = selectedVariation ? `${prod.name} (${varLabel})` : (prod.name || 'Unnamed Product');
+      const finalSku = selectedVariation ? (selectedVariation.sku || prod.sku) : (prod.sku || 'N/A');
+      const finalCostPrice = selectedVariation
+        ? (Number(selectedVariation.costPrice) || 0)
+        : (selectedLot ? (Number(selectedLot.costPrice) || 0) : (Number(prod.costPrice) || 0));
+
       const newItem: TransactionItem = {
         productId: prod.id,
-        productName: prod.name || 'Unnamed Product',
-        sku: prod.sku || 'N/A',
+        productName: finalProdName,
+        sku: finalSku,
         unit: prod.unit || 'Pc',
         quantity: 1,
         unitPrice: unitPrice,
-        costPrice: selectedLot ? (Number(selectedLot.costPrice) || 0) : (Number(prod.costPrice) || 0),
+        costPrice: finalCostPrice,
         taxRate: taxRate,
         taxAmount: taxAmt,
         discount: 0,
@@ -364,6 +501,8 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         warrantyId: prod.warrantyId,
         lotId: selectedLot?.id,
         lotNumber: selectedLot?.lotNumber,
+        variationId: selectedVariation?.id,
+        variationName: varLabel,
       };
       setItems((prev) => [...prev, newItem]);
     }
@@ -380,7 +519,12 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         const prod = products.find((p) => p.id === item.productId);
         if (!prod) return item;
         const lot = item.lotId && prod.lots ? prod.lots.find((l) => l.id === item.lotId) : null;
-        const basePrice = lot ? Number(lot.sellingPrice) : (Number(prod.sellingPrice) || 0);
+        const matchingVar = item.variationId && prod.variations
+          ? prod.variations.find((v: any) => v.id === item.variationId || v.sku === item.sku)
+          : null;
+        const basePrice = matchingVar
+          ? Number(matchingVar.sellingPrice)
+          : (lot ? Number(lot.sellingPrice) : (Number(prod.sellingPrice) || 0));
         const targetPrice = getCustomerGroupPrice(basePrice, selectedCust);
         if (targetPrice === item.unitPrice) return item;
         return {
@@ -1104,52 +1248,87 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                 </div>
 
                 {filteredProducts.length > 0 ? (
-                  filteredProducts.map((prod) => {
-                    const locStock = prod.locationStocks?.[locationId] ?? prod.currentStock ?? 0;
-                    const isOutOfStock = locStock <= 0;
-                    const sellPrice = Number(prod.sellingPrice) || 0;
-                    const initialChar = prod.name ? prod.name.charAt(0).toUpperCase() : 'P';
-                    const alertQty = prod.alertQuantity ?? 5;
+                  filteredProducts.map((entry) => {
+                    const isOutOfStock = entry.stock <= 0;
+                    const initialChar = entry.product.name ? entry.product.name.charAt(0).toUpperCase() : 'P';
+                    const alertQty = entry.product.alertQuantity ?? 5;
 
                     return (
                       <div
-                        key={prod.id}
-                        onClick={() => addProductToItems(prod)}
-                        className="p-3 hover:bg-slate-900 border-b border-slate-900/60 cursor-pointer flex items-center justify-between transition group"
+                        key={entry.id}
+                        onClick={() => {
+                          if (entry.isVariableParent) {
+                            setVariationSelectionProduct(entry.product);
+                            setShowSearchResults(false);
+                          } else if (entry.isVariation) {
+                            addProductToItems(entry.product, undefined, entry.variation);
+                          } else {
+                            addProductToItems(entry.product);
+                          }
+                        }}
+                        className={`p-3 hover:bg-slate-900 border-b border-slate-900/60 cursor-pointer flex items-center justify-between transition group ${
+                          entry.isVariation ? 'bg-slate-950/70 pl-6' : ''
+                        }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400 font-bold text-xs shrink-0">
-                            {initialChar}
+                          <div
+                            className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs shrink-0 ${
+                              entry.isVariation
+                                ? 'bg-purple-950/60 border-purple-800/40 text-purple-300'
+                                : entry.isVariableParent
+                                ? 'bg-indigo-950/80 border-indigo-700/60 text-indigo-300'
+                                : 'bg-slate-900 border-slate-800 text-slate-300'
+                            }`}
+                          >
+                            {entry.isVariation ? 'V' : initialChar}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-white group-hover:text-indigo-400 transition truncate">
-                              {prod.name || 'Unnamed Product'}
+                            <div className="text-xs font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2 truncate">
+                              <span className="truncate">{entry.displayName}</span>
+                              {entry.isVariableParent && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-700 whitespace-nowrap">
+                                  {entry.variationCount} Variations Available
+                                </span>
+                              )}
+                              {entry.isVariation && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800 whitespace-nowrap">
+                                  Variant
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5 truncate">
-                              <span className="font-mono text-slate-500">SKU: {prod.sku || 'N/A'}</span>
+                              <span className="font-mono text-slate-500">SKU: {entry.displaySku}</span>
                               <span>•</span>
-                              <span className="capitalize">{prod.category || 'General'}</span>
-                              {prod.unit && <span>({prod.unit})</span>}
+                              <span className="capitalize">{entry.category || 'General'}</span>
+                              {entry.unit && <span>({entry.unit})</span>}
                             </div>
                           </div>
                         </div>
 
                         <div className="text-right shrink-0 pl-3">
                           <div className="text-xs font-mono font-bold text-emerald-400">
-                            {formatCurrency(sellPrice, settings)}
+                            {entry.isVariableParent ? `From ${formatCurrency(entry.price, settings)}` : formatCurrency(entry.price, settings)}
                           </div>
-                          <div className="mt-0.5">
+                          <div className="mt-0.5 flex items-center justify-end gap-1.5">
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 isOutOfStock
                                   ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                                  : locStock <= alertQty
+                                  : entry.stock <= alertQty
                                   ? 'bg-amber-950 text-amber-300 border border-amber-800'
                                   : 'bg-slate-800 text-slate-300'
                               }`}
                             >
-                              Stock: {locStock} {prod.unit || 'Pc'}
+                              {entry.isVariableParent ? `Total Stock: ${entry.stock} ${entry.unit}` : `Stock: ${entry.stock} ${entry.unit}`}
                             </span>
+                            {entry.isVariableParent && (
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 rounded text-[9px] font-bold"
+                              >
+                                Select
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1204,16 +1383,24 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
               ) : (
                 items.map((item, idx) => {
                   const prod = products.find(p => p.id === item.productId);
-                  const availableLocStock = prod ? (prod.locationStocks?.[locationId] ?? prod.currentStock) : 999;
+                  const matchingVar = prod?.variations?.find((v: any) => v.id === item.variationId || v.sku === item.sku);
+                  const availableLocStock = matchingVar
+                    ? (matchingVar.locationStocks?.[locationId] ?? matchingVar.currentStock ?? matchingVar.openingStock ?? 0)
+                    : prod ? (prod.locationStocks?.[locationId] ?? prod.currentStock) : 999;
                   const isExceedingStock = availableLocStock < item.quantity;
 
                   return (
-                    <tr key={`${item.productId}-${idx}`} className="hover:bg-slate-950/40 transition">
+                    <tr key={`${item.productId}-${item.variationId || item.sku || 'single'}-${idx}`} className="hover:bg-slate-950/40 transition">
                       <td className="py-3 px-3 text-slate-500 font-mono">{idx + 1}</td>
                       <td className="py-3 px-3">
                         <div className="font-bold text-white">{item.productName}</div>
                         <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                           <span className="font-mono text-slate-500">SKU: {item.sku}</span>
+                          {item.variationName && (
+                            <span className="bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.2 rounded text-[10px] font-bold">
+                              Var: {item.variationName}
+                            </span>
+                          )}
                           {item.lotNumber && (
                             <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-1.5 py-0.2 rounded text-[10px] font-bold">
                               Lot: {item.lotNumber}
@@ -2081,6 +2268,118 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                 className="px-6 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VARIATION SELECTION MODAL */}
+      {variationSelectionProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-scaleIn">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/30">
+                  <Boxes className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight">Select Product Variation</h3>
+                  <p className="text-xs text-slate-400 font-medium">
+                    {variationSelectionProduct.name} • Parent SKU: {variationSelectionProduct.sku || 'N/A'} • ({variationSelectionProduct.variations?.length || 0} variations)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVariationSelectionProduct(null)}
+                className="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-3">
+                <Info className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-purple-200 leading-relaxed">
+                  This variable product contains multiple distinct variation SKUs with independent stock levels. Select the desired variation to add to this sale invoice.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                {variationSelectionProduct.variations?.map((v: any, vIdx: number) => {
+                  const varStock = Number(v.locationStocks?.[locationId] ?? v.currentStock ?? v.openingStock ?? 0);
+                  const isVarOutOfStock = varStock <= 0;
+                  const isVarDisabled = isVarOutOfStock && !settings.allowOverselling;
+                  const varPrice = Number(v.sellingPrice) || Number(variationSelectionProduct.sellingPrice) || 0;
+                  const varLabel = v.value || v.name || `Variation ${vIdx + 1}`;
+                  const varSku = v.sku || `${variationSelectionProduct.sku}-${vIdx + 1}`;
+
+                  return (
+                    <button
+                      key={v.id || v.sku || vIdx}
+                      type="button"
+                      disabled={isVarDisabled}
+                      onClick={() => {
+                        addProductToItems(variationSelectionProduct, undefined, v);
+                        setVariationSelectionProduct(null);
+                        showFlashNotification(`Added ${variationSelectionProduct.name} (${varLabel}) to sale invoice!`, 'success');
+                      }}
+                      className={`w-full flex items-center justify-between p-4 border rounded-2xl transition group relative overflow-hidden ${
+                        isVarDisabled 
+                          ? 'bg-slate-900/50 border-slate-800 cursor-not-allowed opacity-60' 
+                          : 'bg-slate-800 hover:bg-slate-750 border-slate-700 hover:border-purple-500/60 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 text-left">
+                        <div className="w-9 h-9 rounded-xl bg-purple-950/60 border border-purple-800/40 flex items-center justify-center text-purple-300 font-bold text-xs shrink-0">
+                          {vIdx + 1}
+                        </div>
+                        <div>
+                          <div className={`text-sm font-bold flex items-center gap-2 ${isVarOutOfStock ? 'text-slate-400' : 'text-white group-hover:text-purple-300'}`}>
+                            <span>{varLabel}</span>
+                            <span className="px-2 py-0.5 bg-slate-900 text-slate-400 rounded-md text-[10px] font-mono border border-slate-800">
+                              SKU: {varSku}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 font-medium">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                isVarOutOfStock
+                                  ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              }`}
+                            >
+                              Stock: {varStock} {variationSelectionProduct.unit || 'Pc'} {isVarOutOfStock ? '(Out of Stock)' : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3.5">
+                        <div className="text-right">
+                          <div className={`text-base font-black font-mono tracking-tight ${isVarOutOfStock ? 'text-slate-600' : 'text-emerald-400'}`}>
+                            {formatCurrency(varPrice, settings)}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-xl bg-purple-600/20 text-purple-300 group-hover:bg-purple-600 group-hover:text-white transition">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-800/30 border-t border-slate-800 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setVariationSelectionProduct(null)}
+                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              >
+                Close
               </button>
             </div>
           </div>

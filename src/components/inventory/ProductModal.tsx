@@ -361,11 +361,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   >
                     <option value="">Select Brand (Optional)</option>
                     {brands && brands.length > 0 ? (
-                      brands.filter(b => b.status === 'active' || b.name === brand).map((b) => (
-                        <option key={b.id} value={b.name}>{b.name}</option>
-                      ))
+                      brands
+                        .filter((b) => (b.status || 'active').toLowerCase() === 'active' || (b.name && b.name.toLowerCase() === (brand || '').toLowerCase()))
+                        .map((b) => (
+                          <option key={b.id} value={b.name}>{b.name}</option>
+                        ))
                     ) : (
-                      ['Apex Tech', 'Apple', 'Samsung', 'Sony', 'Logitech'].map((b) => (
+                      ['Apex Tech', 'Apple', 'Samsung', 'Sony', 'Logitech', 'Nike'].map((b) => (
                         <option key={b} value={b}>{b}</option>
                       ))
                     )}
@@ -508,13 +510,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </div>
 
               {/* Tax Group & Tax Type Selection */}
-              {Boolean(settings.enablePriceAndTaxInfo) && (
+              {settings.enablePriceAndTaxInfo !== false && (
                 <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t ${
                   isLight ? 'border-slate-200' : 'border-slate-800'
                 }`}>
                   <div className="sm:col-span-2">
                     <label className={`${isLight ? 'text-slate-600' : 'text-slate-400'} font-semibold flex items-center justify-between`}>
-                      <span>Applicable Tax Group</span>
+                      <span>Applicable Tax</span>
                       <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">
                         Rate: {taxRate}%
                       </span>
@@ -524,16 +526,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                       onChange={(e) => {
                         const gid = e.target.value;
                         setTaxGroupId(gid);
-                        const found = taxGroups.find((g) => g.id === gid);
+                        const found = (taxGroups || []).find((g) => g.id === gid);
                         if (found) {
                           setTaxRate(found.totalRate.toString());
+                        } else {
+                          setTaxRate('0');
                         }
                       }}
                       className={`w-full font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none mt-1 ${
                         isLight ? 'bg-white text-slate-900 border-slate-200' : 'bg-slate-900 text-white border-slate-700'
                       }`}
                     >
-                      {taxGroups.map((g) => (
+                      <option value="">None (0% Tax)</option>
+                      {(taxGroups || []).map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.name} ({g.totalRate}%)
                         </option>
@@ -542,7 +547,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   </div>
 
                   <div>
-                    <label className={`${isLight ? 'text-slate-600' : 'text-slate-400'} font-semibold`}>Selling Price Tax</label>
+                    <label className={`${isLight ? 'text-slate-600' : 'text-slate-400'} font-semibold`}>Selling Price Tax Type</label>
                     <select
                       value={taxType}
                       onChange={(e) => setTaxType(e.target.value as any)}
@@ -550,8 +555,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                         isLight ? 'bg-white text-slate-900 border-slate-200' : 'bg-slate-900 text-white border-slate-700'
                       }`}
                     >
-                      <option value="exclusive">Exclusive</option>
-                      <option value="inclusive">Inclusive</option>
+                      <option value="exclusive">Exclusive (Added to price)</option>
+                      <option value="inclusive">Inclusive (Included in price)</option>
                       <option value="exempt">Exempt (0%)</option>
                     </select>
                   </div>

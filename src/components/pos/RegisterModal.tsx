@@ -30,7 +30,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   onShiftOpened,
 }) => {
   const {
-    cashRegister = { openingCash: 0, cashSales: 0, totalExpenses: 0, status: 'closed', openedAt: '', cashierName: '' },
+    cashRegister = { openingCash: 0, cashSales: 0, cardSales: 0, totalExpenses: 0, status: 'closed', openedAt: '', cashierName: '' },
     openRegister,
     closeRegister,
     settings = {},
@@ -47,7 +47,10 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
   const expectedCashInDrawer = useMemo(() => {
     if (!cashRegister) return 0;
-    return cashRegister.openingCash + (cashRegister.cashSales || 0) - (cashRegister.totalExpenses || 0);
+    const opening = Number(cashRegister.openingCash) || 0;
+    const sales = Number(cashRegister.cashSales) || 0;
+    const expenses = Number(cashRegister.totalExpenses) || 0;
+    return opening + sales - expenses;
   }, [cashRegister]);
 
   React.useEffect(() => {
@@ -155,28 +158,28 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                   <div className="text-[10px] text-slate-400 font-medium">Opening Float</div>
                   <div className="text-xs font-bold text-slate-200 font-mono mt-0.5">
                     {settings.currencySymbol}
-                    {cashRegister.openingCash.toFixed(2)}
+                    {(Number(cashRegister?.openingCash) || 0).toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
                   <div className="text-[10px] text-emerald-400 font-medium">Cash Sales</div>
                   <div className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
                     +{settings.currencySymbol}
-                    {cashRegister.cashSales.toFixed(2)}
+                    {(Number(cashRegister?.cashSales) || 0).toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
                   <div className="text-[10px] text-blue-400 font-medium">Card Sales</div>
                   <div className="text-xs font-bold text-blue-400 font-mono mt-0.5">
                     {settings.currencySymbol}
-                    {cashRegister.cardSales.toFixed(2)}
+                    {(Number(cashRegister?.cardSales) || 0).toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
                   <div className="text-[10px] text-rose-400 font-medium">Drawer Out</div>
                   <div className="text-xs font-bold text-rose-400 font-mono mt-0.5">
                     -{settings.currencySymbol}
-                    {cashRegister.totalExpenses.toFixed(2)}
+                    {(Number(cashRegister?.totalExpenses) || 0).toFixed(2)}
                   </div>
                 </div>
               </div>

@@ -89,7 +89,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
   onClose,
   onOpenHistory,
 }) => {
-  const { settings, transactions } = useErp();
+  const { settings, locations = [], transactions = [], stockTransfers = [], stockAdjustments = [] } = useErp();
 
   if (!isOpen || !product) return null;
 
@@ -99,17 +99,45 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
 
   const cost = product.costPrice ?? 0;
   const price = product.sellingPrice ?? 0;
-  const margin = price > 0 ? (((price - cost) / price) * 100).toFixed(2) : '10.00';
-  const currentStock = product.currentStock ?? 37;
-  const stockValue = currentStock * price;
+  const margin = price > 0 ? (((price - cost) / price) * 100).toFixed(2) : '0.00';
+  const isVariableProduct = product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0);
+  const variationsList = isVariableProduct && product.variations && product.variations.length > 0 ? product.variations : [];
+  
+  const totalVariationsStock = variationsList.reduce((sum, v) => sum + (Number(v.currentStock ?? v.openingStock) || 0), 0);
+  const totalVariationsStockValue = variationsList.reduce((sum, v) => sum + ((Number(v.currentStock ?? v.openingStock) || 0) * (v.sellingPrice ?? price)), 0);
 
-  const totalSold = transactions.reduce((acc, t) => {
-    if (t.type === 'sale' && t.status === 'final') {
-      const item = t.items.find((i) => i.productId === product.id || i.name === product.name);
-      if (item) return acc + item.quantity;
+  const currentStock = isVariableProduct && variationsList.length > 0
+    ? totalVariationsStock
+    : Number(product.currentStock ?? product.stock ?? 0);
+  const stockValue = isVariableProduct && variationsList.length > 0
+    ? totalVariationsStockValue
+    : currentStock * price;
+
+  const defaultLocationName = locations.find((l) => l.id === product.locationId || l.id === product.branchId)?.name || locations[0]?.name || 'MS Agencies';
+
+  const totalSold = (transactions || []).reduce((acc, t) => {
+    if ((t.type === 'sale' || t.type === 'pos_sale') && (t.status === 'final' || t.status === 'completed' || t.paymentStatus === 'paid')) {
+      const item = t.items?.find((i) => i.productId === product.id || i.name === product.name);
+      if (item) return acc + (Number(item.quantity) || 0);
     }
     return acc;
-  }, 14);
+  }, 0);
+
+  const totalTransferred = (stockTransfers || []).reduce((acc, st) => {
+    if (st.status === 'completed' && Array.isArray(st.items)) {
+      const item = st.items.find((i: any) => i.productId === product.id || i.name === product.name);
+      if (item) return acc + (Number(item.quantity) || 0);
+    }
+    return acc;
+  }, 0);
+
+  const totalAdjusted = (stockAdjustments || []).reduce((acc, sa) => {
+    if (Array.isArray(sa.items)) {
+      const item = sa.items.find((i: any) => i.productId === product.id || i.name === product.name);
+      if (item) return acc + (Number(item.quantity) || 0);
+    }
+    return acc;
+  }, 0);
 
   const handlePrint = () => {
     window.print();
@@ -191,6 +219,12 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
             <table className="w-full text-left text-xs">
               <thead className={`${theme.headerBg} font-bold uppercase text-[10px] tracking-wider`}>
                 <tr>
+                  {isVariableProduct && variationsList.length > 0 && (
+                    <th className="py-3 px-4">Variation</th>
+                  )}
+                  {isVariableProduct && variationsList.length > 0 && (
+                    <th className="py-3 px-4">SKU</th>
+                  )}
                   <th className="py-3 px-4">Default Purchase Price (Exc. tax)</th>
                   <th className="py-3 px-4">Default Purchase Price (Inc. tax)</th>
                   <th className="py-3 px-4">x Margin(%)</th>
@@ -202,14 +236,49 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
               <tbody className={`divide-y font-mono ${
                 isLight ? 'divide-slate-200 bg-white text-slate-900' : 'divide-slate-800 bg-slate-950 text-slate-200'
               }`}>
-                <tr>
-                  <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
-                  <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
-                  <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{margin}</td>
-                  <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
-                  <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
-                  <td className="py-3 px-4 text-slate-400">—</td>
-                </tr>
+                {isVariableProduct && variationsList.length > 0 ? (
+                  variationsList.map((v, idx) => {
+                    const vCost = v.costPrice ?? cost;
+                    const vCostInc = v.costPriceIncTax ?? (product.taxRate ? vCost * (1 + product.taxRate / 100) : vCost);
+                    const vPrice = v.sellingPrice ?? price;
+                    const vPriceInc = v.sellingPriceIncTax ?? (product.taxRate ? vPrice * (1 + product.taxRate / 100) : vPrice);
+                    const vMargin = v.margin !== undefined ? Number(v.margin).toFixed(2) : (vPrice > 0 ? (((vPrice - vCost) / vPrice) * 100).toFixed(2) : margin);
+                    const vSku = v.sku || `${product.sku}-${idx + 1}`;
+                    const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
+
+                    return (
+                      <tr key={v.id || idx} className="hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3 px-4 font-sans font-bold text-white">
+                          <span className="inline-block px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-lg text-xs">
+                            {vValue}
+                          </span>
+                        </td>
+                        <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{vSku}</td>
+                        <td className="py-3 px-4">{formatCurrency(vCost, settings)}</td>
+                        <td className="py-3 px-4">{formatCurrency(vCostInc, settings)}</td>
+                        <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{vMargin}%</td>
+                        <td className="py-3 px-4">{formatCurrency(vPrice, settings)}</td>
+                        <td className="py-3 px-4">{formatCurrency(vPriceInc, settings)}</td>
+                        <td className="py-3 px-4">
+                          {v.image ? (
+                            <img src={v.image} alt={vValue} className="w-9 h-9 object-cover rounded-lg border border-slate-700 bg-slate-900" />
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
+                    <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
+                    <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{margin}</td>
+                    <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
+                    <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
+                    <td className="py-3 px-4 text-slate-400">—</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -238,17 +307,62 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                 <tbody className={`divide-y font-mono ${
                   isLight ? 'divide-slate-200 bg-white text-slate-900' : 'divide-slate-800 bg-slate-950 text-slate-200'
                 }`}>
-                  <tr>
-                    <td className={`py-3 px-3 font-bold ${theme.textAccent}`}>{product.sku}</td>
-                    <td className={`py-3 px-3 font-sans font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{product.name}</td>
-                    <td className={`py-3 px-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>MS Agencies</td>
-                    <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
-                    <td className="py-3 px-3 font-bold text-emerald-600">{currentStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                    <td className="py-3 px-3 font-bold text-amber-500">{formatCurrency(stockValue, settings)}</td>
-                    <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                    <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
-                    <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
-                  </tr>
+                  {isVariableProduct && variationsList.length > 0 ? (
+                    <>
+                      {variationsList.map((v, idx) => {
+                        const vSku = v.sku || `${product.sku}-${idx + 1}`;
+                        const vPrice = v.sellingPrice ?? price;
+                        const vStock = Number(v.currentStock ?? v.openingStock ?? 0);
+                        const vStockVal = vStock * vPrice;
+                        const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
+
+                        return (
+                          <tr key={v.id || idx} className="hover:bg-slate-900/40 transition-colors">
+                            <td className={`py-3 px-3 font-bold ${theme.textAccent}`}>{vSku}</td>
+                            <td className={`py-3 px-3 font-sans font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              <div className="flex items-center gap-1.5">
+                                <span>{product.name}</span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                                  {vValue}
+                                </span>
+                              </div>
+                            </td>
+                            <td className={`py-3 px-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{defaultLocationName}</td>
+                            <td className="py-3 px-3">{formatCurrency(vPrice, settings)}</td>
+                            <td className="py-3 px-3 font-bold text-emerald-600">{vStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                            <td className="py-3 px-3 font-bold text-amber-500">{formatCurrency(vStockVal, settings)}</td>
+                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                          </tr>
+                        );
+                      })}
+                      {/* Summary Total Row for Variable Product */}
+                      <tr className={`font-bold ${isLight ? 'bg-slate-100/90 text-slate-950' : 'bg-slate-900/90 text-white'}`}>
+                        <td className={`py-3 px-3 ${theme.textAccent}`}>Total</td>
+                        <td className="py-3 px-3 font-sans">{product.name} ({variationsList.length} Variations)</td>
+                        <td className="py-3 px-3">All Locations</td>
+                        <td className="py-3 px-3 text-slate-500">—</td>
+                        <td className="py-3 px-3 font-bold text-emerald-500">{totalVariationsStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                        <td className="py-3 px-3 font-bold text-amber-400">{formatCurrency(totalVariationsStockValue, settings)}</td>
+                        <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                        <td className="py-3 px-3">{totalTransferred.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                        <td className="py-3 px-3">{totalAdjusted.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                      </tr>
+                    </>
+                  ) : (
+                    <tr>
+                      <td className={`py-3 px-3 font-bold ${theme.textAccent}`}>{product.sku}</td>
+                      <td className={`py-3 px-3 font-sans font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{product.name}</td>
+                      <td className={`py-3 px-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{defaultLocationName}</td>
+                      <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
+                      <td className="py-3 px-3 font-bold text-emerald-600">{currentStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                      <td className="py-3 px-3 font-bold text-amber-500">{formatCurrency(stockValue, settings)}</td>
+                      <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                      <td className="py-3 px-3">{totalTransferred.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                      <td className="py-3 px-3">{totalAdjusted.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

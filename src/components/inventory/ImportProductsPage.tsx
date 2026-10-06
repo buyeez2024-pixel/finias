@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useErp } from '../../context/ErpContext';
 import { Product } from '../../types/erp';
@@ -15,7 +15,9 @@ import {
   Sparkles,
   Layers,
   HelpCircle,
-  X
+  X,
+  ShieldAlert,
+  Hash
 } from 'lucide-react';
 
 interface ParsedProductRow {
@@ -24,6 +26,7 @@ interface ParsedProductRow {
   name: string;
   sku?: string;
   barcode?: string;
+  lotNumber?: string;
   category: string;
   brand?: string;
   unit: string;
@@ -35,12 +38,15 @@ interface ParsedProductRow {
   hsnCode?: string;
   isValid: boolean;
   validationError?: string;
+  skuStatus?: 'ok' | 'duplicate_system' | 'duplicate_batch';
+  lotStatus?: 'ok' | 'duplicate_system' | 'duplicate_batch';
   raw: Record<string, any>;
 }
 
 export const ImportProductsPage: React.FC = () => {
   const {
     addProducts,
+    products = [],
     categories,
     brands,
     units,
@@ -64,12 +70,46 @@ export const ImportProductsPage: React.FC = () => {
   const fallbackTaxRate = defaultTaxGroup ? defaultTaxGroup.totalRate : 0;
   const defaultLocId = locations && locations.length > 0 ? (locations.find((l) => l.isDefault)?.id || locations[0].id) : 'loc_1';
 
+  // Memoized System SKUs and System LOT Numbers
+  const existingSystemSkus = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.sku && typeof p.sku === 'string') set.add(p.sku.trim().toLowerCase());
+      if (p.barcode && typeof p.barcode === 'string') set.add(p.barcode.trim().toLowerCase());
+      if (Array.isArray(p.variations)) {
+        p.variations.forEach((v: any) => {
+          if (v.sku && typeof v.sku === 'string') set.add(v.sku.trim().toLowerCase());
+          if (v.barcode && typeof v.barcode === 'string') set.add(v.barcode.trim().toLowerCase());
+        });
+      }
+    });
+    return set;
+  }, [products]);
+
+  const existingSystemLots = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (Array.isArray(p.lots)) {
+        p.lots.forEach((l: any) => {
+          if (l.lotNumber && typeof l.lotNumber === 'string') {
+            set.add(l.lotNumber.trim().toLowerCase());
+          }
+        });
+      }
+      if ((p as any).lotNumber && typeof (p as any).lotNumber === 'string') {
+        set.add(String((p as any).lotNumber).trim().toLowerCase());
+      }
+    });
+    return set;
+  }, [products]);
+
   // Template Data Generator
   const generateTemplateData = () => {
     const headers = [
       'Name*',
       'SKU',
       'Barcode',
+      'Lot Number',
       'Category*',
       'Brand',
       'Unit*',
@@ -86,6 +126,7 @@ export const ImportProductsPage: React.FC = () => {
         'Wireless Bluetooth Headphones',
         'SKU-BTH-01',
         '8901234567891',
+        'LOT-2026-001',
         'Electronics',
         'ApexTech',
         'Pcs',
@@ -100,6 +141,7 @@ export const ImportProductsPage: React.FC = () => {
         'Organic Coffee Beans (500g)',
         'SKU-CB-500',
         '8901234567892',
+        'LOT-2026-002',
         'Groceries',
         'RoastMaster',
         'Pack',
@@ -114,11 +156,12 @@ export const ImportProductsPage: React.FC = () => {
         'Ergonomic Desk Chair',
         'SKU-CHR-99',
         '8901234567893',
+        'LOT-2026-003',
         'Furniture',
         'ComfortPlus',
         'Nos',
         '120.00',
-         me => '199.99',
+        '199.99',
         '18',
         '5',
         '15',
@@ -165,7 +208,8 @@ export const ImportProductsPage: React.FC = () => {
       return;
     }
 
-    const parsed: ParsedProductRow[] = rawJson.map((row, index) => {
+    // Pass 1: Extract all raw fields
+    const extractedRows = rawJson.map((row, index) => {
       const findVal = (...aliases: string[]): string => {
         for (const alias of aliases) {
           const matchedKey = Object.keys(row).find(
@@ -181,6 +225,7 @@ export const ImportProductsPage: React.FC = () => {
       const name = findVal('Name', 'Product Name', 'Title', 'Item Name');
       const sku = findVal('SKU', 'Item Code', 'Product Code');
       const barcode = findVal('Barcode', 'EAN', 'UPC', 'GTIN');
+      const lotNumber = findVal('Lot Number', 'LotNumber', 'LOT Number', 'Lot', 'Batch Number', 'BatchNo', 'Lot No', 'Batch', 'Batch No');
       const category = findVal('Category', 'Product Category') || 'General';
       const brand = findVal('Brand', 'Brand Name', 'Manufacturer');
       const unit = findVal('Unit', 'Unit of Measure', 'UoM') || 'Nos';
@@ -197,38 +242,105 @@ export const ImportProductsPage: React.FC = () => {
       const alertQuantity = alertStr !== '' && !isNaN(parseInt(alertStr)) ? parseInt(alertStr) : 10;
       const openingStock = stockStr !== '' && !isNaN(parseInt(stockStr)) ? parseInt(stockStr) : 0;
 
-      let isValid = true;
-      let validationError = '';
+      return {
+        rowIndex: index + 1,
+        name,
+        sku,
+        barcode,
+        lotNumber,
+        category,
+        brand,
+        unit,
+        costPrice: isNaN(costPrice) ? 0 : costPrice,
+        sellingPrice: isNaN(sellingPrice) ? 0 : sellingPrice,
+        rawCostPrice: costPrice,
+        rawSellingPrice: sellingPrice,
+        taxRate,
+        alertQuantity,
+        openingStock,
+        hsnCode,
+        raw: row,
+      };
+    });
 
-      if (!name) {
-        isValid = false;
-        validationError = 'Missing Product Name';
-      } else if (isNaN(costPrice)) {
-        isValid = false;
-        validationError = 'Invalid or Missing Cost Price';
-      } else if (isNaN(sellingPrice)) {
-        isValid = false;
-        validationError = 'Invalid or Missing Selling Price';
+    // Pass 2: Track SKU and LOT frequencies within the uploaded file batch
+    const skuBatchCounts = new Map<string, number>();
+    const lotBatchCounts = new Map<string, number>();
+
+    extractedRows.forEach((r) => {
+      if (r.sku) {
+        const cleanSku = r.sku.trim().toLowerCase();
+        skuBatchCounts.set(cleanSku, (skuBatchCounts.get(cleanSku) || 0) + 1);
       }
+      if (r.lotNumber) {
+        const cleanLot = r.lotNumber.trim().toLowerCase();
+        lotBatchCounts.set(cleanLot, (lotBatchCounts.get(cleanLot) || 0) + 1);
+      }
+    });
+
+    // Pass 3: Validate each row against system and file batch
+    const parsed: ParsedProductRow[] = extractedRows.map((r, index) => {
+      const errorList: string[] = [];
+      let skuStatus: 'ok' | 'duplicate_system' | 'duplicate_batch' = 'ok';
+      let lotStatus: 'ok' | 'duplicate_system' | 'duplicate_batch' = 'ok';
+
+      if (!r.name) {
+        errorList.push('Missing Product Name');
+      }
+      if (isNaN(r.rawCostPrice)) {
+        errorList.push('Invalid or Missing Cost Price');
+      }
+      if (isNaN(r.rawSellingPrice)) {
+        errorList.push('Invalid or Missing Selling Price');
+      }
+
+      // SKU Uniqueness Validation
+      if (r.sku) {
+        const cleanSku = r.sku.trim().toLowerCase();
+        if (existingSystemSkus.has(cleanSku)) {
+          skuStatus = 'duplicate_system';
+          errorList.push(`SKU "${r.sku}" already exists in existing products database`);
+        } else if ((skuBatchCounts.get(cleanSku) || 0) > 1) {
+          skuStatus = 'duplicate_batch';
+          errorList.push(`Duplicate SKU "${r.sku}" repeated multiple times in uploaded file`);
+        }
+      }
+
+      // LOT Number Uniqueness Validation
+      if (r.lotNumber) {
+        const cleanLot = r.lotNumber.trim().toLowerCase();
+        if (existingSystemLots.has(cleanLot)) {
+          lotStatus = 'duplicate_system';
+          errorList.push(`LOT "${r.lotNumber}" already exists in existing products/lots database`);
+        } else if ((lotBatchCounts.get(cleanLot) || 0) > 1) {
+          lotStatus = 'duplicate_batch';
+          errorList.push(`Duplicate LOT "${r.lotNumber}" repeated multiple times in uploaded file`);
+        }
+      }
+
+      const isValid = errorList.length === 0;
 
       return {
         id: `row_${index}_${Date.now()}`,
         selected: isValid,
-        name,
-        sku: sku || undefined,
-        barcode: barcode || undefined,
-        category,
-        brand: brand || undefined,
-        unit,
-        costPrice: isNaN(costPrice) ? 0 : costPrice,
-        sellingPrice: isNaN(sellingPrice) ? 0 : sellingPrice,
-        taxRate,
-        alertQuantity,
-        openingStock,
-        hsnCode: hsnCode || undefined,
+        name: r.name,
+        sku: r.sku || undefined,
+        barcode: r.barcode || undefined,
+        lotNumber: r.lotNumber || undefined,
+        category: r.category,
+        brand: r.brand || undefined,
+        unit: r.unit,
+        costPrice: r.costPrice,
+        sellingPrice: r.sellingPrice,
+        taxRate: r.taxRate,
+        alertQuantity: r.alertQuantity,
+        openingStock: r.openingStock,
+        hsnCode: r.hsnCode || undefined,
         isValid,
-        validationError,
-        raw: row,
+        validationError: errorList.join(' • '),
+        skuStatus,
+        lotStatus,
+        raw: r.raw,
       };
     });
 
@@ -253,7 +365,7 @@ export const ImportProductsPage: React.FC = () => {
         const wb = XLSX.read(buffer, { type: 'array' });
         setSheetNames(wb.SheetNames);
         processWorkbook(wb);
-        showFlashNotification(`Successfully parsed "${f.name}".`, 'success');
+        showFlashNotification(`Successfully parsed "${f.name}". Please review SKU and LOT uniqueness below.`, 'success');
       } catch (err) {
         console.error('Error parsing file:', err);
         showFlashNotification('Failed to parse Excel/CSV file.', 'error');
@@ -305,15 +417,60 @@ export const ImportProductsPage: React.FC = () => {
       return;
     }
 
+    // Strict Pre-Import Confirmation Check
+    const selectedSkus = new Set<string>();
+    const selectedLots = new Set<string>();
+    const duplicateErrors: string[] = [];
+
+    for (let i = 0; i < selectedRows.length; i++) {
+      const r = selectedRows[i];
+      if (!r.isValid) {
+        duplicateErrors.push(`Row ${i + 1} (${r.name}): ${r.validationError || 'Invalid product data'}`);
+        continue;
+      }
+
+      // Check SKU uniqueness
+      if (r.sku) {
+        const cleanSku = r.sku.trim().toLowerCase();
+        if (existingSystemSkus.has(cleanSku)) {
+          duplicateErrors.push(`Row ${i + 1}: SKU "${r.sku}" is already registered in existing products.`);
+        } else if (selectedSkus.has(cleanSku)) {
+          duplicateErrors.push(`Row ${i + 1}: Duplicate SKU "${r.sku}" is selected multiple times in this import batch.`);
+        }
+        selectedSkus.add(cleanSku);
+      }
+
+      // Check LOT uniqueness
+      if (r.lotNumber) {
+        const cleanLot = r.lotNumber.trim().toLowerCase();
+        if (existingSystemLots.has(cleanLot)) {
+          duplicateErrors.push(`Row ${i + 1}: LOT "${r.lotNumber}" already exists in existing products database.`);
+        } else if (selectedLots.has(cleanLot)) {
+          duplicateErrors.push(`Row ${i + 1}: Duplicate LOT "${r.lotNumber}" is selected multiple times in this import batch.`);
+        }
+        selectedLots.add(cleanLot);
+      }
+    }
+
+    if (duplicateErrors.length > 0) {
+      showFlashNotification(
+        `Import Blocked: Found ${duplicateErrors.length} duplicate SKU / LOT conflict(s). Please unselect or fix duplicate rows before importing.`,
+        'error'
+      );
+      return;
+    }
+
     const formattedProducts: Omit<Product, 'id' | 'currentStock'>[] = selectedRows.map((r, idx) => {
       const prefix = settings.productSkuPrefix || 'PROD-';
       const generatedSku = r.sku || `${prefix}M${Math.floor(100000 + Math.random() * 900000)}`;
       const generatedBarcode = r.barcode || generatedSku;
+      const itemLot = r.lotNumber ? r.lotNumber.trim() : undefined;
 
       return {
         name: r.name,
         sku: generatedSku,
         barcode: generatedBarcode,
+        lotNumber: itemLot,
         category: r.category || 'General',
         brand: r.brand || '',
         unit: r.unit || 'Nos',
@@ -333,12 +490,15 @@ export const ImportProductsPage: React.FC = () => {
     });
 
     addProducts(formattedProducts);
+    showFlashNotification(`Successfully imported ${formattedProducts.length} unique products into inventory!`, 'success');
     navigateToInventory('matrix');
   };
 
   const validRowsCount = parsedRows.filter((r) => r.isValid).length;
   const selectedRowsCount = parsedRows.filter((r) => r.selected).length;
   const invalidRowsCount = parsedRows.filter((r) => !r.isValid).length;
+  const duplicateSkuCount = parsedRows.filter((r) => r.skuStatus && r.skuStatus !== 'ok').length;
+  const duplicateLotCount = parsedRows.filter((r) => r.lotStatus && r.lotStatus !== 'ok').length;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto animate-fadeIn">
@@ -358,7 +518,7 @@ export const ImportProductsPage: React.FC = () => {
               <span>Bulk Import Products</span>
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Bulk import inventory items, pricing, categories, and opening stock levels from Excel (.xlsx) or CSV (.csv) spreadsheets.
+              Bulk import inventory items, SKU, LOT numbers, pricing, categories, and opening stock with strict duplicate detection.
             </p>
           </div>
         </div>
@@ -374,16 +534,18 @@ export const ImportProductsPage: React.FC = () => {
               <span>Download Product Template</span>
             </div>
             <p className="text-xs text-slate-400">
-              Download the predesigned product spreadsheet template with pre-formatted column headers and sample inventory rows.
+              Download the predesigned product spreadsheet template with column headers including mandatory uniqueness fields for SKU and LOT.
             </p>
 
             <div className="mt-4 p-3.5 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs text-slate-300">
-              <div className="font-semibold text-slate-200">Required & Optional Headers:</div>
+              <div className="font-semibold text-slate-200">Required & Unique Headers:</div>
               <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
                 <li><strong className="text-slate-200">Name*</strong>: Product Title</li>
+                <li><strong className="text-indigo-300">SKU</strong>: Unique Product SKU code</li>
+                <li><strong className="text-indigo-300">Lot Number</strong>: Unique Batch / Lot Number</li>
                 <li><strong className="text-slate-200">Cost Price*</strong> & <strong className="text-slate-200">Selling Price*</strong></li>
                 <li><strong className="text-slate-200">Category*</strong> & <strong className="text-slate-200">Unit*</strong></li>
-                <li>SKU, Barcode, Brand, Tax Rate (%), Opening Stock, HSN Code</li>
+                <li>Barcode, Brand, Tax Rate (%), Opening Stock, HSN Code</li>
               </ul>
             </div>
           </div>
@@ -504,7 +666,7 @@ export const ImportProductsPage: React.FC = () => {
                 <span>Review Parsed Product Records ({parsedRows.length})</span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Review extracted items and prices before importing into stock.
+                Review extracted items, duplicate validations for SKU and LOT before importing into stock.
               </p>
             </div>
 
@@ -515,7 +677,19 @@ export const ImportProductsPage: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {validRowsCount} Valid
                 </span>
-                {invalidRowsCount > 0 && (
+                {duplicateSkuCount > 0 && (
+                  <span className="flex items-center gap-1 text-rose-400 font-bold pl-2 border-l border-slate-800">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    {duplicateSkuCount} Duplicate SKU
+                  </span>
+                )}
+                {duplicateLotCount > 0 && (
+                  <span className="flex items-center gap-1 text-rose-400 font-bold pl-2 border-l border-slate-800">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    {duplicateLotCount} Duplicate LOT
+                  </span>
+                )}
+                {invalidRowsCount > 0 && duplicateSkuCount === 0 && duplicateLotCount === 0 && (
                   <span className="flex items-center gap-1 text-amber-400 font-bold pl-2 border-l border-slate-800">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     {invalidRowsCount} Invalid
@@ -526,9 +700,9 @@ export const ImportProductsPage: React.FC = () => {
               <button
                 onClick={handleExecuteImport}
                 disabled={selectedRowsCount === 0}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition cursor-pointer ${
                   selectedRowsCount > 0
-                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 active:scale-95'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
@@ -548,12 +722,13 @@ export const ImportProductsPage: React.FC = () => {
                       type="checkbox"
                       checked={selectedRowsCount > 0 && selectedRowsCount === validRowsCount}
                       onChange={(e) => handleSelectAllToggle(e.target.checked)}
-                      className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                      className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
                     />
                   </th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5">Product Name</th>
                   <th className="p-3.5">SKU / Barcode</th>
+                  <th className="p-3.5">LOT / Batch</th>
                   <th className="p-3.5">Category</th>
                   <th className="p-3.5 text-right">Cost Price</th>
                   <th className="p-3.5 text-right">Selling Price</th>
@@ -567,7 +742,7 @@ export const ImportProductsPage: React.FC = () => {
                     key={row.id}
                     className={`hover:bg-slate-800/40 transition ${
                       !row.isValid
-                        ? 'bg-amber-500/5'
+                        ? 'bg-rose-500/5'
                         : row.selected
                         ? 'bg-indigo-600/5'
                         : 'opacity-60'
@@ -579,7 +754,7 @@ export const ImportProductsPage: React.FC = () => {
                         checked={row.selected}
                         disabled={!row.isValid}
                         onChange={() => handleSelectRowToggle(row.id)}
-                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-30"
+                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-30 cursor-pointer"
                       />
                     </td>
                     <td className="p-3.5 whitespace-nowrap">
@@ -587,17 +762,59 @@ export const ImportProductsPage: React.FC = () => {
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3" /> Ready
                         </span>
+                      ) : row.skuStatus !== 'ok' && row.lotStatus !== 'ok' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                          <ShieldAlert className="w-3 h-3" /> Duplicate SKU & LOT
+                        </span>
+                      ) : row.skuStatus !== 'ok' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                          <ShieldAlert className="w-3 h-3" /> Duplicate SKU
+                        </span>
+                      ) : row.lotStatus !== 'ok' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                          <ShieldAlert className="w-3 h-3" /> Duplicate LOT
+                        </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                           <AlertTriangle className="w-3 h-3" /> {row.validationError || 'Invalid'}
                         </span>
                       )}
+                      {!row.isValid && row.validationError && (
+                        <div className="text-[10px] text-rose-400 mt-1 max-w-xs truncate" title={row.validationError}>
+                          {row.validationError}
+                        </div>
+                      )}
                     </td>
                     <td className="p-3.5 font-bold text-white whitespace-nowrap">
                       {row.name || <span className="text-slate-500 italic">Empty Name</span>}
                     </td>
-                    <td className="p-3.5 font-mono text-slate-300 whitespace-nowrap">
-                      {row.sku || <span className="text-slate-500 italic">Auto-generate</span>}
+                    <td className="p-3.5 font-mono whitespace-nowrap">
+                      {row.sku ? (
+                        <span className={row.skuStatus !== 'ok' ? 'text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20' : 'text-slate-300'}>
+                          {row.sku}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 italic">Auto-generate</span>
+                      )}
+                      {row.barcode && row.barcode !== row.sku && (
+                        <span className="block text-[10px] text-slate-500 font-mono mt-0.5">
+                          Barcode: {row.barcode}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 font-mono whitespace-nowrap">
+                      {row.lotNumber ? (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${
+                          row.lotStatus !== 'ok'
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                        }`}>
+                          <Hash className="w-3 h-3 opacity-70" />
+                          {row.lotNumber}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 italic text-[11px]">Auto-generate</span>
+                      )}
                     </td>
                     <td className="p-3.5 whitespace-nowrap">
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold border border-slate-700 text-[11px]">

@@ -9,7 +9,7 @@ interface ProductImportModalProps {
 }
 
 export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, onClose }) => {
-  const { addProducts, taxGroups, settings, locations } = useErp();
+  const { addProducts, products = [], taxGroups, settings, locations } = useErp();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -23,7 +23,8 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
     const headers = [
       'Name*', 
       'SKU', 
-      'Barcode', 
+      'Barcode',
+      'LotNumber',
       'Category*', 
       'Brand', 
       'Unit*', 
@@ -34,7 +35,7 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
       'OpeningStock'
     ];
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n"
-      + "Sample Product,,123456789,Electronics,BrandX,Nos,100,150,18,10,50";
+      + "Sample Wireless Headphones,SKU-BTH-01,8901234567891,LOT-2026-001,Electronics,BrandX,Nos,100,150,18,10,50";
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -80,7 +81,7 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
       return result;
     };
 
-    const headers = parseLine(lines[0]).map(h => h.replace('*', '').trim().toLowerCase());
+    const headers = parseLine(lines[0]).map(h => h.replace('*', '').trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
     const data = lines.slice(1).map(parseLine);
     return { headers, data };
   };
@@ -107,37 +108,111 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
         }
       }
 
-      const getIdx = (col: string) => headers.indexOf(col);
+      const getIdx = (...aliases: string[]) => {
+        for (const alias of aliases) {
+          const clean = alias.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const idx = headers.indexOf(clean);
+          if (idx !== -1) return idx;
+        }
+        return -1;
+      };
       
       const defaultTaxGroup = taxGroups.find(g => g.id === settings.defaultTaxGroupId) || taxGroups[0];
       const fallbackTaxRate = defaultTaxGroup ? defaultTaxGroup.totalRate : 0;
 
+      // Existing System SKUs & Lots
+      const existingSkus = new Set<string>();
+      products.forEach((p) => {
+        if (p.sku && typeof p.sku === 'string') existingSkus.add(p.sku.trim().toLowerCase());
+        if (p.barcode && typeof p.barcode === 'string') existingSkus.add(p.barcode.trim().toLowerCase());
+        if (Array.isArray(p.variations)) {
+          p.variations.forEach((v: any) => {
+            if (v.sku && typeof v.sku === 'string') existingSkus.add(v.sku.trim().toLowerCase());
+            if (v.barcode && typeof v.barcode === 'string') existingSkus.add(v.barcode.trim().toLowerCase());
+          });
+        }
+      });
+
+      const existingLots = new Set<string>();
+      products.forEach((p) => {
+        if (Array.isArray(p.lots)) {
+          p.lots.forEach((l: any) => {
+            if (l.lotNumber && typeof l.lotNumber === 'string') {
+              existingLots.add(l.lotNumber.trim().toLowerCase());
+            }
+          });
+        }
+        if ((p as any).lotNumber && typeof (p as any).lotNumber === 'string') {
+          existingLots.add(String((p as any).lotNumber).trim().toLowerCase());
+        }
+      });
+
+      const batchSkus = new Set<string>();
+      const batchLots = new Set<string>();
       const newProducts: Omit<Product, 'id' | 'currentStock'>[] = [];
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
-        const name = row[getIdx('name')];
+        const nameIdx = getIdx('name', 'productname');
+        const name = nameIdx !== -1 ? row[nameIdx] : '';
         if (!name) continue; // Skip empty rows
 
-        const sku = getIdx('sku') !== -1 && row[getIdx('sku')] ? row[getIdx('sku')] : `${settings.productSkuPrefix || 'PROD-'}M${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
-        const barcode = getIdx('barcode') !== -1 && row[getIdx('barcode')] ? row[getIdx('barcode')] : sku;
+        const skuIdx = getIdx('sku', 'itemcode', 'productcode');
+        const rawSku = skuIdx !== -1 && row[skuIdx] ? row[skuIdx].trim() : '';
+        const sku = rawSku || `${settings.productSkuPrefix || 'PROD-'}M${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+        
+        // SKU duplicate check
+        if (rawSku) {
+          const cleanSku = rawSku.toLowerCase();
+          if (existingSkus.has(cleanSku)) {
+            throw new Error(`Row ${i + 2}: SKU "${rawSku}" already exists in the system database.`);
+          }
+          if (batchSkus.has(cleanSku)) {
+            throw new Error(`Row ${i + 2}: Duplicate SKU "${rawSku}" found multiple times in uploaded CSV.`);
+          }
+          batchSkus.add(cleanSku);
+        }
+
+        const barcodeIdx = getIdx('barcode', 'ean', 'upc', 'gtin');
+        const barcode = barcodeIdx !== -1 && row[barcodeIdx] ? row[barcodeIdx].trim() : sku;
+
+        const lotIdx = getIdx('lotnumber', 'lot', 'batchnumber', 'batch');
+        const lotNumber = lotIdx !== -1 && row[lotIdx] ? row[lotIdx].trim() : undefined;
+
+        // LOT duplicate check
+        if (lotNumber) {
+          const cleanLot = lotNumber.toLowerCase();
+          if (existingLots.has(cleanLot)) {
+            throw new Error(`Row ${i + 2}: LOT "${lotNumber}" already exists in the system database.`);
+          }
+          if (batchLots.has(cleanLot)) {
+            throw new Error(`Row ${i + 2}: Duplicate LOT "${lotNumber}" found multiple times in uploaded CSV.`);
+          }
+          batchLots.add(cleanLot);
+        }
+
         const category = row[getIdx('category')] || 'General';
-        const brand = getIdx('brand') !== -1 ? row[getIdx('brand')] : '';
+        const brandIdx = getIdx('brand', 'brandname');
+        const brand = brandIdx !== -1 ? row[brandIdx] : '';
         const unit = row[getIdx('unit')] || 'Nos';
         
         const costPrice = parseFloat(row[getIdx('costprice')]);
         const sellingPrice = parseFloat(row[getIdx('sellingprice')]);
 
         if (isNaN(costPrice) || isNaN(sellingPrice)) {
-          throw new Error(`Row ${i+1}: Cost Price and Selling Price must be numbers.`);
+          throw new Error(`Row ${i + 2}: Cost Price and Selling Price must be numbers.`);
         }
 
-        const taxRateStr = getIdx('taxrate') !== -1 ? row[getIdx('taxrate')] : null;
+        const taxRateIdx = getIdx('taxrate', 'tax', 'gstrate');
+        const taxRateStr = taxRateIdx !== -1 ? row[taxRateIdx] : null;
         const taxRate = taxRateStr && !isNaN(parseFloat(taxRateStr)) ? parseFloat(taxRateStr) : fallbackTaxRate;
-        const alertQtyStr = getIdx('alertquantity') !== -1 ? row[getIdx('alertquantity')] : '10';
+        
+        const alertQtyIdx = getIdx('alertquantity', 'minstock');
+        const alertQtyStr = alertQtyIdx !== -1 ? row[alertQtyIdx] : '10';
         const alertQuantity = parseInt(alertQtyStr) || 10;
         
-        const stockStr = getIdx('openingstock') !== -1 ? row[getIdx('openingstock')] : '0';
+        const stockIdx = getIdx('openingstock', 'initialstock', 'quantity');
+        const stockStr = stockIdx !== -1 ? row[stockIdx] : '0';
         const openingStock = parseInt(stockStr) || 0;
         
         const defaultLocId = locations && locations.length > 0 ? (locations.find(l => l.isDefault)?.id || locations[0].id) : 'loc_1';
@@ -146,6 +221,7 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
           name,
           sku,
           barcode,
+          lotNumber,
           category,
           brand,
           unit,

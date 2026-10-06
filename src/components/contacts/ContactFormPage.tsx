@@ -91,6 +91,11 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     return 'customer';
   });
 
+  const getCleanFieldValue = (val?: string) => {
+    if (!val || val.trim().toUpperCase() === 'N/A') return '';
+    return val;
+  };
+
   // Form State
   const [name, setName] = useState(editingContact?.name || '');
   const [contactCustomId, setContactCustomId] = useState(() => {
@@ -115,7 +120,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   });
 
   const [phone, setPhone] = useState(() => {
-    if (!editingContact?.phone) return '';
+    if (!editingContact?.phone || editingContact.phone === 'N/A') return '';
     const cCode = (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
     const { rawPhone } = extractRawPhoneAndCountry(editingContact.phone, cCode);
     return rawPhone;
@@ -127,14 +132,14 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   });
 
   const [alternatePhone, setAlternatePhone] = useState(() => {
-    if (!editingContact?.alternatePhone) return '';
+    if (!editingContact?.alternatePhone || editingContact.alternatePhone === 'N/A') return '';
     const defCode = (editingContact as any)?.altCountryCode || (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
     const { rawPhone } = extractRawPhoneAndCountry(editingContact.alternatePhone, defCode);
     return rawPhone;
   });
 
-  const [email, setEmail] = useState(editingContact?.email || '');
-  const [taxNumber, setTaxNumber] = useState(editingContact?.taxNumber || '');
+  const [email, setEmail] = useState(() => getCleanFieldValue(editingContact?.email));
+  const [taxNumber, setTaxNumber] = useState(() => getCleanFieldValue(editingContact?.taxNumber));
   
   // Financial Fields
   const [openingBalance, setOpeningBalance] = useState(editingContact?.openingBalance?.toString() || '0');
@@ -143,11 +148,11 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const [payTerm, setPayTerm] = useState(editingContact?.payTerm || 'Due on Receipt');
 
   // Address Details
-  const [address, setAddress] = useState(editingContact?.address || '');
-  const [city, setCity] = useState(editingContact?.city || '');
-  const [state, setState] = useState(editingContact?.state || '');
-  const [province, setProvince] = useState(editingContact?.province || '');
-  const [zipcode, setZipcode] = useState(editingContact?.zipcode || '');
+  const [address, setAddress] = useState(() => getCleanFieldValue(editingContact?.address));
+  const [city, setCity] = useState(() => getCleanFieldValue(editingContact?.city));
+  const [state, setState] = useState(() => getCleanFieldValue(editingContact?.state));
+  const [province, setProvince] = useState(() => getCleanFieldValue(editingContact?.province));
+  const [zipcode, setZipcode] = useState(() => getCleanFieldValue(editingContact?.zipcode));
   const [country, setCountry] = useState(
     editingContact?.country || (defaultFallbackCode === '+91' ? 'India' : 'United States')
   );
@@ -261,36 +266,36 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             ''
         );
         const resolvedCountryCode = (editingContact as any)?.countryCode || resolveCountryCodeFromContact(editingContact, defaultFallbackCode);
-        const rawPhoneData = extractRawPhoneAndCountry(
-          (editingContact as any)?.phone || '',
-          resolvedCountryCode
-        );
+        const contactPhone = (editingContact as any)?.phone;
+        const rawPhoneData = (!contactPhone || contactPhone === 'N/A')
+          ? { rawPhone: '' }
+          : extractRawPhoneAndCountry(contactPhone, resolvedCountryCode);
         setCountryCode(resolvedCountryCode);
         setPhone(rawPhoneData.rawPhone);
 
         const resolvedAltCountryCode = (editingContact as any)?.altCountryCode || (editingContact as any)?.countryCode || resolvedCountryCode;
-        const rawAltData = extractRawPhoneAndCountry(
-          (editingContact as any)?.alternatePhone || '',
-          resolvedAltCountryCode
-        );
+        const contactAltPhone = (editingContact as any)?.alternatePhone;
+        const rawAltData = (!contactAltPhone || contactAltPhone === 'N/A')
+          ? { rawPhone: '' }
+          : extractRawPhoneAndCountry(contactAltPhone, resolvedAltCountryCode);
         setAltCountryCode(resolvedAltCountryCode);
         setAlternatePhone(rawAltData.rawPhone);
 
-        setEmail((editingContact as any)?.email || '');
-        setTaxNumber((editingContact as any)?.taxNumber || '');
+        setEmail(getCleanFieldValue((editingContact as any)?.email));
+        setTaxNumber(getCleanFieldValue((editingContact as any)?.taxNumber));
         setOpeningBalance((editingContact as any)?.openingBalance?.toString() || '0');
         setAdvanceBalance((editingContact as any)?.advanceBalance?.toString() || '0');
         setCreditLimit((editingContact as any)?.creditLimit?.toString() || '1000.00');
         setPayTerm((editingContact as any)?.payTerm || 'Due on Receipt');
-        setAddress((editingContact as any)?.address || '');
-        setCity((editingContact as any)?.city || '');
-        setState((editingContact as any)?.state || '');
-        setProvince((editingContact as any)?.province || '');
-        setZipcode((editingContact as any)?.zipcode || '');
+        setAddress(getCleanFieldValue((editingContact as any)?.address));
+        setCity(getCleanFieldValue((editingContact as any)?.city));
+        setState(getCleanFieldValue((editingContact as any)?.state));
+        setProvince(getCleanFieldValue((editingContact as any)?.province));
+        setZipcode(getCleanFieldValue((editingContact as any)?.zipcode));
         setCountry(
           (editingContact as any)?.country || (resolvedCountryCode === '+91' ? 'India' : 'United States')
         );
-        setNotes((editingContact as any)?.notes || '');
+        setNotes(getCleanFieldValue((editingContact as any)?.notes));
       } else if (settings.autoGenerateContactId !== false) {
         setContactCustomId(generateNextContactId(contactType === 'supplier' ? 'supplier' : 'customer'));
       }
@@ -309,7 +314,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       countryCode,
       alternatePhone,
       altCountryCode,
-      email: email.trim().toUpperCase() === 'N/A' ? undefined : email,
+      email: email.trim().toUpperCase() === 'N/A' || !email.trim() ? undefined : email.trim(),
       taxNumber,
       businessName,
       openingBalance,
@@ -444,12 +449,12 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         countryCode: countryCode || defaultFallbackCode,
         alternatePhone: finalFormattedAltPhone,
         altCountryCode: altCountryCode || defaultFallbackCode,
-        email: email.trim() || 'N/A',
+        email: email.trim() && email.trim().toUpperCase() !== 'N/A' ? email.trim() : '',
         taxNumber: taxNumber.trim() || undefined,
         openingBalance: parsedOpeningBal,
         advanceBalance: parsedAdvanceBal,
         payTerm,
-        address: address.trim() || 'N/A',
+        address: address.trim() || '',
         city: city.trim() || undefined,
         state: state.trim() || undefined,
         province: province.trim() || state.trim() || undefined,
@@ -598,7 +603,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 w-full min-w-0">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-6 w-full min-w-0">
         {/* Section 1: Primary Identification */}
         <div className={`p-3.5 sm:p-6 rounded-2xl border shadow-xs space-y-4 w-full min-w-0 overflow-hidden ${
           isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'

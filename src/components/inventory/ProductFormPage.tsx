@@ -40,6 +40,11 @@ import {
   Pencil,
   Search,
   Lock,
+  Filter,
+  CheckSquare,
+  Square,
+  Minus,
+  ShoppingBag,
 } from 'lucide-react';
 
 interface ProductFormPageProps {
@@ -73,33 +78,6 @@ const PRESET_BRANDS = [
   'Nike',
 ];
 
-const SAMPLE_IMAGE_PRESETS = [
-  {
-    name: 'Wireless Headphones',
-    url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
-  },
-  {
-    name: 'Smart Watch',
-    url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
-  },
-  {
-    name: 'Mechanical Keyboard',
-    url: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80',
-  },
-  {
-    name: 'DSLR Camera Lens',
-    url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&q=80',
-  },
-  {
-    name: 'Leather Sneakers',
-    url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
-  },
-  {
-    name: 'Artisan Coffee Beans',
-    url: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600&q=80',
-  },
-];
-
 export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   productToEdit,
   onBack,
@@ -114,12 +92,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     racks = [],
     addProduct,
     updateProduct,
+    addUnit,
+    addCategory,
+    addBrand,
+    addWarranty,
     settings,
     taxGroups,
     units,
     categories: erpCategories,
     brands: erpBrands,
     warranties,
+    variationTemplates = [],
+    addVariationTemplate,
+    showFlashNotification,
     openBarcodeStudio,
     setInventorySubTab,
   } = useErp();
@@ -297,10 +282,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   };
 
   // Variable Product state
+  const [variationSkuFormat, setVariationSkuFormat] = useState<'sku_number' | 'sku_variation'>('sku_number');
+  const [selectedVariationName, setSelectedVariationName] = useState<string>('Phase Type');
+  const [selectedVariationValues, setSelectedVariationValues] = useState<string[]>(['Single Phase', 'Three Phase', 'two phase']);
+  const [newValueInput, setNewValueInput] = useState<string>('');
+  const [variationCostsExc, setVariationCostsExc] = useState<Record<string, string>>({ 'Single Phase': '100', 'Three Phase': '180', 'two phase': '160' });
+  const [variationMargins, setVariationMargins] = useState<Record<string, string>>({ 'Single Phase': '25', 'Three Phase': '25', 'two phase': '25' });
+  const [variationOpeningStocks, setVariationOpeningStocks] = useState<Record<string, string>>({ 'Single Phase': '5', 'Three Phase': '5', 'two phase': '5' });
+  const [variationAlertQuantities, setVariationAlertQuantities] = useState<Record<string, string>>({ 'Single Phase': '2', 'Three Phase': '2', 'two phase': '5' });
+  const [variationSkus, setVariationSkus] = useState<Record<string, string>>({});
+  const [variationImages, setVariationImages] = useState<Record<string, string>>({});
   const [attributes, setAttributes] = useState<import('../../types/erp').ProductAttribute[]>(
     productToEdit?.attributes || [
-      { id: 'attr_1', name: 'Size', values: ['Small', 'Medium', 'Large'] },
-      { id: 'attr_2', name: 'Color', values: ['Black', 'White'] },
+      { id: 'attr_1', name: 'Phase Type', values: ['Single Phase', 'Three Phase', 'two phase'] },
     ]
   );
   const [variations, setVariations] = useState<import('../../types/erp').ProductVariation[]>(
@@ -316,6 +310,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     productToEdit?.comboItems || []
   );
   const [selectedComboProductId, setSelectedComboProductId] = useState('');
+  const [comboSearchQuery, setComboSearchQuery] = useState('');
+  const [isComboSearchFocused, setIsComboSearchFocused] = useState(false);
+  const [isComboAdvancedSearchOpen, setIsComboAdvancedSearchOpen] = useState(false);
+  const [comboFilterCategory, setComboFilterCategory] = useState('all');
+  const [comboFilterBrand, setComboFilterBrand] = useState('all');
+  const [comboFilterStockStatus, setComboFilterStockStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [modalSelectedProductIds, setModalSelectedProductIds] = useState<string[]>([]);
+  const [modalProductQuantities, setModalProductQuantities] = useState<Record<string, number>>({});
 
   // Multi-location stock allocation
   const [locationStocks, setLocationStocks] = useState<Record<string, number>>(() => {
@@ -348,14 +350,195 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [editingLot, setEditingLot] = useState<ProductLot | null>(null);
   const [editingLotStock, setEditingLotStock] = useState<string>('');
-  const [showLiveCalculator, setShowLiveCalculator] = useState(() => {
-    const saved = localStorage.getItem('erp_live_calc_pref');
-    return saved !== 'false'; // Defaults to true if not set
-  });
 
-  useEffect(() => {
-    localStorage.setItem('erp_live_calc_pref', showLiveCalculator.toString());
-  }, [showLiveCalculator]);
+  // Quick Add Modal States & Handlers (Unit, Category, Brand, Warranty)
+  // 1. Quick Add Unit
+  const [isQuickUnitModalOpen, setIsQuickUnitModalOpen] = useState(false);
+  const [quickUnitName, setQuickUnitName] = useState('');
+  const [quickUnitShortName, setQuickUnitShortName] = useState('');
+  const [quickUnitAllowDecimal, setQuickUnitAllowDecimal] = useState(false);
+  const [quickUnitError, setQuickUnitError] = useState<string | null>(null);
+
+  const handleOpenQuickUnitModal = () => {
+    setQuickUnitName('');
+    setQuickUnitShortName('');
+    setQuickUnitAllowDecimal(false);
+    setQuickUnitError(null);
+    setIsQuickUnitModalOpen(true);
+  };
+
+  const handleSaveQuickUnit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = quickUnitName.trim();
+    const trimmedShort = quickUnitShortName.trim();
+    if (!trimmedName || !trimmedShort) {
+      setQuickUnitError('Please provide both Unit Name and Short Symbol.');
+      return;
+    }
+    const isDuplicate = units.some(
+      (u) => u.shortName.toLowerCase() === trimmedShort.toLowerCase() || u.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setQuickUnitError(`Unit "${trimmedShort}" already exists.`);
+      return;
+    }
+    const newUnit = addUnit({
+      name: trimmedName,
+      shortName: trimmedShort,
+      allowDecimal: quickUnitAllowDecimal,
+    });
+    setUnit(newUnit.shortName);
+    if (fieldErrors.unit) setFieldErrors((prev) => ({ ...prev, unit: '' }));
+    setIsQuickUnitModalOpen(false);
+    setToastMessage(`Unit "${newUnit.name} (${newUnit.shortName})" created and selected!`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // 2. Quick Add Category
+  const [isQuickCategoryModalOpen, setIsQuickCategoryModalOpen] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState('');
+  const [quickCategoryCode, setQuickCategoryCode] = useState('');
+  const [quickCategoryParentId, setQuickCategoryParentId] = useState('');
+  const [quickCategoryDescription, setQuickCategoryDescription] = useState('');
+  const [quickCategoryError, setQuickCategoryError] = useState<string | null>(null);
+
+  const handleOpenQuickCategoryModal = (presetParentId?: string) => {
+    setQuickCategoryName('');
+    setQuickCategoryCode('');
+    setQuickCategoryParentId(presetParentId || '');
+    setQuickCategoryDescription('');
+    setQuickCategoryError(null);
+    setIsQuickCategoryModalOpen(true);
+  };
+
+  const handleSaveQuickCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = quickCategoryName.trim();
+    if (!trimmedName) {
+      setQuickCategoryError('Please enter a Category Name.');
+      return;
+    }
+    const codeToUse = quickCategoryCode.trim() || `CAT-${trimmedName.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN'}`;
+    const isDuplicate = (erpCategories || []).some(
+      (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setQuickCategoryError(`Category "${trimmedName}" already exists.`);
+      return;
+    }
+    const newCat = addCategory({
+      name: trimmedName,
+      code: codeToUse,
+      parentId: quickCategoryParentId || undefined,
+      description: quickCategoryDescription.trim(),
+      status: 'active',
+    });
+    if (quickCategoryParentId) {
+      setSubCategory(newCat.name);
+    } else {
+      setCategory(newCat.name);
+      setSubCategory('');
+    }
+    setIsQuickCategoryModalOpen(false);
+    setToastMessage(`Category "${newCat.name}" created and selected!`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // 3. Quick Add Brand
+  const [isQuickBrandModalOpen, setIsQuickBrandModalOpen] = useState(false);
+  const [quickBrandName, setQuickBrandName] = useState('');
+  const [quickBrandCode, setQuickBrandCode] = useState('');
+  const [quickBrandShortCode, setQuickBrandShortCode] = useState('');
+  const [quickBrandOriginCountry, setQuickBrandOriginCountry] = useState('');
+  const [quickBrandWebsite, setQuickBrandWebsite] = useState('');
+  const [quickBrandError, setQuickBrandError] = useState<string | null>(null);
+
+  const handleOpenQuickBrandModal = () => {
+    setQuickBrandName('');
+    setQuickBrandCode('');
+    setQuickBrandShortCode('');
+    setQuickBrandOriginCountry('');
+    setQuickBrandWebsite('');
+    setQuickBrandError(null);
+    setIsQuickBrandModalOpen(true);
+  };
+
+  const handleSaveQuickBrand = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = quickBrandName.trim();
+    if (!trimmedName) {
+      setQuickBrandError('Please enter a Brand Name.');
+      return;
+    }
+    const codeToUse = quickBrandCode.trim() || `BRD-${trimmedName.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN'}`;
+    const isDuplicate = (erpBrands || []).some(
+      (b) => (b.name || '').toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setQuickBrandError(`Brand "${trimmedName}" already exists.`);
+      return;
+    }
+    const newBrand = addBrand({
+      name: trimmedName,
+      code: codeToUse,
+      shortCode: quickBrandShortCode.trim().toUpperCase() || trimmedName.substring(0, 4).toUpperCase(),
+      originCountry: quickBrandOriginCountry.trim(),
+      website: quickBrandWebsite.trim(),
+      color: '#6366f1',
+      status: 'active',
+    });
+    setBrand(newBrand.name);
+    setIsQuickBrandModalOpen(false);
+    setToastMessage(`Brand "${newBrand.name}" created and selected!`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // 4. Quick Add Warranty
+  const [isQuickWarrantyModalOpen, setIsQuickWarrantyModalOpen] = useState(false);
+  const [quickWarrantyName, setQuickWarrantyName] = useState('');
+  const [quickWarrantyDurationValue, setQuickWarrantyDurationValue] = useState('1');
+  const [quickWarrantyDurationType, setQuickWarrantyDurationType] = useState<'days' | 'months' | 'years'>('years');
+  const [quickWarrantyDescription, setQuickWarrantyDescription] = useState('');
+  const [quickWarrantyError, setQuickWarrantyError] = useState<string | null>(null);
+
+  const handleOpenQuickWarrantyModal = () => {
+    setQuickWarrantyName('');
+    setQuickWarrantyDurationValue('1');
+    setQuickWarrantyDurationType('years');
+    setQuickWarrantyDescription('');
+    setQuickWarrantyError(null);
+    setIsQuickWarrantyModalOpen(true);
+  };
+
+  const handleSaveQuickWarranty = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = quickWarrantyName.trim();
+    if (!trimmedName) {
+      setQuickWarrantyError('Please enter a Warranty Plan Name.');
+      return;
+    }
+    const val = parseInt(quickWarrantyDurationValue) || 1;
+    const isDuplicate = (warranties || []).some(
+      (w) => w.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setQuickWarrantyError(`Warranty Plan "${trimmedName}" already exists.`);
+      return;
+    }
+    const newWarranty = addWarranty({
+      name: trimmedName,
+      durationValue: val,
+      durationType: quickWarrantyDurationType,
+      description: quickWarrantyDescription.trim(),
+      status: 'active',
+    });
+    setWarrantyId(newWarranty.id);
+    setIsQuickWarrantyModalOpen(false);
+    setToastMessage(`Warranty Plan "${newWarranty.name}" created and selected!`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+
 
   // Sync state if productToEdit changes
   useEffect(() => {
@@ -399,7 +582,31 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       setLotNumber(productToEdit.lotNumber || (productToEdit.lots && productToEdit.lots[0]?.lotNumber) || `LOT-${new Date().getFullYear()}-001`);
 
       if (productToEdit.attributes) setAttributes(productToEdit.attributes);
-      if (productToEdit.variations) setVariations(productToEdit.variations);
+      if (productToEdit.variations && productToEdit.variations.length > 0) {
+        setVariations(productToEdit.variations);
+        const firstAttr = productToEdit.attributes?.[0];
+        if (firstAttr?.name) setSelectedVariationName(firstAttr.name);
+        const vals = productToEdit.variations.map((v) => v.value || v.name?.replace(/^.*:\s*/, '') || 'Default');
+        if (vals.length > 0) setSelectedVariationValues(vals);
+        const cExc: Record<string, string> = {};
+        const vMarg: Record<string, string> = {};
+        const vStock: Record<string, string> = {};
+        const vAlert: Record<string, string> = {};
+        const vSkuMap: Record<string, string> = {};
+        productToEdit.variations.forEach((v) => {
+          const valKey = v.value || v.name?.replace(/^.*:\s*/, '') || 'Default';
+          cExc[valKey] = (v.costPrice ?? 100).toString();
+          vMarg[valKey] = (v.margin ?? 25).toString();
+          vStock[valKey] = (v.openingStock ?? v.currentStock ?? 10).toString();
+          vAlert[valKey] = (v.alertQuantity ?? 5).toString();
+          if (v.sku) vSkuMap[valKey] = v.sku;
+        });
+        setVariationCostsExc(cExc);
+        setVariationMargins(vMarg);
+        setVariationOpeningStocks(vStock);
+        setVariationAlertQuantities(vAlert);
+        setVariationSkus(vSkuMap);
+      }
       if (productToEdit.comboItems) setComboItems(productToEdit.comboItems);
       if (productToEdit.lots && Array.isArray(productToEdit.lots) && productToEdit.lots.length > 0) {
         setLots(productToEdit.lots);
@@ -507,34 +714,226 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     setAttrValuesInput('');
   };
 
-  // Helper: Add Combo Item
+  // Combo Helpers & Advanced Recalculations
+  const updateComboPricing = useCallback((items: import('../../types/erp').ComboItem[], customMargin?: string) => {
+    const sumComponentPrices = items.reduce((acc, item) => acc + (Number(item.totalPrice) || 0), 0);
+    const sumComponentCosts = items.reduce((acc, item) => {
+      const prod = (products || []).find((p) => p.id === item.productId);
+      const itemCost = item.costPrice !== undefined ? Number(item.costPrice) : (Number(prod?.costPrice) || 0);
+      return acc + (itemCost * (Number(item.quantity) || 1));
+    }, 0);
+
+    setCostPrice(sumComponentCosts.toFixed(2));
+
+    const activeMarginStr = customMargin !== undefined ? customMargin : marginInput;
+    const activeMargin = parseFloat(activeMarginStr);
+
+    if (!isNaN(activeMargin) && sumComponentCosts > 0) {
+      const newSellExc = sumComponentCosts * (1 + activeMargin / 100);
+      setSellingPrice(newSellExc.toFixed(2));
+    } else if (sumComponentPrices > 0) {
+      setSellingPrice(sumComponentPrices.toFixed(2));
+      if (sumComponentCosts > 0) {
+        const calcMargin = (((sumComponentPrices - sumComponentCosts) / sumComponentCosts) * 100).toFixed(1);
+        setMarginInput(calcMargin);
+      }
+    } else if (sumComponentCosts > 0) {
+      setSellingPrice(sumComponentCosts.toFixed(2));
+      setMarginInput('0.0');
+    }
+  }, [products, marginInput]);
+
+  const addProductToCombo = useCallback((prod: Product, qty: number = 1) => {
+    if (prod.type === 'combo' || prod.id === productToEdit?.id) return;
+
+    const existingIdx = comboItems.findIndex((ci) => ci.productId === prod.id);
+    let updated: import('../../types/erp').ComboItem[];
+
+    if (existingIdx >= 0) {
+      updated = [...comboItems];
+      const newQty = (updated[existingIdx].quantity || 1) + qty;
+      const unitP = updated[existingIdx].unitPrice || Number(prod.sellingPrice) || 0;
+      const unitC = updated[existingIdx].costPrice !== undefined ? Number(updated[existingIdx].costPrice) : (Number(prod.costPrice) || 0);
+      updated[existingIdx] = {
+        ...updated[existingIdx],
+        quantity: newQty,
+        totalPrice: unitP * newQty,
+        totalCost: unitC * newQty,
+      };
+      setToastMessage(`Updated "${prod.name}" quantity to ${newQty} in bundle.`);
+    } else {
+      const unitP = Number(prod.sellingPrice) || 0;
+      const unitC = Number(prod.costPrice) || 0;
+      const newItem: import('../../types/erp').ComboItem = {
+        productId: prod.id,
+        productName: prod.name,
+        sku: prod.sku,
+        barcode: prod.barcode,
+        category: prod.category,
+        brand: prod.brand,
+        quantity: qty,
+        unitPrice: unitP,
+        totalPrice: unitP * qty,
+        costPrice: unitC,
+        totalCost: unitC * qty,
+        image: prod.image,
+      };
+      updated = [...comboItems, newItem];
+      setToastMessage(`Added "${prod.name}" to combo bundle.`);
+    }
+
+    setComboItems(updated);
+    updateComboPricing(updated);
+    setComboSearchQuery('');
+    setTimeout(() => setToastMessage(null), 3000);
+  }, [comboItems, productToEdit, updateComboPricing]);
+
   const handleAddComboItem = () => {
     if (!selectedComboProductId) return;
     const targetProd = (products || []).find((p) => p.id === selectedComboProductId);
     if (!targetProd) return;
+    addProductToCombo(targetProd, 1);
+    setSelectedComboProductId('');
+  };
 
-    if (comboItems.some((ci) => ci.productId === targetProd.id)) {
-      setToastMessage(`Product "${targetProd.name}" is already in this bundle.`);
-      setTimeout(() => setToastMessage(null), 3000);
-      return;
-    }
+  const removeComboItem = (index: number) => {
+    const updated = comboItems.filter((_, i) => i !== index);
+    setComboItems(updated);
+    updateComboPricing(updated);
+  };
 
-    const newItem: import('../../types/erp').ComboItem = {
-      productId: targetProd.id,
-      productName: targetProd.name,
-      sku: targetProd.sku,
-      quantity: 1,
-      unitPrice: targetProd.sellingPrice,
-      totalPrice: targetProd.sellingPrice,
+  const updateComboItemQuantity = (index: number, newQty: number) => {
+    const qty = Math.max(1, newQty);
+    const updated = [...comboItems];
+    const item = updated[index];
+    if (!item) return;
+
+    const unitP = Number(item.unitPrice) || 0;
+    const unitC = item.costPrice !== undefined ? Number(item.costPrice) : 0;
+
+    updated[index] = {
+      ...item,
+      quantity: qty,
+      totalPrice: unitP * qty,
+      totalCost: unitC * qty,
     };
 
-    const updatedCombo = [...comboItems, newItem];
-    setComboItems(updatedCombo);
-    setSelectedComboProductId('');
+    setComboItems(updated);
+    updateComboPricing(updated);
+  };
 
-    // Auto-recalculate bundle cost and selling price
-    const sumComponentPrices = updatedCombo.reduce((acc, item) => acc + item.totalPrice, 0);
-    setSellingPrice(sumComponentPrices.toFixed(2));
+  // Eligible Products for Combo Assembly
+  const eligibleComboProducts = useMemo(() => {
+    return (products || []).filter(
+      (p) => p.type !== 'combo' && p.id !== productToEdit?.id
+    );
+  }, [products, productToEdit]);
+
+  // Fast inline search matches (by Name, SKU, Barcode, Brand, Category)
+  const searchMatchedComboProducts = useMemo(() => {
+    if (!comboSearchQuery.trim()) {
+      return eligibleComboProducts.slice(0, 8);
+    }
+    const q = comboSearchQuery.toLowerCase().trim();
+    return eligibleComboProducts.filter((p) => {
+      const matchName = p.name?.toLowerCase().includes(q);
+      const matchSku = p.sku?.toLowerCase().includes(q);
+      const matchBarcode = p.barcode?.toLowerCase().includes(q);
+      const matchBrand = p.brand?.toLowerCase().includes(q);
+      const matchCategory = p.category?.toLowerCase().includes(q);
+      return matchName || matchSku || matchBarcode || matchBrand || matchCategory;
+    });
+  }, [eligibleComboProducts, comboSearchQuery]);
+
+  // Advanced Modal filtered products
+  const modalFilteredProducts = useMemo(() => {
+    return eligibleComboProducts.filter((p) => {
+      if (comboFilterCategory !== 'all' && p.category !== comboFilterCategory) return false;
+      if (comboFilterBrand !== 'all' && p.brand !== comboFilterBrand) return false;
+      
+      const stock = Number(p.currentStock ?? p.stock) || 0;
+      const alert = Number(p.alertQuantity) || 5;
+      if (comboFilterStockStatus === 'in_stock' && stock <= 0) return false;
+      if (comboFilterStockStatus === 'low_stock' && (stock <= 0 || stock > alert)) return false;
+      if (comboFilterStockStatus === 'out_of_stock' && stock > 0) return false;
+
+      if (comboSearchQuery.trim()) {
+        const q = comboSearchQuery.toLowerCase().trim();
+        const matchName = p.name?.toLowerCase().includes(q);
+        const matchSku = p.sku?.toLowerCase().includes(q);
+        const matchBarcode = p.barcode?.toLowerCase().includes(q);
+        const matchBrand = p.brand?.toLowerCase().includes(q);
+        const matchCategory = p.category?.toLowerCase().includes(q);
+        if (!matchName && !matchSku && !matchBarcode && !matchBrand && !matchCategory) return false;
+      }
+      return true;
+    });
+  }, [eligibleComboProducts, comboFilterCategory, comboFilterBrand, comboFilterStockStatus, comboSearchQuery]);
+
+  const handleToggleModalProduct = (productId: string) => {
+    setModalSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const handleSelectAllModalProducts = () => {
+    if (modalSelectedProductIds.length === modalFilteredProducts.length) {
+      setModalSelectedProductIds([]);
+    } else {
+      setModalSelectedProductIds(modalFilteredProducts.map((p) => p.id));
+    }
+  };
+
+  const handleAddSelectedModalProducts = () => {
+    if (modalSelectedProductIds.length === 0) return;
+
+    let updated = [...comboItems];
+    let addedCount = 0;
+
+    modalSelectedProductIds.forEach((pid) => {
+      const prod = eligibleComboProducts.find((p) => p.id === pid);
+      if (!prod) return;
+      const qty = modalProductQuantities[pid] || 1;
+      const existingIdx = updated.findIndex((ci) => ci.productId === prod.id);
+
+      if (existingIdx >= 0) {
+        const newQty = (updated[existingIdx].quantity || 1) + qty;
+        const unitP = updated[existingIdx].unitPrice || Number(prod.sellingPrice) || 0;
+        const unitC = updated[existingIdx].costPrice !== undefined ? Number(updated[existingIdx].costPrice) : (Number(prod.costPrice) || 0);
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          quantity: newQty,
+          totalPrice: unitP * newQty,
+          totalCost: unitC * newQty,
+        };
+      } else {
+        const unitP = Number(prod.sellingPrice) || 0;
+        const unitC = Number(prod.costPrice) || 0;
+        updated.push({
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          barcode: prod.barcode,
+          category: prod.category,
+          brand: prod.brand,
+          quantity: qty,
+          unitPrice: unitP,
+          totalPrice: unitP * qty,
+          costPrice: unitC,
+          totalCost: unitC * qty,
+          image: prod.image,
+        });
+      }
+      addedCount++;
+    });
+
+    setComboItems(updated);
+    updateComboPricing(updated);
+    setModalSelectedProductIds([]);
+    setModalProductQuantities({});
+    setIsComboAdvancedSearchOpen(false);
+    setToastMessage(`Added ${addedCount} product(s) to combo bundle.`);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   // Duplicate Checkers
@@ -791,20 +1190,96 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       return;
     }
 
+    // 0. Compute effective variations for Variable Products
+    let activeVarValues = [...selectedVariationValues];
+    if (newValueInput.trim() && !activeVarValues.includes(newValueInput.trim())) {
+      activeVarValues.push(newValueInput.trim());
+      setSelectedVariationValues(activeVarValues);
+      setNewValueInput('');
+    }
+
+    if (productType === 'variable' && activeVarValues.length === 0) {
+      if (variations.length > 0) {
+        activeVarValues = variations.map(v => v.value || v.name?.replace(/^.*:\s*/, '') || 'Default');
+      } else {
+        const currentName = selectedVariationName || 'Phase Type';
+        const matched = variationTemplates.find(t => t.name.toLowerCase() === currentName.toLowerCase());
+        if (matched && matched.values?.length > 0) {
+          activeVarValues = [...matched.values];
+        } else {
+          const presets: Record<string, string[]> = {
+            'phase type': ['Single Phase', 'Three Phase', 'two phase'],
+            'cable length': ['1 Meter', '3 Meter', '5 Meter', '10 Meter'],
+            'wire gauge / thickness': ['1.5 sq mm', '2.5 sq mm', '4.0 sq mm'],
+            'voltage rating': ['110V', '220V', '440V'],
+            'size': ['Small', 'Medium', 'Large', 'XL'],
+            'color': ['Red', 'Blue', 'Black', 'White'],
+            'flavor': ['Vanilla', 'Chocolate', 'Strawberry'],
+            'material / conductor': ['Copper', 'Aluminum', 'Brass'],
+            'dram / storage capacity': ['128GB', '256GB', '512GB', '1TB NVMe'],
+          };
+          activeVarValues = presets[currentName.toLowerCase()] || ['Standard', 'Variant 1'];
+        }
+      }
+      setSelectedVariationValues(activeVarValues);
+    }
+
+    const effectiveVariations: import('../../types/erp').ProductVariation[] = productType === 'variable'
+      ? activeVarValues.map((val, idx) => {
+          const varSku = variationSkus[val] || (variationSkuFormat === 'sku_number'
+            ? `${(sku.trim() || 'SKU')}-${idx + 1}`
+            : `${(sku.trim() || 'SKU')}${val.replace(/[^a-zA-Z0-9]/g, '')}`);
+
+          const effectiveTaxRate = taxType === 'exempt' ? 0 : (parseFloat(taxRate) || 0);
+          const baseCostExc = parseFloat(variationCostsExc[val] !== undefined ? variationCostsExc[val] : ((idx + 1) * 20 + 80).toString()) || 100;
+          const currentCostInc = effectiveTaxRate > 0 ? (baseCostExc * (1 + effectiveTaxRate / 100)) : baseCostExc;
+          const currentMargin = parseFloat(variationMargins[val] !== undefined ? variationMargins[val] : (marginInput || '25')) || 25;
+          const currentSellingExc = baseCostExc * (1 + currentMargin / 100);
+          const currentSellingInc = effectiveTaxRate > 0 ? (currentSellingExc * (1 + effectiveTaxRate / 100)) : currentSellingExc;
+          const opStock = parseFloat(variationOpeningStocks[val] ?? '5') || 0;
+          const alertThresh = parseFloat(variationAlertQuantities[val] ?? '2') || 5;
+          const varImg = variationImages[val] || '';
+
+          return {
+            id: `var_${Date.now()}_${idx}`,
+            name: `${selectedVariationName || 'Variation'}: ${val}`,
+            value: val,
+            attributeName: selectedVariationName || 'Variation',
+            sku: varSku,
+            barcode: barcode ? `${barcode}-${idx + 1}` : undefined,
+            costPrice: baseCostExc,
+            costPriceIncTax: currentCostInc,
+            margin: currentMargin,
+            sellingPrice: currentSellingExc,
+            sellingPriceIncTax: currentSellingInc,
+            openingStock: opStock,
+            currentStock: opStock,
+            alertQuantity: alertThresh,
+            image: varImg || undefined,
+            attributes: { [selectedVariationName || 'Variation']: val },
+          };
+        })
+      : [];
+
+    const variableTotalOpeningStock = effectiveVariations.reduce(
+      (sum, v) => sum + (Number(v.openingStock ?? v.currentStock) || 0),
+      0
+    );
+
     // 1. Strict Schema-Driven Input Validation
     const schemaRes = validateProductData({
       name,
       sku: sku.trim() || undefined,
       type: productType,
       unit,
-      costPrice: productType === 'single' ? costPrice : undefined,
-      sellingPrice: productType === 'single' ? sellingPrice : undefined,
-      alertQuantity,
+      costPrice: productType === 'single' ? costPrice : (productType === 'combo' ? (costPrice || '0') : (effectiveVariations[0]?.costPrice?.toString() || '0')),
+      sellingPrice: productType === 'single' ? sellingPrice : (productType === 'combo' ? (sellingPrice || '0') : (effectiveVariations[0]?.sellingPrice?.toString() || '0')),
+      alertQuantity: productType === 'single' ? alertQuantity : (productType === 'combo' ? '0' : (effectiveVariations[0]?.alertQuantity?.toString() || '5')),
       taxRate,
       category,
       brand,
-      variations: productType === 'variable' ? variations.map((v) => ({
-        name: v.name,
+      variations: productType === 'variable' ? effectiveVariations.map((v) => ({
+        name: v.name || v.value,
         sku: v.sku,
         purchasePrice: v.costPrice,
         sellingPrice: v.sellingPrice,
@@ -818,7 +1293,13 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       return;
     }
 
-    if (!isEditMode) {
+    if (productType === 'combo' && comboItems.length === 0) {
+      setFormError('Please select and add at least one individual product into this combo bundle.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (!isEditMode && productType === 'single') {
       const trimmedLot = lotNumber.trim();
       if (!trimmedLot) {
         setFormError('Please enter a LOT number.');
@@ -835,7 +1316,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       }
       const stockVal = parseFloat(initialLotStock);
       if (isNaN(stockVal) || stockVal <= 0) {
-        setFormError('please enter opening stock for the allocated LOT number');
+        setFormError('Please enter opening stock for the allocated LOT number.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -888,7 +1369,13 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       });
     }
 
-    const finalLots: ProductLot[] = isEditMode
+    const resolvedStockForLot = productType === 'variable'
+      ? variableTotalOpeningStock
+      : (productType === 'combo' ? 0 : (Number(initialLotStock) || totalStockValue));
+
+    const finalLots: ProductLot[] = productType === 'combo'
+      ? []
+      : isEditMode
       ? (lots && lots.length > 0
           ? lots.map((l, idx) => (idx === 0 || l.lotNumber === lotNumber) && initialLotStock !== ''
               ? { ...l, currentStock: Math.max(0, Number(initialLotStock) || 0) }
@@ -896,7 +1383,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           : [
               {
                 id: `lot_init_${productToEdit?.id || Date.now()}`,
-                lotNumber: lotNumber.trim() || `LOT-${new Date().getFullYear()}-001`,
+                lotNumber: lotNumber.trim() || `LOT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
                 costPrice: cost,
                 sellingPrice: price,
                 currentStock: totalStockValue,
@@ -907,16 +1394,32 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       : [
           {
             id: `lot_${Date.now()}`,
-            lotNumber: lotNumber.trim() || `LOT-${new Date().getFullYear()}-001`,
-            costPrice: cost,
-            sellingPrice: price,
-            currentStock: Number(initialLotStock) || totalStockValue,
+            lotNumber: lotNumber.trim() || `LOT-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
+            costPrice: productType === 'variable' ? (effectiveVariations[0]?.costPrice || cost) : cost,
+            sellingPrice: productType === 'variable' ? (effectiveVariations[0]?.sellingPrice || price) : price,
+            currentStock: resolvedStockForLot,
             createdDate: new Date().toISOString().slice(0, 10),
             source: 'opening_stock',
           }
         ];
 
-    const finalResolvedStock = finalLots.reduce((sum, l) => sum + (Number(l.currentStock) || 0), 0);
+    // Compute dynamic stock for combo products from components
+    let comboDynamicStock = 0;
+    if (productType === 'combo' && comboItems.length > 0) {
+      const possibleComboCounts = comboItems.map((ci) => {
+        const compProd = (products || []).find((p) => p.id === ci.productId);
+        const compStock = Number(compProd?.currentStock ?? compProd?.stock) || 0;
+        const reqQty = Number(ci.quantity) || 1;
+        return Math.floor(compStock / reqQty);
+      });
+      comboDynamicStock = possibleComboCounts.length > 0 ? Math.min(...possibleComboCounts) : 0;
+    }
+
+    const finalResolvedStock = productType === 'variable'
+      ? variableTotalOpeningStock
+      : productType === 'combo'
+      ? comboDynamicStock
+      : finalLots.reduce((sum, l) => sum + (Number(l.currentStock) || 0), 0);
 
     const productPayload = {
       name: name.trim(),
@@ -931,8 +1434,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       brand: brand.trim(),
       warrantyId: warrantyId || undefined,
       unit,
-      costPrice: cost,
-      sellingPrice: price,
+      costPrice: productType === 'variable' ? (effectiveVariations[0]?.costPrice || cost) : cost,
+      sellingPrice: productType === 'variable' ? (effectiveVariations[0]?.sellingPrice || price) : price,
       taxRate: tax,
       alertQuantity: alertQty,
       image: image.trim() || 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80',
@@ -947,12 +1450,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       locationStocks: finalLocationStocks,
       currentStock: finalResolvedStock,
       stock: finalResolvedStock,
-      attributes: productType === 'variable' ? attributes : undefined,
-      variations: productType === 'variable' ? variations : undefined,
+      attributes: productType === 'variable'
+        ? [{ id: 'attr_1', name: selectedVariationName || 'Variation', values: selectedVariationValues }]
+        : undefined,
+      variations: productType === 'variable' ? effectiveVariations : undefined,
       comboItems: productType === 'combo' ? comboItems : undefined,
       lots: finalLots,
-      manualLotNumber: isEditMode ? undefined : (lotNumber.trim() || undefined),
-      initialLotStock: isEditMode ? undefined : (Number(initialLotStock) || 0),
+      manualLotNumber: (productType === 'combo' || isEditMode) ? undefined : (lotNumber.trim() || undefined),
+      initialLotStock: (productType === 'combo' || isEditMode) ? undefined : resolvedStockForLot,
       source: isEditMode ? (productToEdit?.source || 'manual') : 'manual',
       creationSource: isEditMode ? (productToEdit?.creationSource || 'add_product_screen') : 'add_product_screen',
     };
@@ -988,7 +1493,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-24 max-w-7xl mx-auto animate-fadeIn">
+    <div className="p-4 sm:p-6 space-y-6 pb-28 w-full max-w-full animate-fadeIn">
       {/* Top Breadcrumbs & Action Bar */}
       <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1039,19 +1544,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
           {/* Action Buttons Top */}
           <div className="flex items-center gap-2.5 flex-wrap justify-end">
-            <button
-              type="button"
-              onClick={() => setShowLiveCalculator(!showLiveCalculator)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
-                showLiveCalculator 
-                  ? (isLight ? 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100' : 'bg-indigo-600/10 border-indigo-500/50 text-indigo-400') 
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
-              }`}
-              title="Toggle Live KPI Calculator"
-            >
-              <Calculator className={`w-4 h-4 ${showLiveCalculator ? 'animate-pulse' : ''}`} />
-              <span>Live Calculator: {showLiveCalculator ? 'ON' : 'OFF'}</span>
-            </button>
+
 
             <button
               id="product-form-cancel-btn"
@@ -1123,10 +1616,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
         </div>
       )}
 
-      {/* Form Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (8 cols): Main Inputs */}
-        <div className="lg:col-span-8 space-y-6">
+      {/* Form Content Full Width */}
+      <div className="space-y-6 w-full">
           {/* Card 1: Essential Product Information */}
           <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1176,7 +1667,15 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setProductType('variable')}
+                    onClick={() => {
+                      setProductType('variable');
+                      if (!selectedVariationName) {
+                        setSelectedVariationName('Phase Type');
+                      }
+                      if (selectedVariationValues.length === 0) {
+                        setSelectedVariationValues(['Single Phase', 'Three Phase', 'two phase']);
+                      }
+                    }}
                     className={`p-3 rounded-xl border text-left transition relative ${
                       productType === 'variable'
                         ? 'bg-purple-950/70 border-purple-500 text-white shadow-md shadow-purple-600/20'
@@ -1527,11 +2026,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     <label className="text-slate-300 font-semibold">Unit of Measurement (UoM) *</label>
                     <button
                       type="button"
-                      onClick={() => setInventorySubTab('units')}
-                      className="text-[10px] text-indigo-400 hover:underline flex items-center gap-0.5"
+                      onClick={handleOpenQuickUnitModal}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                      title="Quick Add Unit"
                     >
-                      <span>Manage Units</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
+                      <Plus className="w-3 h-3" />
+                      <span>Manage / + Add Unit</span>
                     </button>
                   </div>
                   <select
@@ -1575,12 +2075,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         <label className="text-slate-300 font-semibold">Category</label>
                         <button
                           type="button"
-                          onClick={() => setInventorySubTab('categories')}
-                          className="text-[10px] text-amber-400 hover:underline flex items-center gap-0.5 font-medium"
-                          title="Manage Product Categories"
+                          onClick={() => handleOpenQuickCategoryModal()}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                          title="Manage & Add Category"
                         >
-                          <span>Manage Categories</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
+                          <Plus className="w-3 h-3" />
+                          <span>Manage / + Add Category</span>
                         </button>
                       </div>
                       <select
@@ -1612,12 +2112,15 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         <label className="text-slate-300 font-semibold">Sub-Category</label>
                         <button
                           type="button"
-                          onClick={() => setInventorySubTab('categories')}
-                          className="text-[10px] text-indigo-400 hover:underline flex items-center gap-0.5 font-medium"
-                          title="Manage Sub-Categories"
+                          onClick={() => {
+                            const parentCatObj = (erpCategories || []).find((c) => c.name === category);
+                            handleOpenQuickCategoryModal(parentCatObj?.id);
+                          }}
+                          className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                          title="Manage & Add Sub-Category"
                         >
-                          <span>Manage Taxonomy</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
+                          <Plus className="w-3 h-3" />
+                          <span>Manage / + Add Sub-Cat</span>
                         </button>
                       </div>
                       {(() => {
@@ -1663,12 +2166,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                         <label className="text-slate-300 font-semibold">Brand / Manufacturer</label>
                         <button
                           type="button"
-                          onClick={() => setInventorySubTab('brands')}
-                          className="text-[10px] text-sky-400 hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                          title="Manage Brands Registry"
+                          onClick={handleOpenQuickBrandModal}
+                          className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                          title="Manage & Add Brand"
                         >
-                          <span>Manage Brands</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
+                          <Plus className="w-3 h-3" />
+                          <span>Manage / + Add Brand</span>
                         </button>
                       </div>
                       <select
@@ -1679,10 +2182,10 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       >
                         <option value="">Select Brand (Optional)</option>
                         {(erpBrands && erpBrands.length > 0
-                          ? erpBrands.filter((b) => b.status === 'active' || b.name === brand)
+                          ? erpBrands.filter((b) => (b.status || 'active').toLowerCase() === 'active' || (b.name && b.name.toLowerCase() === (brand || '').toLowerCase()))
                           : PRESET_BRANDS.map(b => ({ id: b, name: b, originCountry: '' }))
                         ).map((b) => (
-                          <option key={b.id} value={b.name}>
+                          <option key={b.id || b.name} value={b.name}>
                             {b.name} {b.originCountry ? `(${b.originCountry})` : ''}
                           </option>
                         ))}
@@ -1703,11 +2206,11 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     </label>
                     <button
                       type="button"
-                      onClick={() => setInventorySubTab('warranties')}
-                      className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                      onClick={handleOpenQuickWarrantyModal}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
                     >
-                      <span>Manage Warranties</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
+                      <Plus className="w-3 h-3" />
+                      <span>Manage / + Add Warranty</span>
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1870,392 +2373,717 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
             </div>
           </div>
 
-          {/* Card 1.5: Variable Product Attributes & Variations Matrix */}
-          {productType === 'variable' && (
-            <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-purple-500/40 shadow-xl space-y-5 animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          {/* Card 1.6: Combo / Bundle Products Configuration */}
+          {productType === 'combo' && (
+            <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-amber-500/40 shadow-xl space-y-5 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-purple-600/20 border border-purple-500/30 rounded-xl text-purple-400">
-                    <Sliders className="w-4 h-4" />
+                  <div className="p-2 bg-amber-600/20 border border-amber-500/30 rounded-xl text-amber-400">
+                    <PackageCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Variable Product Attributes & Matrix</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white">Combo / Bundle Items Assembly</h3>
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                        Combo Mode
+                      </span>
+                    </div>
                     <p className="text-[11px] text-slate-400">
-                      Configure variation attributes (Size, Color, Flavor, Design) and manage variation combinations
+                      Assemble individual products from your inventory into this bundle. Stock and cost are calculated dynamically.
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-full">
-                  Variable Mode
-                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsComboAdvancedSearchOpen(true)}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 shrink-0 self-start sm:self-auto cursor-pointer"
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Advanced Search & Catalog</span>
+                  <span className="bg-indigo-800/80 px-1.5 py-0.2 rounded text-[10px] ml-1">
+                    {eligibleComboProducts.length}
+                  </span>
+                </button>
               </div>
 
-              {/* Attributes Builder */}
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+              {/* Fast Inline Search Bar with Live Results Dropdown */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 relative">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-200">1. Define Attributes for this Product</h4>
-                  <button
-                    type="button"
-                    onClick={handleAutoGenerateVariations}
-                    className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-purple-600/30"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Auto-Generate Combinations</span>
-                  </button>
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Quick Search Inventory Products (by SKU, Name, Brand, Category)</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">Type to search or browse below</span>
                 </div>
 
-                {/* Attribute List */}
-                <div className="space-y-3">
-                  {attributes.map((attr, aIdx) => (
-                    <div key={attr.id} className="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <input
-                          type="text"
-                          value={attr.name}
-                          onChange={(e) => {
-                            const newAttrs = [...attributes];
-                            newAttrs[aIdx].name = e.target.value;
-                            setAttributes(newAttrs);
-                          }}
-                          placeholder="Attribute Name (e.g. Size, Color, Flavor)"
-                          className="bg-slate-950 text-white font-bold text-xs px-2.5 py-1 rounded border border-slate-700 w-48 focus:outline-none focus:border-purple-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setAttributes(attributes.filter((_, idx) => idx !== aIdx))}
-                          className="text-slate-500 hover:text-rose-400 p-1 rounded"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                <div className="relative">
+                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-900 focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/40 overflow-hidden transition">
+                    <div className="pl-3.5 pr-2 text-slate-400 flex items-center justify-center">
+                      <Search className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={comboSearchQuery}
+                      onChange={(e) => {
+                        setComboSearchQuery(e.target.value);
+                        setIsComboSearchFocused(true);
+                      }}
+                      onFocus={() => setIsComboSearchFocused(true)}
+                      placeholder="Search product name, SKU (e.g. ELEC-001), barcode, category, brand..."
+                      className="w-full bg-transparent text-white placeholder-slate-500 text-xs py-2.5 px-1 focus:outline-none"
+                    />
+                    {comboSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setComboSearchQuery('')}
+                        className="p-1.5 text-slate-400 hover:text-white mr-1.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsComboAdvancedSearchOpen(true)}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border-l border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+                      title="Open full catalog modal"
+                    >
+                      <Filter className="w-3 h-3 text-amber-400" />
+                      <span className="hidden sm:inline">Browse</span>
+                    </button>
+                  </div>
 
-                      <div className="flex flex-wrap gap-1.5 items-center">
-                        {attr.values.map((val, vIdx) => (
-                          <span
-                            key={vIdx}
-                            className="bg-slate-950 text-slate-300 border border-slate-700 text-[11px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1"
-                          >
-                            <span>{val}</span>
+                  {/* Autocomplete Dropdown List */}
+                  {isComboSearchFocused && comboSearchQuery.trim().length > 0 && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-20"
+                        onClick={() => setIsComboSearchFocused(false)}
+                      />
+                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-30 max-h-72 overflow-y-auto divide-y divide-slate-800">
+                        {searchMatchedComboProducts.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-slate-400">
+                            No inventory products match "{comboSearchQuery}".
                             <button
                               type="button"
                               onClick={() => {
-                                const newAttrs = [...attributes];
-                                newAttrs[aIdx].values = newAttrs[aIdx].values.filter((_, idx) => idx !== vIdx);
-                                setAttributes(newAttrs);
+                                setIsComboSearchFocused(false);
+                                setIsComboAdvancedSearchOpen(true);
                               }}
-                              className="text-slate-500 hover:text-rose-400 ml-1"
+                              className="block mx-auto mt-2 text-indigo-400 hover:underline font-semibold"
                             >
-                              &times;
+                              Open Advanced Search Catalog
                             </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                          </div>
+                        ) : (
+                          searchMatchedComboProducts.map((p) => {
+                            const isAlreadyIn = comboItems.some((ci) => ci.productId === p.id);
+                            const existingItem = comboItems.find((ci) => ci.productId === p.id);
+                            const stockVal = Number(p.currentStock ?? p.stock) || 0;
 
-                  {/* Quick Add Custom Attribute Inputs */}
-                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
-                    <input
-                      type="text"
-                      placeholder="New Attr Name (e.g. Design)"
-                      value={attrNameInput}
-                      onChange={(e) => setAttrNameInput(e.target.value)}
-                      className="bg-slate-950 text-white text-xs px-3 py-1.5 rounded-lg border border-slate-700 w-full sm:w-1/3"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Values comma separated (e.g. S, M, L, XL)"
-                      value={attrValuesInput}
-                      onChange={(e) => setAttrValuesInput(e.target.value)}
-                      className="bg-slate-950 text-white text-xs px-3 py-1.5 rounded-lg border border-slate-700 w-full sm:w-1/2"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddCustomAttribute}
-                      className="bg-slate-800 hover:bg-slate-700 text-purple-300 px-3 py-1.5 rounded-lg text-xs font-bold w-full sm:w-auto shrink-0 border border-purple-500/30"
-                    >
-                      + Add Attr
-                    </button>
-                  </div>
+                            return (
+                              <div
+                                key={p.id}
+                                className="p-3 hover:bg-slate-800/80 flex items-center justify-between gap-3 cursor-pointer transition"
+                                onClick={() => {
+                                  addProductToCombo(p, 1);
+                                  setIsComboSearchFocused(false);
+                                }}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  {p.image ? (
+                                    <img
+                                      src={p.image}
+                                      alt={p.name}
+                                      className="w-10 h-10 rounded-lg object-cover bg-slate-800 border border-slate-700 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shrink-0">
+                                      <Package className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-white text-xs truncate">{p.name}</span>
+                                      {p.brand && (
+                                        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700">
+                                          {p.brand}
+                                        </span>
+                                      )}
+                                      {p.category && (
+                                        <span className="text-[10px] bg-indigo-950/60 text-indigo-300 px-1.5 py-0.2 rounded border border-indigo-800/40">
+                                          {p.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                                      <span className="font-mono text-slate-300 font-semibold">SKU: {p.sku}</span>
+                                      <span>•</span>
+                                      <span>Cost: <strong className="text-slate-200">{formatCurrency(p.costPrice || 0, settings)}</strong></span>
+                                      <span>•</span>
+                                      <span>Price: <strong className="text-emerald-400">{formatCurrency(p.sellingPrice || 0, settings)}</strong></span>
+                                      <span>•</span>
+                                      <span className={stockVal > 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                                        Stock: {stockVal} {p.unit || 'pcs'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 flex items-center gap-2">
+                                  {isAlreadyIn ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold rounded-lg">
+                                      <Check className="w-3 h-3" />
+                                      <span>In Bundle ({existingItem?.quantity}) +1</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addProductToCombo(p, 1);
+                                        setIsComboSearchFocused(false);
+                                      }}
+                                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow transition cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Add</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Variations Matrix Table */}
-              <div className="space-y-2">
+              {/* Combo Items Assembly Table */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-                  <span>2. Variation Combinations Matrix ({variations.length})</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newVar: import('../../types/erp').ProductVariation = {
-                        id: `var_${Date.now()}`,
-                        sku: `${sku}-CUSTOM`,
-                        barcode: `${barcode.slice(0, 10)}${Math.floor(10 + Math.random() * 89)}`,
-                        name: 'Custom Variation',
-                        attributes: {},
-                        costPrice: parseFloat(costPrice) || 50,
-                        sellingPrice: parseFloat(sellingPrice) || 99,
-                        currentStock: 10,
-                      };
-                      setVariations([...variations, newVar]);
-                    }}
-                    className="text-[11px] text-purple-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Add Manual Variation Row</span>
-                  </button>
+                  <span className="flex items-center gap-2">
+                    <span>Bundled Component Items ({comboItems.length})</span>
+                    {comboItems.length > 0 && (
+                      <span className="text-[11px] text-amber-400 font-normal">
+                        ({comboItems.reduce((sum, ci) => sum + (Number(ci.quantity) || 1), 0)} total units)
+                      </span>
+                    )}
+                  </span>
+                  {comboItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to remove all items from this combo bundle?')) {
+                          setComboItems([]);
+                          setCostPrice('0.00');
+                          setSellingPrice('0.00');
+                        }
+                      }}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 transition"
+                    >
+                      Clear All Items
+                    </button>
+                  )}
                 </div>
 
-                {variations.length === 0 ? (
-                  <div className="p-6 bg-slate-950 rounded-xl border border-dashed border-slate-800 text-center space-y-2">
-                    <p className="text-xs text-slate-400">No variations generated yet.</p>
-                    <p className="text-[11px] text-slate-500">
-                      Click "Auto-Generate Combinations" above or add a manual variation row.
-                    </p>
+                {comboItems.length === 0 ? (
+                  <div className="p-8 bg-slate-950 rounded-xl border border-dashed border-slate-800 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                      <ShoppingBag className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-200">No products added to this bundle yet</p>
+                      <p className="text-[11px] text-slate-400 max-w-md mx-auto mt-1">
+                        Use the search bar above or click <strong>"Advanced Search & Catalog"</strong> to search by SKU, Product Name, Brand, or Category and add items into this bundle.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsComboAdvancedSearchOpen(true)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow transition"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      <span>Browse Inventory Catalog</span>
+                    </button>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-900 text-slate-400 text-[11px] uppercase font-bold border-b border-slate-800">
-                        <tr>
-                          <th className="py-2.5 px-3">Variation Name</th>
-                          <th className="py-2.5 px-3">Variation SKU</th>
-                          <th className="py-2.5 px-3">Barcode</th>
-                          <th className="py-2.5 px-3 w-32">Cost ({settings.currencySymbol || '₹'})</th>
-                          <th className="py-2.5 px-3 w-32">Selling ({settings.currencySymbol || '₹'})</th>
-                          <th className="py-2.5 px-3 w-20">Stock</th>
-                          <th className="py-2.5 px-3 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-850">
-                        {variations.map((v, idx) => (
-                          <tr key={v.id} className="hover:bg-slate-900/50">
-                            <td className="py-2 px-3 font-semibold text-white">
-                              <input
-                                type="text"
-                                value={v.name}
-                                onChange={(e) => {
-                                  const updated = [...variations];
-                                  updated[idx].name = e.target.value;
-                                  setVariations(updated);
-                                }}
-                                className="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-purple-500 focus:outline-none text-white w-full"
-                              />
-                            </td>
-                            <td className="py-2 px-3 font-mono text-slate-300">
-                              <input
-                                type="text"
-                                value={v.sku}
-                                onChange={(e) => {
-                                  const updated = [...variations];
-                                  updated[idx].sku = e.target.value;
-                                  setVariations(updated);
-                                }}
-                                className="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-purple-500 focus:outline-none font-mono text-xs w-full text-slate-300"
-                              />
-                            </td>
-                            <td className="py-2 px-3 font-mono text-slate-400">
-                              <input
-                                type="text"
-                                value={v.barcode}
-                                onChange={(e) => {
-                                  const updated = [...variations];
-                                  updated[idx].barcode = e.target.value;
-                                  setVariations(updated);
-                                }}
-                                className="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-purple-500 focus:outline-none font-mono text-xs w-full text-slate-400"
-                              />
-                            </td>
-                            <td className="py-2 px-3">
-                              <div className="flex items-center rounded-lg bg-slate-900 border border-slate-700 overflow-hidden focus-within:border-slate-500 transition">
-                                <span className="px-2 py-1 text-slate-400 font-mono text-xs font-bold select-none bg-slate-950 border-r border-slate-800 shrink-0">
-                                  {settings.currencySymbol || '₹'}
-                                </span>
-                                <input
-                                  type="number"
-                                  value={v.costPrice}
-                                  onChange={(e) => {
-                                    const updated = [...variations];
-                                    updated[idx].costPrice = parseFloat(e.target.value) || 0;
-                                    setVariations(updated);
-                                  }}
-                                  className="bg-transparent text-slate-200 px-2 py-1 w-full font-mono text-right focus:outline-none text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                              </div>
-                            </td>
-                            <td className="py-2 px-3">
-                              <div className="flex items-center rounded-lg bg-slate-900 border border-slate-700 overflow-hidden focus-within:border-indigo-500 transition">
-                                <span className="px-2 py-1 text-indigo-400 font-mono text-xs font-bold select-none bg-slate-950 border-r border-slate-800 shrink-0">
-                                  {settings.currencySymbol || '₹'}
-                                </span>
-                                <input
-                                  type="number"
-                                  value={v.sellingPrice}
-                                  onChange={(e) => {
-                                    const updated = [...variations];
-                                    updated[idx].sellingPrice = parseFloat(e.target.value) || 0;
-                                    setVariations(updated);
-                                  }}
-                                  className="bg-transparent text-indigo-400 font-bold px-2 py-1 w-full font-mono text-right focus:outline-none text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                              </div>
-                            </td>
-                            <td className="py-2 px-3">
-                              <input
-                                type="number"
-                                value={v.currentStock}
-                                onChange={(e) => {
-                                  const updated = [...variations];
-                                  updated[idx].currentStock = parseInt(e.target.value) || 0;
-                                  setVariations(updated);
-                                }}
-                                className="bg-slate-900 border border-slate-700 text-white font-mono px-2 py-1 rounded w-full text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </td>
-                            <td className="py-2 px-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setVariations(variations.filter((_, i) => i !== idx))}
-                                className="text-slate-500 hover:text-rose-400 p-1 rounded"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
+                  <div className="space-y-3">
+                    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-900 text-slate-400 text-[11px] uppercase font-bold border-b border-slate-800">
+                          <tr>
+                            <th className="py-2.5 px-3">Item Details</th>
+                            <th className="py-2.5 px-3">SKU</th>
+                            <th className="py-2.5 px-3 text-right">Unit Cost</th>
+                            <th className="py-2.5 px-3 text-right">Unit Price</th>
+                            <th className="py-2.5 px-3 text-center w-36">Quantity in Bundle</th>
+                            <th className="py-2.5 px-3 text-right">Subtotal Cost</th>
+                            <th className="py-2.5 px-3 text-right">Subtotal Price</th>
+                            <th className="py-2.5 px-3 text-center w-12">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-850">
+                          {comboItems.map((item, idx) => {
+                            const prod = (products || []).find((p) => p.id === item.productId);
+                            const itemCost = item.costPrice !== undefined ? Number(item.costPrice) : (Number(prod?.costPrice) || 0);
+                            const itemPrice = Number(item.unitPrice) || 0;
+                            const qty = Number(item.quantity) || 1;
+                            const totalItemCost = itemCost * qty;
+                            const totalItemPrice = itemPrice * qty;
+
+                            return (
+                              <tr key={item.productId} className="hover:bg-slate-900/50 transition">
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-2.5">
+                                    {item.image || prod?.image ? (
+                                      <img
+                                        src={item.image || prod?.image}
+                                        alt={item.productName}
+                                        className="w-8 h-8 rounded-lg object-cover bg-slate-800 border border-slate-700 shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shrink-0">
+                                        <Package className="w-4 h-4 text-slate-400" />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-bold text-white">{item.productName}</div>
+                                      <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                        {prod?.brand && <span>{prod.brand}</span>}
+                                        {prod?.brand && prod?.category && <span>•</span>}
+                                        {prod?.category && <span>{prod.category}</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 font-mono font-semibold text-slate-300">{item.sku}</td>
+                                <td className="py-2.5 px-3 text-right font-mono text-indigo-300">
+                                  {formatCurrency(itemCost, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono text-slate-300">
+                                  {formatCurrency(itemPrice, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <div className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
+                                    <button
+                                      type="button"
+                                      onClick={() => updateComboItemQuantity(idx, qty - 1)}
+                                      disabled={qty <= 1}
+                                      className="p-1.5 hover:bg-slate-800 text-slate-300 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={qty}
+                                      onChange={(e) => updateComboItemQuantity(idx, parseInt(e.target.value) || 1)}
+                                      className="bg-transparent text-amber-300 font-bold w-12 text-center font-mono text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => updateComboItemQuantity(idx, qty + 1)}
+                                      className="p-1.5 hover:bg-slate-800 text-slate-300 transition"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-400">
+                                  {formatCurrency(totalItemCost, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                                  {formatCurrency(totalItemPrice, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeComboItem(idx)}
+                                    className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded transition cursor-pointer"
+                                    title="Remove from bundle"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Live Summary Strip for Bundle Assembly */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-slate-800 rounded-lg text-slate-300">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase font-bold text-slate-400">Total Bundle Items</div>
+                          <div className="text-xs font-bold text-white">
+                            {comboItems.length} Products ({comboItems.reduce((s, ci) => s + (Number(ci.quantity) || 1), 0)} Units)
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase font-bold text-indigo-400">Total Purchase Cost</div>
+                          <div className="text-xs font-bold font-mono text-indigo-300">
+                            {settings.currencySymbol} {parseFloat(costPrice || '0').toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                          <TrendingUp className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase font-bold text-emerald-400">Target Margin (%)</div>
+                          <div className="text-xs font-bold font-mono text-emerald-300">
+                            {marginInput || '0.0'}%
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400">
+                          <Tag className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase font-bold text-amber-400">Bundle Selling Price</div>
+                          <div className="text-xs font-bold font-mono text-amber-300">
+                            {settings.currencySymbol} {parseFloat(sellingPrice || '0').toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Card 1.6: Combo / Bundle Products Configuration */}
-          {productType === 'combo' && (
-            <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-amber-500/40 shadow-xl space-y-5 animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-amber-600/20 border border-amber-500/30 rounded-xl text-amber-400">
-                    <PackageCheck className="w-4 h-4" />
+          {/* Advanced Catalog Search Modal for Combo Products */}
+          {isComboAdvancedSearchOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+              <div className="bg-slate-900 border border-slate-700 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+                {/* Modal Header */}
+                <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
+                      <Filter className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Advanced Inventory Search & Bundle Selector</h3>
+                      <p className="text-xs text-slate-400">
+                        Filter and search products by SKU, Name, Brand, Category or Stock Status to add into bundle
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">Combo / Bundle Items Assembly</h3>
-                    <p className="text-[11px] text-slate-400">
-                      Combine multiple individual products from your inventory into a single selling bundle set (e.g. Computer Set)
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  Combo Mode
-                </span>
-              </div>
-
-              {/* Add Item to Combo Form */}
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                <h4 className="text-xs font-bold text-slate-200">Select Individual Product to Add into Bundle</h4>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <select
-                    value={selectedComboProductId}
-                    onChange={(e) => setSelectedComboProductId(e.target.value)}
-                    className="w-full bg-slate-900 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="">-- Select Product from Inventory --</option>
-                    {(products || [])
-                      .filter((p) => p.type !== 'combo' && p.id !== productToEdit?.id)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.sku}) • Price: {settings.currencySymbol || '₹'}{p.sellingPrice} • Stock: {p.currentStock}
-                        </option>
-                      ))}
-                  </select>
                   <button
                     type="button"
-                    onClick={handleAddComboItem}
-                    disabled={!selectedComboProductId}
-                    className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 shadow-md shadow-amber-600/30"
+                    onClick={() => setIsComboAdvancedSearchOpen(false)}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>+ Add to Combo</span>
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-              </div>
 
-              {/* Combo Items Table */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-                  <span>Bundled Items List ({comboItems.length})</span>
+                {/* Filter Controls Bar */}
+                <div className="p-4 bg-slate-950 border-b border-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                  {/* Search Query */}
+                  <div className="sm:col-span-1">
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Search Keywords</label>
+                    <div className="flex items-center rounded-xl border border-slate-700 bg-slate-900 px-2.5 py-1.5">
+                      <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <input
+                        type="text"
+                        value={comboSearchQuery}
+                        onChange={(e) => setComboSearchQuery(e.target.value)}
+                        placeholder="Name, SKU, Barcode..."
+                        className="w-full bg-transparent text-white focus:outline-none text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Category</label>
+                    <select
+                      value={comboFilterCategory}
+                      onChange={(e) => setComboFilterCategory(e.target.value)}
+                      className="w-full bg-slate-900 text-white px-2.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="all">All Categories</option>
+                      {Array.from(new Set(eligibleComboProducts.map((p) => p.category).filter(Boolean))).map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Brand Filter */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Brand</label>
+                    <select
+                      value={comboFilterBrand}
+                      onChange={(e) => setComboFilterBrand(e.target.value)}
+                      className="w-full bg-slate-900 text-white px-2.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="all">All Brands</option>
+                      {Array.from(new Set(eligibleComboProducts.map((p) => p.brand).filter(Boolean))).map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Stock Status Filter */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Stock Status</label>
+                    <select
+                      value={comboFilterStockStatus}
+                      onChange={(e) => setComboFilterStockStatus(e.target.value as any)}
+                      className="w-full bg-slate-900 text-white px-2.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="all">All Stock Statuses</option>
+                      <option value="in_stock">In Stock (&gt; 0)</option>
+                      <option value="low_stock">Low Stock (≤ Alert)</option>
+                      <option value="out_of_stock">Out of Stock (0)</option>
+                    </select>
+                  </div>
                 </div>
 
-                {comboItems.length === 0 ? (
-                  <div className="p-6 bg-slate-950 rounded-xl border border-dashed border-slate-800 text-center space-y-2">
-                    <p className="text-xs text-slate-400">No products added to this bundle yet.</p>
-                    <p className="text-[11px] text-slate-500">
-                      Select products from the dropdown above (e.g., Monitor, Keyboard, Mouse, CPU) to build a bundle set.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-900 text-slate-400 text-[11px] uppercase font-bold border-b border-slate-800">
-                        <tr>
-                          <th className="py-2.5 px-3">Product Name</th>
-                          <th className="py-2.5 px-3">SKU</th>
-                          <th className="py-2.5 px-3 w-28 text-center">Qty in Bundle</th>
-                          <th className="py-2.5 px-3 text-right">Unit Price</th>
-                          <th className="py-2.5 px-3 text-right">Subtotal</th>
-                          <th className="py-2.5 px-3 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-850">
-                        {comboItems.map((item, idx) => (
-                          <tr key={item.productId} className="hover:bg-slate-900/50">
-                            <td className="py-2 px-3 font-bold text-white">{item.productName}</td>
-                            <td className="py-2 px-3 font-mono text-slate-400">{item.sku}</td>
-                            <td className="py-2 px-3 text-center">
-                              <input
-                                type="number"
-                                min={1}
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const newQty = parseInt(e.target.value) || 1;
-                                  const updated = [...comboItems];
-                                  updated[idx].quantity = newQty;
-                                  updated[idx].totalPrice = updated[idx].unitPrice * newQty;
-                                  setComboItems(updated);
+                {/* Table of Filtered Products */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllModalProducts}
+                        className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        {modalSelectedProductIds.length === modalFilteredProducts.length && modalFilteredProducts.length > 0 ? (
+                          <>
+                            <CheckSquare className="w-4 h-4 text-indigo-400" />
+                            <span>Deselect All</span>
+                          </>
+                        ) : (
+                          <>
+                            <Square className="w-4 h-4 text-slate-500" />
+                            <span>Select All ({modalFilteredProducts.length})</span>
+                          </>
+                        )}
+                      </button>
+                      <span>•</span>
+                      <span>Showing {modalFilteredProducts.length} matching products</span>
+                    </div>
 
-                                  const sumComponentPrices = updated.reduce((acc, ci) => acc + ci.totalPrice, 0);
-                                  setSellingPrice(sumComponentPrices.toFixed(2));
-                                }}
-                                className="bg-slate-900 border border-slate-700 text-amber-300 font-bold px-2 py-1 rounded w-16 text-center font-mono"
-                              />
-                            </td>
-                            <td className="py-2 px-3 text-right font-mono text-slate-300">
-                              {formatCurrency(item.unitPrice || 0, settings)}
-                            </td>
-                            <td className="py-2 px-3 text-right font-mono font-bold text-indigo-400">
-                              {formatCurrency(item.unitPrice * item.quantity || 0, settings)}
-                            </td>
-                            <td className="py-2 px-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = comboItems.filter((_, i) => i !== idx);
-                                  setComboItems(updated);
-                                  const sumPrices = updated.reduce((acc, ci) => acc + ci.totalPrice, 0);
-                                  setSellingPrice(sumPrices.toFixed(2));
-                                }}
-                                className="text-slate-500 hover:text-rose-400 p-1 rounded"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    {modalSelectedProductIds.length > 0 && (
+                      <span className="text-emerald-400 font-bold">
+                        {modalSelectedProductIds.length} item(s) selected
+                      </span>
+                    )}
                   </div>
-                )}
+
+                  {modalFilteredProducts.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400 space-y-2">
+                      <Search className="w-8 h-8 text-slate-600 mx-auto" />
+                      <p className="text-xs font-semibold">No inventory products found matching the active filters.</p>
+                      <p className="text-[11px] text-slate-500">Try clearing or adjusting your search query and filters above.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-900 text-slate-400 text-[11px] uppercase font-bold border-b border-slate-800">
+                          <tr>
+                            <th className="py-2.5 px-3 w-10 text-center">
+                              <span className="sr-only">Select</span>
+                            </th>
+                            <th className="py-2.5 px-3">Product Name & Category</th>
+                            <th className="py-2.5 px-3">SKU & Barcode</th>
+                            <th className="py-2.5 px-3 text-right">Cost Price</th>
+                            <th className="py-2.5 px-3 text-right">Selling Price</th>
+                            <th className="py-2.5 px-3 text-center">Available Stock</th>
+                            <th className="py-2.5 px-3 text-center w-28">Bundle Qty</th>
+                            <th className="py-2.5 px-3 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-850">
+                          {modalFilteredProducts.map((p) => {
+                            const isSelected = modalSelectedProductIds.includes(p.id);
+                            const isAlreadyInCombo = comboItems.some((ci) => ci.productId === p.id);
+                            const currentQty = modalProductQuantities[p.id] || 1;
+                            const stockVal = Number(p.currentStock ?? p.stock) || 0;
+
+                            return (
+                              <tr
+                                key={p.id}
+                                className={`hover:bg-slate-900/60 transition cursor-pointer ${
+                                  isSelected ? 'bg-indigo-950/20' : ''
+                                }`}
+                                onClick={() => handleToggleModalProduct(p.id)}
+                              >
+                                <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleToggleModalProduct(p.id)}
+                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-2.5">
+                                    {p.image ? (
+                                      <img
+                                        src={p.image}
+                                        alt={p.name}
+                                        className="w-9 h-9 rounded-lg object-cover bg-slate-800 border border-slate-700 shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shrink-0">
+                                        <Package className="w-4 h-4 text-slate-400" />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-bold text-white">{p.name}</div>
+                                      <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                        {p.brand && <span className="text-slate-300 font-medium">{p.brand}</span>}
+                                        {p.brand && p.category && <span>•</span>}
+                                        {p.category && (
+                                          <span className="bg-slate-800 px-1.5 py-0.2 rounded text-slate-300">
+                                            {p.category}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="font-mono font-semibold text-slate-200">{p.sku}</div>
+                                  {p.barcode && <div className="font-mono text-[10px] text-slate-500">{p.barcode}</div>}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-semibold text-indigo-300">
+                                  {formatCurrency(p.costPrice || 0, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                                  {formatCurrency(p.sellingPrice || 0, settings)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                                      stockVal > 0
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                    }`}
+                                  >
+                                    {stockVal} {p.unit || 'pcs'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <div className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setModalProductQuantities((prev) => ({
+                                          ...prev,
+                                          [p.id]: Math.max(1, currentQty - 1),
+                                        }));
+                                      }}
+                                      disabled={currentQty <= 1}
+                                      className="p-1 hover:bg-slate-800 text-slate-300 disabled:opacity-30"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={currentQty}
+                                      onChange={(e) => {
+                                        const v = parseInt(e.target.value) || 1;
+                                        setModalProductQuantities((prev) => ({
+                                          ...prev,
+                                          [p.id]: Math.max(1, v),
+                                        }));
+                                      }}
+                                      className="bg-transparent text-amber-300 font-bold w-10 text-center font-mono text-xs focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setModalProductQuantities((prev) => ({
+                                          ...prev,
+                                          [p.id]: currentQty + 1,
+                                        }));
+                                      }}
+                                      className="p-1 hover:bg-slate-800 text-slate-300"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      addProductToCombo(p, currentQty);
+                                    }}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition flex items-center gap-1 mx-auto cursor-pointer ${
+                                      isAlreadyInCombo
+                                        ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40'
+                                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow'
+                                    }`}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>{isAlreadyInCombo ? 'Add More' : 'Add'}</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer with Batch Actions */}
+                <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-xs text-slate-400">
+                    {modalSelectedProductIds.length > 0 ? (
+                      <span>
+                        <strong>{modalSelectedProductIds.length}</strong> product(s) selected ready to add into bundle.
+                      </span>
+                    ) : (
+                      <span>Select multiple products via checkboxes to add them together in one click.</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsComboAdvancedSearchOpen(false)}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddSelectedModalProducts}
+                      disabled={modalSelectedProductIds.length === 0}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-amber-600/20 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Selected ({modalSelectedProductIds.length}) to Bundle</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2279,11 +3107,11 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
 
             <div className="space-y-4 text-xs">
               {/* Tax Group & Tax Type Selection */}
-              {Boolean(settings.enablePriceAndTaxInfo) && (
+              {settings.enablePriceAndTaxInfo !== false && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2 border-b border-slate-800">
                   <div className="sm:col-span-2">
                     <label className="text-slate-300 font-semibold flex items-center justify-between">
-                      <span>Product Tax</span>
+                      <span>Applicable Tax</span>
                       <span className="text-[11px] text-indigo-400 font-mono font-bold">
                         Rate: {taxRate}%
                       </span>
@@ -2294,16 +3122,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       onChange={(e) => {
                         const gid = e.target.value;
                         setTaxGroupId(gid);
-                        const found = taxGroups.find((g) => g.id === gid);
+                        const found = (taxGroups || []).find((g) => g.id === gid);
                         if (found) {
                           setTaxRate(found.totalRate.toString());
+                          if (taxType === 'exempt' && found.totalRate > 0) {
+                            setTaxType('exclusive');
+                          }
                         } else {
                           setTaxRate('0');
                         }
                       }}
                       className="w-full bg-slate-950 text-white font-semibold px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 mt-1"
                     >
-                      <option value="">Select Tax Attributes</option>
+                      <option value="">None (0% Tax)</option>
                       {(taxGroups || []).map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.name} ({g.totalRate}%) {Array.isArray((g as any).rates) ? `[${(g as any).rates.map((r: any) => `${r.name} ${r.rate}%`).join(', ')}]` : ''}
@@ -2313,7 +3144,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-slate-300 font-semibold">Selling Price Tax</label>
+                    <label className="text-slate-300 font-semibold">Selling Price Tax Type</label>
                     <select
                       id="prod-select-tax-type"
                       value={taxType}
@@ -2356,173 +3187,735 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                 </div>
               )}
 
-              {/* Cost & Selling Price Inputs - Professional Clean Box Styling matching finias POS Columns */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
-                {/* COLUMN 1: Cost Price (Default Purchase Price) */}
-                <div className="md:col-span-5 space-y-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 block border-b border-slate-800 pb-2">
-                    Default Purchase Price
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Cost & Selling Price Inputs - Shown only for Single & Combo products (Variable products use individual prices in Variation Table) */}
+              {productType !== 'variable' && (
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+                  {/* COLUMN 1: Cost Price (Default Purchase Price) - Disabled for Combo, Enabled ONLY for Single Product */}
+                  <div className="md:col-span-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${productType === 'single' ? 'text-indigo-400' : 'text-slate-500'}`}>
+                        <span>Default Purchase Price</span>
+                        {productType !== 'single' && <Lock className="w-3 h-3 text-slate-500" />}
+                      </span>
+                      {productType === 'combo' && (
+                        <span className="text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                          Auto from combo items
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className={`text-[11px] font-semibold block mb-1 ${productType === 'single' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Exc. Tax ({settings.currencySymbol}) {productType === 'single' ? '*' : ''}
+                        </label>
+                        <div className={`flex items-center rounded-xl border ${productType !== 'single' ? 'border-slate-800 bg-slate-900/50 opacity-60 cursor-not-allowed' : fieldErrors.costPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
+                          <input
+                            id="prod-input-cost-price"
+                            required={productType === 'single'}
+                            disabled={productType !== 'single'}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={costPrice}
+                            onChange={(e) => {
+                              handleCostPriceExcTaxChange(e.target.value);
+                              if (fieldErrors.costPrice) setFieldErrors(prev => ({ ...prev, costPrice: '' }));
+                            }}
+                            onPaste={(e) => {
+                              if (productType === 'single') {
+                                const pastedText = e.clipboardData.getData('text');
+                                handleCostPriceExcTaxPaste(pastedText);
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="w-full bg-transparent text-indigo-400 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                        <FormFieldError error={fieldErrors.costPrice} />
+                      </div>
+
+                      <div>
+                        <label className={`text-[11px] font-semibold block mb-1 ${productType === 'single' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Inc. Tax ({settings.currencySymbol})
+                        </label>
+                        <div className={`flex items-center rounded-xl border ${productType !== 'single' ? 'border-slate-800 bg-slate-900/50 opacity-60 cursor-not-allowed' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
+                          <input
+                            id="prod-input-cost-price-inc-tax"
+                            disabled={productType !== 'single'}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={calculatedCostPriceIncTax > 0 ? calculatedCostPriceIncTax.toFixed(2) : ''}
+                            onChange={(e) => handleCostPriceIncTaxChange(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full bg-transparent text-indigo-400/80 font-mono font-semibold text-sm px-3.5 py-2.5 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {productType === 'combo' && (
+                      <p className="text-[10px] text-slate-500 italic leading-tight">
+                        * Purchase cost is locked and automatically calculated from the individual component products in the combo bundle.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* COLUMN 2: Margin % - Enabled for Single and Combo Products */}
+                  <div className="md:col-span-2 space-y-4">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block border-b border-slate-800 pb-2">
+                      Margin
+                    </span>
                     <div>
-                      <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                        Exc. Tax ({settings.currencySymbol}) *
+                      <label className="text-[11px] font-semibold block mb-1 text-slate-300">
+                        Profit Margin (%) {productType === 'single' ? '*' : ''}
                       </label>
-                      <div className={`flex items-center rounded-xl border ${fieldErrors.costPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
+                      <div className="flex items-center rounded-xl border border-emerald-500/40 bg-slate-950 overflow-hidden focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/50 transition">
                         <input
-                          id="prod-input-cost-price"
-                          required
+                          id="prod-input-margin"
+                          required={productType === 'single'}
                           type="number"
-                          step="0.01"
-                          min="0"
-                          value={costPrice}
-                          onChange={(e) => {
-                            handleCostPriceExcTaxChange(e.target.value);
-                            if (fieldErrors.costPrice) setFieldErrors(prev => ({ ...prev, costPrice: '' }));
-                          }}
-                          onPaste={(e) => {
-                            const pastedText = e.clipboardData.getData('text');
-                            handleCostPriceExcTaxPaste(pastedText);
-                          }}
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-indigo-400 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          step="0.1"
+                          value={marginInput}
+                          onChange={(e) => handleMarginChange(e.target.value)}
+                          placeholder="0.0"
+                          className="w-full bg-transparent text-emerald-400 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
-                      <FormFieldError error={fieldErrors.costPrice} />
+                      {productType === 'combo' ? (
+                        <p className="text-[10px] text-indigo-300 mt-1 italic leading-tight">
+                          * Dynamically updates selling price based on total component cost + profit margin.
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-slate-500 mt-1 italic leading-tight">
+                          * Calculates selling price based on cost price.
+                        </p>
+                      )}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                        Inc. Tax ({settings.currencySymbol})
-                      </label>
-                      <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
-                        <input
-                          id="prod-input-cost-price-inc-tax"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={calculatedCostPriceIncTax > 0 ? calculatedCostPriceIncTax.toFixed(2) : ''}
-                          onChange={(e) => handleCostPriceIncTaxChange(e.target.value)}
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-indigo-400/80 font-mono font-semibold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
+                  {/* COLUMN 3: Default Selling Price */}
+                  <div className="md:col-span-5 space-y-4">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block border-b border-slate-800 pb-2">
+                      Default Selling Price
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="text-[11px] text-slate-400 font-semibold block mb-1">
+                          Exc. Tax ({settings.currencySymbol}) *
+                        </label>
+                        <div className={`flex items-center rounded-xl border ${fieldErrors.sellingPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
+                          <input
+                            id="prod-input-selling-price"
+                            required
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={sellingPrice}
+                            onChange={(e) => {
+                              handleSellingPriceExcTaxChange(e.target.value);
+                              if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));
+                            }}
+                            placeholder="0.00"
+                            className="w-full bg-transparent text-white font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                        <FormFieldError error={fieldErrors.sellingPrice} />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] text-slate-400 font-semibold block mb-1">
+                          Inc. Tax ({settings.currencySymbol})
+                        </label>
+                        <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
+                          <input
+                            id="prod-input-selling-price-inc-tax"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={calculatedSellingPriceIncTax > 0 ? calculatedSellingPriceIncTax.toFixed(2) : ''}
+                            onChange={(e) => handleSellingPriceIncTaxChange(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full bg-transparent text-white font-mono font-semibold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* COLUMN 2: Margin % */}
-                <div className="md:col-span-2 space-y-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-800 pb-2">
-                    Margin
-                  </span>
-                  <div>
-                    <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                      Profit Margin (%) *
+              {/* Variation SKU Format & Variation Table Section (When Variable Product is Selected) */}
+              {productType === 'variable' && (
+                <div className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-5">
+                  {/* Variation SKU Format Radio Selection */}
+                  <div className="space-y-2 pb-3 border-b border-slate-800">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <span>Variation SKU Format</span>
+                      <Info className="w-3.5 h-3.5 text-sky-400" />
                     </label>
-                    <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
-                      <input
-                        id="prod-input-margin"
-                        required
-                        type="number"
-                        step="0.1"
-                        value={marginInput}
-                        onChange={(e) => handleMarginChange(e.target.value)}
-                        placeholder="0.0"
-                        className="w-full bg-transparent text-white font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
+                    <div className="flex flex-wrap items-center gap-6 text-xs font-semibold">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="skuFormat"
+                          value="sku_number"
+                          checked={variationSkuFormat === 'sku_number'}
+                          onChange={() => setVariationSkuFormat('sku_number')}
+                          className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <span className="text-slate-200">SKU-Number (Example -&gt; ABC-1, ABC-2)</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="skuFormat"
+                          value="sku_variation"
+                          checked={variationSkuFormat === 'sku_variation'}
+                          onChange={() => setVariationSkuFormat('sku_variation')}
+                          className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <span className="text-slate-200">SKUVariation (Example -&gt; ABCS, ABCM)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Add Variation Header with Plus Button */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white">Add Variation:*</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = `${(selectedVariationValues.length + 1) * 3}`;
+                          if (!selectedVariationValues.includes(nextVal)) {
+                            setSelectedVariationValues([...selectedVariationValues, nextVal]);
+                          }
+                        }}
+                        className="w-7 h-7 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center justify-center font-bold text-base shadow-md transition active:scale-95 cursor-pointer"
+                        title="Add Variation Value"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-slate-400">Configure cost prices, profit margins, selling prices, SKUs & images per variation</span>
+                  </div>
+
+                  {/* Green Banner Variation Table */}
+                  <div className="rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+                    {/* Green Header Banner (#4caf50) */}
+                    <div className="bg-[#4caf50] text-white font-extrabold text-xs grid grid-cols-1 md:grid-cols-12 divide-x divide-emerald-500/50 py-2.5 px-4">
+                      <div className="md:col-span-3">Variation</div>
+                      <div className="md:col-span-9 pl-4">Variation Values</div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-800 bg-slate-950">
+                      
+                      {/* LEFT COLUMN: Variation Attribute Selector & Chips */}
+                      <div className="md:col-span-3 p-4 space-y-4 bg-slate-900/60">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm('Clear variation values?')) {
+                                setSelectedVariationValues([]);
+                              }
+                            }}
+                            className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg border border-rose-900/40 transition cursor-pointer"
+                            title="Delete Variation Set"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
+                          <select
+                            id="prod-select-variation-type"
+                            value={selectedVariationName}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (!val) return;
+                              if (val === 'Custom') {
+                                const customName = prompt('Enter custom variation name (e.g. Storage, Material, Model):');
+                                if (customName && customName.trim()) {
+                                  setSelectedVariationName(customName.trim());
+                                  if (selectedVariationValues.length === 0) {
+                                    setSelectedVariationValues(['Standard', 'Option 1']);
+                                  }
+                                }
+                                return;
+                              }
+                              setSelectedVariationName(val);
+                              const matchedTmpl = variationTemplates.find(
+                                (t) => t.name.toLowerCase() === val.toLowerCase()
+                              );
+                              if (matchedTmpl && matchedTmpl.values?.length > 0) {
+                                setSelectedVariationValues([...matchedTmpl.values]);
+                              } else {
+                                const commonPresets: Record<string, string[]> = {
+                                  'phase type': ['Single Phase', 'Three Phase', 'two phase'],
+                                  'cable length': ['1 Meter', '3 Meter', '5 Meter', '10 Meter'],
+                                  'wire gauge / thickness': ['1.5 sq mm', '2.5 sq mm', '4.0 sq mm'],
+                                  'voltage rating': ['110V', '220V', '440V'],
+                                  'size': ['Small', 'Medium', 'Large', 'XL'],
+                                  'color': ['Red', 'Blue', 'Black', 'White'],
+                                  'flavor': ['Vanilla', 'Chocolate', 'Strawberry'],
+                                  'material / conductor': ['Copper', 'Aluminum', 'Brass'],
+                                  'dram / storage capacity': ['128GB', '256GB', '512GB', '1TB NVMe'],
+                                };
+                                const presetValues = commonPresets[val.toLowerCase()];
+                                if (presetValues && presetValues.length > 0) {
+                                  setSelectedVariationValues([...presetValues]);
+                                } else if (selectedVariationValues.length === 0) {
+                                  setSelectedVariationValues(['Option 1', 'Option 2']);
+                                }
+                              }
+                            }}
+                            className="w-full bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                          >
+                            <option value="">-- Select Variation Type --</option>
+                            <option value="Phase Type">Phase Type</option>
+                            <option value="Cable Length">Cable Length</option>
+                            <option value="Wire Gauge / Thickness">Wire Gauge / Thickness</option>
+                            <option value="Voltage Rating">Voltage Rating</option>
+                            <option value="Size">Size</option>
+                            <option value="Color">Color</option>
+                            <option value="Flavor">Flavor</option>
+                            <option value="Material / Conductor">Material / Conductor</option>
+                            <option value="DRAM / Storage Capacity">DRAM / Storage Capacity</option>
+                            {variationTemplates
+                              .filter((t) => !['phase type', 'cable length', 'wire gauge / thickness', 'voltage rating', 'size', 'color', 'flavor', 'material / conductor', 'dram / storage capacity'].includes(t.name.toLowerCase()))
+                              .map((tmpl) => (
+                                <option key={tmpl.id} value={tmpl.name}>
+                                  {tmpl.name}
+                                </option>
+                              ))}
+                            {selectedVariationName &&
+                              !['Phase Type', 'Cable Length', 'Wire Gauge / Thickness', 'Voltage Rating', 'Size', 'Color', 'Flavor', 'Material / Conductor', 'DRAM / Storage Capacity'].some(
+                                (def) => def.toLowerCase() === selectedVariationName.toLowerCase()
+                              ) &&
+                              !variationTemplates.some((t) => t.name.toLowerCase() === selectedVariationName.toLowerCase()) && (
+                                <option value={selectedVariationName}>{selectedVariationName}</option>
+                              )}
+                            <option value="Custom">+ Custom Attribute...</option>
+                          </select>
+                        </div>
+
+                        {/* Select Variation Values Chips Section */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-200 block">
+                            Select variation values
+                          </label>
+
+                          {/* Selected Value Pills / Chips matching scr.png */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedVariationValues.map((val) => (
+                              <span
+                                key={val}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0088cc] text-white font-bold text-xs rounded-lg shadow-sm"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedVariationValues(selectedVariationValues.filter((v) => v !== val));
+                                  }}
+                                  className="hover:text-amber-200 transition font-black text-sm leading-none cursor-pointer"
+                                >
+                                  &times;
+                                </button>
+                                <span>{val}</span>
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Quick Add Custom Value Input */}
+                          <div className="flex items-center gap-2 pt-2">
+                            <input
+                              type="text"
+                              placeholder="Type custom value..."
+                              value={newValueInput}
+                              onChange={(e) => setNewValueInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (newValueInput.trim() && !selectedVariationValues.includes(newValueInput.trim())) {
+                                    setSelectedVariationValues([...selectedVariationValues, newValueInput.trim()]);
+                                    setNewValueInput('');
+                                  }
+                                }
+                              }}
+                              className="w-full bg-slate-900 text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newValueInput.trim() && !selectedVariationValues.includes(newValueInput.trim())) {
+                                  setSelectedVariationValues([...selectedVariationValues, newValueInput.trim()]);
+                                  setNewValueInput('');
+                                }
+                              }}
+                              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shrink-0 transition cursor-pointer"
+                            >
+                              + Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* RIGHT COLUMN: Variation Values Table with Blue Subheader */}
+                      <div className="md:col-span-9 p-0 overflow-x-auto">
+                        {/* Blue Subheader Banner (#0088cc) */}
+                        <div className="bg-[#0088cc] text-white font-extrabold text-xs py-2.5 px-4 shadow-sm">
+                          <span>Variation Values</span>
+                        </div>
+
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-900 text-slate-300 text-[11px] font-bold border-b border-slate-800">
+                            <tr>
+                              <th className="py-2.5 px-3 min-w-[80px]">Value</th>
+                              <th className="py-2.5 px-3 min-w-[120px]">SKU</th>
+                              <th className="py-2.5 px-3 min-w-[210px] text-center">
+                                <div className="text-[11px] font-bold pb-1 border-b border-slate-800 mb-1">Default Purchase Price</div>
+                                <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-semibold text-slate-400">
+                                  <span>Exc. Tax</span>
+                                  <span className="flex items-center justify-center gap-0.5">
+                                    <span>Inc. Tax</span>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                  </span>
+                                </div>
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[90px] text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <span>x Margin(%)</span>
+                                </div>
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[210px] text-center">
+                                <div className="text-[11px] font-bold pb-1 border-b border-slate-800 mb-1">Default Selling Price</div>
+                                <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-semibold text-slate-400">
+                                  <span>Exc. Tax</span>
+                                  <span className="flex items-center justify-center gap-0.5">
+                                    <span>Inc. Tax</span>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                  </span>
+                                </div>
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[100px] text-center">
+                                Opening Stock Qty
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[100px] text-center">
+                                Low Stock Alert
+                              </th>
+                              <th className="py-2.5 px-3 min-w-[150px]">Variation Images</th>
+                              <th className="py-2.5 px-3 text-center min-w-[50px]">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800">
+                            {selectedVariationValues.length === 0 ? (
+                              <tr>
+                                <td colSpan={9} className="py-8 text-center text-slate-400">
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Info className="w-6 h-6 text-slate-500" />
+                                    <span className="font-semibold text-slate-300">No variation values selected for "{selectedVariationName || 'Variation'}".</span>
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const currentName = selectedVariationName || 'Phase Type';
+                                          const matched = variationTemplates.find(t => t.name.toLowerCase() === currentName.toLowerCase());
+                                          if (matched && matched.values?.length > 0) {
+                                            setSelectedVariationValues([...matched.values]);
+                                          } else {
+                                            const presets: Record<string, string[]> = {
+                                              'phase type': ['Single Phase', 'Three Phase', 'two phase'],
+                                              'cable length': ['1 Meter', '3 Meter', '5 Meter', '10 Meter'],
+                                              'wire gauge / thickness': ['1.5 sq mm', '2.5 sq mm', '4.0 sq mm'],
+                                              'voltage rating': ['110V', '220V', '440V'],
+                                              'size': ['Small', 'Medium', 'Large', 'XL'],
+                                              'color': ['Red', 'Blue', 'Black', 'White'],
+                                              'flavor': ['Vanilla', 'Chocolate', 'Strawberry'],
+                                              'material / conductor': ['Copper', 'Aluminum', 'Brass'],
+                                              'dram / storage capacity': ['128GB', '256GB', '512GB', '1TB NVMe'],
+                                            };
+                                            const defVals = presets[currentName.toLowerCase()] || ['Option 1', 'Option 2', 'Option 3'];
+                                            setSelectedVariationValues(defVals);
+                                          }
+                                        }}
+                                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow transition cursor-pointer"
+                                      >
+                                        + Load Default Values for {selectedVariationName || 'Variation'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newVal = `Option ${selectedVariationValues.length + 1}`;
+                                          setSelectedVariationValues([...selectedVariationValues, newVal]);
+                                        }}
+                                        className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-lg transition cursor-pointer"
+                                      >
+                                        + Add Single Value
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ) : (
+                              selectedVariationValues.map((val, idx) => {
+                                const varSku = variationSkuFormat === 'sku_number'
+                                  ? `${sku || 'SKU'}-${idx + 1}`
+                                  : `${sku || 'SKU'}${val.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+                                const effectiveTaxRate = taxType === 'exempt' ? 0 : (parseFloat(taxRate) || 0);
+
+                                const baseCostExc = parseFloat(variationCostsExc[val] !== undefined ? variationCostsExc[val] : ((idx + 1) * 20 + 80).toString()) || 100;
+                                const currentCostInc = effectiveTaxRate > 0 ? (baseCostExc * (1 + effectiveTaxRate / 100)) : baseCostExc;
+
+                                const currentMargin = parseFloat(variationMargins[val] !== undefined ? variationMargins[val] : (marginInput || '25')) || 25;
+
+                                const currentSellingExc = baseCostExc * (1 + currentMargin / 100);
+                                const currentSellingInc = effectiveTaxRate > 0 ? (currentSellingExc * (1 + effectiveTaxRate / 100)) : currentSellingExc;
+
+                                return (
+                                  <tr key={val} className="hover:bg-slate-900/60 transition">
+                                    {/* Value Badge */}
+                                    <td className="py-2 px-3 font-bold text-white">
+                                      <span className="inline-block px-2.5 py-1 bg-slate-800 rounded border border-slate-700 text-xs font-mono">
+                                        {val}
+                                      </span>
+                                    </td>
+
+                                    {/* SKU */}
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="text"
+                                        value={variationSkus[val] !== undefined ? variationSkus[val] : varSku}
+                                        onChange={(e) => {
+                                          const valStr = e.target.value;
+                                          setVariationSkus(prev => ({ ...prev, [val]: valStr }));
+                                        }}
+                                        className="w-full bg-slate-950 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 font-mono font-medium focus:outline-none focus:border-indigo-500"
+                                      />
+                                    </td>
+
+                                    {/* Default Purchase Price (Exc. Tax & Inc. Tax) */}
+                                    <td className="py-2 px-2">
+                                      <div className="grid grid-cols-2 gap-1.5 items-center">
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={variationCostsExc[val] !== undefined ? variationCostsExc[val] : baseCostExc.toFixed(2)}
+                                          onChange={(e) => {
+                                            const valStr = e.target.value;
+                                            setVariationCostsExc(prev => ({ ...prev, [val]: valStr }));
+                                          }}
+                                          placeholder="0.00"
+                                          className="w-full bg-slate-950 text-white text-xs px-2 py-1.5 rounded border border-slate-700 font-mono font-bold text-right focus:outline-none focus:border-indigo-500"
+                                        />
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={currentCostInc.toFixed(2)}
+                                          onChange={(e) => {
+                                            const incVal = parseFloat(e.target.value) || 0;
+                                            const calcExc = effectiveTaxRate > 0 ? (incVal / (1 + effectiveTaxRate / 100)) : incVal;
+                                            setVariationCostsExc(prev => ({ ...prev, [val]: calcExc.toFixed(2) }));
+                                          }}
+                                          placeholder="0.00"
+                                          className="w-full bg-slate-950 text-indigo-300 text-xs px-2 py-1.5 rounded border border-slate-700 font-mono font-bold text-right focus:outline-none focus:border-indigo-500"
+                                        />
+                                      </div>
+                                    </td>
+
+                                    {/* Profit Margin (%) */}
+                                    <td className="py-2 px-2">
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        value={variationMargins[val] !== undefined ? variationMargins[val] : currentMargin.toString()}
+                                        onChange={(e) => {
+                                          setVariationMargins(prev => ({ ...prev, [val]: e.target.value }));
+                                        }}
+                                        className="w-16 bg-slate-950 text-emerald-400 text-xs px-2 py-1.5 rounded border border-slate-700 font-mono font-bold text-right focus:outline-none focus:border-indigo-500 mx-auto block"
+                                      />
+                                    </td>
+
+                                    {/* Default Selling Price (Exc. Tax & Inc. Tax) */}
+                                    <td className="py-2 px-2">
+                                      <div className="grid grid-cols-2 gap-1.5 items-center">
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={currentSellingExc.toFixed(2)}
+                                          onChange={(e) => {
+                                            const sExc = parseFloat(e.target.value) || 0;
+                                            const costE = baseCostExc || 1;
+                                            const newMargin = (((sExc - costE) / costE) * 100).toFixed(1);
+                                            setVariationMargins(prev => ({ ...prev, [val]: newMargin }));
+                                          }}
+                                          placeholder="0.00"
+                                          className="w-full bg-slate-950 text-white text-xs px-2 py-1.5 rounded border border-slate-700 font-mono font-bold text-right focus:outline-none focus:border-indigo-500"
+                                        />
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={currentSellingInc.toFixed(2)}
+                                          onChange={(e) => {
+                                            const sInc = parseFloat(e.target.value) || 0;
+                                            const sExc = effectiveTaxRate > 0 ? (sInc / (1 + effectiveTaxRate / 100)) : sInc;
+                                            const costE = baseCostExc || 1;
+                                            const newMargin = (((sExc - costE) / costE) * 100).toFixed(1);
+                                            setVariationMargins(prev => ({ ...prev, [val]: newMargin }));
+                                          }}
+                                          placeholder="0.00"
+                                          className="w-full bg-slate-950 text-indigo-400 text-xs px-2 py-1.5 rounded border border-slate-700 font-mono font-extrabold text-right focus:outline-none focus:border-indigo-500"
+                                        />
+                                      </div>
+                                    </td>
+
+                                    {/* Opening Stock Quantity */}
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="10"
+                                        value={variationOpeningStocks[val] !== undefined ? variationOpeningStocks[val] : '10'}
+                                        onChange={(e) => {
+                                          setVariationOpeningStocks({
+                                            ...variationOpeningStocks,
+                                            [val]: e.target.value
+                                          });
+                                        }}
+                                        className="w-24 bg-slate-950 text-amber-300 font-mono font-bold text-xs px-2.5 py-1.5 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
+                                      />
+                                    </td>
+
+                                    {/* Low Stock Alert Threshold */}
+                                    <td className="py-2 px-3">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="5"
+                                        value={variationAlertQuantities[val] !== undefined ? variationAlertQuantities[val] : (alertQuantity || '5')}
+                                        onChange={(e) => {
+                                          setVariationAlertQuantities({
+                                            ...variationAlertQuantities,
+                                            [val]: e.target.value
+                                          });
+                                        }}
+                                        className="w-24 bg-slate-950 text-rose-300 font-mono font-bold text-xs px-2.5 py-1.5 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
+                                      />
+                                    </td>
+
+                                    {/* Variation Images Upload */}
+                                    <td className="py-2 px-3">
+                                      <div className="flex items-center gap-2">
+                                        <label className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold cursor-pointer transition shrink-0">
+                                          <span>Browse...</span>
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (loadEvt) => {
+                                                  const res = loadEvt.target?.result as string;
+                                                  if (res) {
+                                                    setVariationImages(prev => ({ ...prev, [val]: res }));
+                                                    showFlashNotification(`Variation image attached for ${val}`, 'success');
+                                                  }
+                                                };
+                                                reader.readAsDataURL(file);
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                        <span className="text-[10px] text-slate-400 truncate max-w-[100px]" title={variationImages[val] ? 'Custom image uploaded' : 'No file chosen'}>
+                                          {variationImages[val] ? 'Image selected' : 'No files selected.'}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* Delete Row Button */}
+                                    <td className="py-2 px-3 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedVariationValues(selectedVariationValues.filter((v) => v !== val));
+                                        }}
+                                        className="p-1.5 text-rose-500 hover:text-rose-400 hover:bg-rose-950/40 rounded transition mx-auto cursor-pointer"
+                                        title="Remove Row"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* COLUMN 3: Default Selling Price */}
-                <div className="md:col-span-5 space-y-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block border-b border-slate-800 pb-2">
-                    Default Selling Price
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                        Exc. Tax ({settings.currencySymbol}) *
-                      </label>
-                      <div className={`flex items-center rounded-xl border ${fieldErrors.sellingPrice ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition`}>
-                        <input
-                          id="prod-input-selling-price"
-                          required
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={sellingPrice}
-                          onChange={(e) => {
-                            handleSellingPriceExcTaxChange(e.target.value);
-                            if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));
-                          }}
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-white font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                      <FormFieldError error={fieldErrors.sellingPrice} />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                        Inc. Tax ({settings.currencySymbol})
-                      </label>
-                      <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
-                        <input
-                          id="prod-input-selling-price-inc-tax"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={calculatedSellingPriceIncTax > 0 ? calculatedSellingPriceIncTax.toFixed(2) : ''}
-                          onChange={(e) => handleSellingPriceIncTaxChange(e.target.value)}
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-white font-mono font-semibold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Other Inventory and Batch details */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5">
-                    Batch / Lot Number *
+                  <label className={`font-semibold block mb-1.5 text-xs ${productType !== 'single' ? 'text-slate-500' : 'text-slate-300'}`}>
+                    Batch / Lot Number {productType === 'single' ? '*' : ''}
+                    {productType === 'combo' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Tracked on component items)</span>
+                    )}
+                    {productType === 'variable' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Managed per variation)</span>
+                    )}
                   </label>
-                  <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition">
-                    <div className="bg-slate-900 border-r border-slate-800 px-3 py-2.5 text-amber-400 shrink-0 flex items-center justify-center min-w-[36px]">
+                  <div className={`flex items-center rounded-xl border ${productType !== 'single' ? 'border-slate-800 bg-slate-900/50 opacity-60' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition`}>
+                    <div className={`px-3 py-2.5 shrink-0 flex items-center justify-center min-w-[36px] ${productType !== 'single' ? 'bg-slate-900 text-slate-600 border-r border-slate-800' : 'bg-slate-900 border-r border-slate-800 text-amber-400'}`}>
                       <Layers className="w-3.5 h-3.5" />
                     </div>
                     <input
                       id="prod-input-lot-number"
-                      required
+                      required={productType === 'single'}
+                      disabled={productType !== 'single'}
                       type="text"
-                      value={lotNumber}
+                      value={productType !== 'single' ? '' : lotNumber}
                       onChange={(e) => setLotNumber(e.target.value)}
-                      placeholder="LOT-2024-001"
-                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none"
+                      placeholder={productType === 'combo' ? 'N/A (Combo Bundle)' : productType === 'variable' ? 'N/A (Managed per variation)' : 'LOT-2024-001'}
+                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
                     />
                   </div>
+                  <p className="text-[10px] text-slate-500 mt-1 italic leading-tight">
+                    {productType === 'combo'
+                      ? '* Batch / Lot tracking is maintained on individual bundled component items.'
+                      : productType === 'variable'
+                      ? '* Batch / Lot tracking is captured per line item in the variation table.'
+                      : '* Unique batch/lot tracking number for opening stock.'}
+                  </p>
                 </div>
 
-
-
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5 text-xs">
+                  <label className={`font-semibold block mb-1.5 text-xs ${productType !== 'single' ? 'text-slate-500' : 'text-slate-300'}`}>
                     {isEditMode ? 'Allocated Stock for this Batch (Lot) *' : 'Opening Stock Quantity *'}
+                    {productType === 'combo' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Dynamic from combo items)</span>
+                    )}
+                    {productType === 'variable' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Managed per variation)</span>
+                    )}
                   </label>
-                  <div className="flex items-center rounded-xl border border-indigo-500/30 bg-indigo-500/5 overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50 transition">
-                    <div className="bg-indigo-500/10 border-r border-indigo-500/20 px-3 py-2.5 text-indigo-400 shrink-0 flex items-center justify-center">
+                  <div className={`flex items-center rounded-xl border ${productType !== 'single' ? 'border-slate-800 bg-slate-900/50 opacity-60' : 'border-indigo-500/30 bg-indigo-500/5 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/50'} overflow-hidden transition`}>
+                    <div className={`px-3 py-2.5 shrink-0 flex items-center justify-center ${productType !== 'single' ? 'bg-slate-900 text-slate-600 border-r border-slate-800' : 'bg-indigo-500/10 border-r border-indigo-500/20 text-indigo-400'}`}>
                       <Boxes className="w-3.5 h-3.5" />
                     </div>
                     <input
                       id="prod-input-initial-lot-stock"
-                      required
+                      required={productType === 'single'}
+                      disabled={productType !== 'single'}
                       type="number"
                       min="0"
-                      value={initialLotStock}
+                      value={productType !== 'single' ? '' : initialLotStock}
                       onChange={(e) => {
                         const val = e.target.value;
                         setInitialLotStock(val);
@@ -2555,41 +3948,61 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                           return updated;
                         });
                       }}
-                      placeholder="0"
-                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none"
+                      placeholder={productType === 'combo' ? 'N/A (Combo Bundle)' : productType === 'variable' ? 'N/A (Managed per variation)' : '0'}
+                      className="w-full bg-transparent text-white font-mono font-bold text-sm px-3 py-2.5 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
                     />
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 italic leading-tight">
-                    {isEditMode ? '* Enter stock specifically for this price batch.' : '* This sets the initial stock in your primary location.'}
+                    {productType === 'combo'
+                      ? '* Opening stock is derived dynamically in real-time from the available stock of its component products.'
+                      : productType === 'variable'
+                      ? '* Opening stock quantity is disabled here and captured per line item in the variation table below.'
+                      : isEditMode ? '* Enter stock specifically for this price batch.' : '* This sets the initial stock in your primary location.'}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1.5">Low Stock Alert Threshold</label>
-                  <div className={`flex items-center rounded-xl border ${fieldErrors.alertQuantity ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition`}>
+                  <label className={`font-semibold block mb-1.5 ${productType !== 'single' ? 'text-slate-500' : 'text-slate-300'}`}>
+                    Low Stock Alert Threshold
+                    {productType === 'combo' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Tracked on component items)</span>
+                    )}
+                    {productType === 'variable' && (
+                      <span className="text-[10px] text-amber-400 font-normal ml-2">(Managed per variation)</span>
+                    )}
+                  </label>
+                  <div className={`flex items-center rounded-xl border ${productType !== 'single' ? 'border-slate-800 bg-slate-900/50 opacity-60' : fieldErrors.alertQuantity ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} bg-slate-950 overflow-hidden transition`}>
                     <input
                       id="prod-input-alert-qty"
+                      disabled={productType !== 'single'}
                       type="number"
                       min="0"
-                      value={alertQuantity}
+                      value={productType !== 'single' ? '' : alertQuantity}
                       onChange={(e) => {
                         setAlertQuantity(e.target.value);
                         if (fieldErrors.alertQuantity) setFieldErrors(prev => ({ ...prev, alertQuantity: '' }));
                       }}
-                      placeholder="10"
-                      className="w-full bg-transparent text-amber-300 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      placeholder={productType === 'combo' ? 'N/A (Combo Bundle)' : productType === 'variable' ? 'N/A (Managed per variation)' : '10'}
+                      className="w-full bg-transparent text-amber-300 font-mono font-bold text-sm px-3.5 py-2.5 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <div className="bg-slate-900 border-l border-slate-800 px-3 py-2.5 text-slate-400 font-semibold text-xs select-none shrink-0">
                       {unit}
                     </div>
                   </div>
                   <FormFieldError error={fieldErrors.alertQuantity} />
+                  <p className="text-[10px] text-slate-500 mt-1 italic leading-tight">
+                    {productType === 'combo'
+                      ? '* Low stock alerts are tracked directly on the individual bundled component items.'
+                      : productType === 'variable'
+                      ? '* Low stock threshold is disabled here and captured per line item in the variation table below.'
+                      : '* Triggers a warning when current stock drops below this level.'}
+                  </p>
                 </div>
               </div>
 
 
               {/* Tax Summary Breakdown Card */}
-              {Boolean(settings.enablePriceAndTaxInfo) && (
+              {settings.enablePriceAndTaxInfo !== false && (
                 <div className="p-3 bg-indigo-950/30 border border-indigo-800/40 rounded-xl flex flex-col sm:flex-row items-center justify-between text-xs text-indigo-200 gap-2">
                   <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -2806,6 +4219,120 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
             </div>
           </div>
 
+          {/* Card: Product Media & Gallery (Moved below Pricing & Tax Configuration for step-wise flow) */}
+          <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-indigo-400">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Product Media & Gallery</h3>
+                  <p className="text-[11px] text-slate-400">Product imagery, visual assets, and promotional banners</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                Step 3 of 3
+              </span>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Hidden native file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+
+              {/* Drag & Drop Zone or Image Preview Box */}
+              {image ? (
+                <div className="relative h-36 sm:h-44 w-full rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group shadow-inner">
+                  <img
+                    src={image}
+                    alt={name || 'Product Preview'}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  {/* Overlay Action Bar */}
+                  <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2.5 p-3 text-center">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload New File</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImage('')}
+                        className="p-1.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg transition"
+                        title="Remove Image"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-slate-300 font-medium bg-slate-900/80 px-2 py-0.5 rounded-full border border-slate-700">
+                      {image.startsWith('data:') ? 'Custom File Uploaded' : 'Web Image URL'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`h-36 sm:h-44 w-full rounded-xl border-2 border-dashed cursor-pointer transition flex flex-col items-center justify-center p-4 text-center group ${
+                    isDragging
+                      ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
+                      : 'border-slate-700 hover:border-indigo-500/70 bg-slate-950/80 hover:bg-slate-950 text-slate-400'
+                  }`}
+                >
+                  <div className="p-3 rounded-full bg-slate-900 border border-slate-800 text-indigo-400 mb-2 group-hover:scale-110 transition shadow-md">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs font-bold text-white mb-0.5">Click to Upload or Drag & Drop</p>
+                  <p className="text-[10px] text-slate-400">PNG, JPG, WEBP, GIF, SVG (up to 10MB)</p>
+                </div>
+              )}
+
+              {/* Direct Upload Button & URL Option */}
+              <div className="space-y-3 pt-2 border-t border-slate-800">
+                <div>
+                  <label className="text-slate-300 text-xs font-semibold block mb-1.5">
+                    Upload Local File or Enter Image Web URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 rounded-xl text-indigo-300 hover:text-white transition flex items-center justify-center gap-1.5 text-xs font-semibold shrink-0"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload Image</span>
+                    </button>
+
+                    <input
+                      id="prod-input-image"
+                      type="text"
+                      value={image.startsWith('data:') ? '' : image}
+                      onChange={(e) => setImage(e.target.value)}
+                      placeholder={image.startsWith('data:') ? 'Custom file attached' : 'https://...'}
+                      className="w-full bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition truncate"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Card 3: Multi-Location Warehouse Initial Stock Allocation */}
           {settings.enableMultiLocationInventory && (
             <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-800 shadow-sm space-y-4 animate-fadeIn">
@@ -2907,186 +4434,6 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Right Column (4 cols): Real-Time Analytics & Media */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Card 0: Live Product Valuation & Margin Executive Widget */}
-          {showLiveCalculator && (
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 p-5 rounded-2xl border border-indigo-500/30 shadow-xl space-y-3.5 animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <h4 className="font-bold text-white text-xs flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
-                  <span>Real-Time Pricing & Margin KPI</span>
-                </h4>
-                <button
-                  onClick={() => setShowLiveCalculator(false)}
-                  className="text-slate-500 hover:text-white transition"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-0.5">
-                  <span className="text-[10px] font-semibold text-slate-400 block">Gross Profit Margin</span>
-                  <span className={`text-base font-black ${grossProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {marginPercentage}%
-                  </span>
-                  <span className="text-[10px] text-slate-500 block truncate font-mono">
-                    Profit: {settings.currencySymbol}{grossProfit.toFixed(2)} / unit
-                  </span>
-                </div>
-
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-0.5">
-                  <span className="text-[10px] font-semibold text-slate-400 block">Checkout MRP (Tax Inc.)</span>
-                  <span className="text-base font-black text-indigo-300">
-                    {settings.currencySymbol} {taxCalculations.finalPrice.toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-slate-500 block truncate font-mono">
-                    Tax: {settings.currencySymbol}{taxCalculations.taxAmount.toFixed(2)} ({taxRate}%)
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-2.5 bg-slate-950/90 rounded-xl border border-slate-850 flex items-center justify-between text-[11px] text-slate-300">
-                <span className="text-slate-400">Total Asset Stock Valuation:</span>
-                <span className="font-mono font-bold text-indigo-400">
-                  {settings.currencySymbol} {totalStockValuationCost.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Card 1: Product Media & Gallery */}
-          <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h4 className="font-bold text-white text-xs flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-indigo-400" />
-                <span>Product Media & Gallery</span>
-              </h4>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {image?.startsWith('data:') ? 'Local File' : image ? 'Web Image' : 'No Media'}
-              </span>
-            </div>
-
-            {/* Hidden native file input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/*"
-              className="hidden"
-            />
-
-            {/* Drag & Drop Zone or Image Preview Box */}
-            {image ? (
-              <div className="relative aspect-video w-full rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group shadow-inner">
-                <img
-                  src={image}
-                  alt={name || 'Product Preview'}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                {/* Overlay Action Bar */}
-                <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2.5 p-3 text-center">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5" />
-                      <span>Upload New File</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setImage('')}
-                      className="p-1.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg transition"
-                      title="Remove Image"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <span className="text-[10px] text-slate-300 font-medium bg-slate-900/80 px-2 py-0.5 rounded-full border border-slate-700">
-                    {image.startsWith('data:') ? 'Custom File Uploaded' : 'Web Image URL'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`aspect-video w-full rounded-xl border-2 border-dashed cursor-pointer transition flex flex-col items-center justify-center p-4 text-center group ${
-                  isDragging
-                    ? 'border-indigo-500 bg-indigo-950/40 text-indigo-300'
-                    : 'border-slate-700 hover:border-indigo-500/70 bg-slate-950/80 hover:bg-slate-950 text-slate-400'
-                }`}
-              >
-                <div className="p-3 rounded-full bg-slate-900 border border-slate-800 text-indigo-400 mb-2 group-hover:scale-110 transition shadow-md">
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-                <p className="text-xs font-bold text-white mb-0.5">Click to Upload or Drag & Drop</p>
-                <p className="text-[10px] text-slate-400">PNG, JPG, WEBP, GIF, SVG (up to 10MB)</p>
-              </div>
-            )}
-
-            {/* Direct Upload Button & URL Option */}
-            <div className="space-y-3 pt-2 border-t border-slate-800">
-              <div>
-                <label className="text-slate-300 text-xs font-semibold block mb-1.5">
-                  Upload Local File or Enter Image Web URL
-                </label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 rounded-xl text-indigo-300 hover:text-white transition flex items-center justify-center gap-1.5 text-xs font-semibold shrink-0"
-                  >
-                    <UploadCloud className="w-3.5 h-3.5" />
-                    <span>Upload Image</span>
-                  </button>
-
-                  <input
-                    id="prod-input-image"
-                    type="text"
-                    value={image.startsWith('data:') ? '' : image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder={image.startsWith('data:') ? 'Custom file attached' : 'https://...'}
-                    className="w-full bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition truncate"
-                  />
-                </div>
-              </div>
-
-              {/* Quick Sample Presets */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Quick Sample Catalog Presets:
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {SAMPLE_IMAGE_PRESETS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => {
-                        setImage(preset.url);
-                        if (!name) setName(preset.name);
-                      }}
-                      className="text-[10px] p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800 text-slate-300 hover:text-white truncate text-left transition font-medium"
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Floating Sticky Bottom Bar for instant saving */}
@@ -3155,6 +4502,412 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
           </button>
         </div>
       </div>
+
+      {/* QUICK ADD MODAL 1: Unit of Measurement */}
+      {isQuickUnitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-600/20 rounded-xl text-indigo-400">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Quick Add Unit of Measurement</h3>
+                  <p className="text-[11px] text-slate-400">Add a new unit and select it instantly</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickUnitModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickUnitError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{quickUnitError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveQuickUnit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Unit Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Kilogram, Dozen, Pack, Liter"
+                  value={quickUnitName}
+                  onChange={(e) => setQuickUnitName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Short Symbol / Code *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. kg, doz, pck, ltr"
+                  value={quickUnitShortName}
+                  onChange={(e) => setQuickUnitShortName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="quick-unit-decimal"
+                  checked={quickUnitAllowDecimal}
+                  onChange={(e) => setQuickUnitAllowDecimal(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="quick-unit-decimal" className="text-xs text-slate-300 cursor-pointer">
+                  Allow fractional/decimal quantities (e.g. 1.5 kg, 0.25 ltr)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickUnitModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Unit</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK ADD MODAL 2: Category / Sub-Category */}
+      {isQuickCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-600/20 rounded-xl text-amber-400">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {quickCategoryParentId ? 'Quick Add Sub-Category' : 'Quick Add Category'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Create category and apply it immediately</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickCategoryModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickCategoryError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{quickCategoryError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveQuickCategory} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Smart Home, Organic Staples, Beverages"
+                  value={quickCategoryName}
+                  onChange={(e) => setQuickCategoryName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Parent Category (Optional)</label>
+                <select
+                  value={quickCategoryParentId}
+                  onChange={(e) => setQuickCategoryParentId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">None (Root Category)</option>
+                  {(erpCategories || [])
+                    .filter((c) => !c.parentId && c.status !== 'inactive')
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        Parent: {c.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Category Code (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Auto-generated if empty (e.g. CAT-SMRT)"
+                  value={quickCategoryCode}
+                  onChange={(e) => setQuickCategoryCode(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Short description..."
+                  value={quickCategoryDescription}
+                  onChange={(e) => setQuickCategoryDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs p-3 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickCategoryModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-600/30 transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Category</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK ADD MODAL 3: Brand */}
+      {isQuickBrandModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-sky-600/20 rounded-xl text-sky-400">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Quick Add Brand / Manufacturer</h3>
+                  <p className="text-[11px] text-slate-400">Register brand and select it automatically</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickBrandModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickBrandError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{quickBrandError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveQuickBrand} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Brand Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sony, Nestlé, Apex Tech, Bose"
+                  value={quickBrandName}
+                  onChange={(e) => setQuickBrandName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Brand Code (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BRD-SONY"
+                    value={quickBrandCode}
+                    onChange={(e) => setQuickBrandCode(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Short Code</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. SONY"
+                    value={quickBrandShortCode}
+                    onChange={(e) => setQuickBrandShortCode(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Origin Country</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Japan, USA"
+                    value={quickBrandOriginCountry}
+                    onChange={(e) => setQuickBrandOriginCountry(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Website URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={quickBrandWebsite}
+                    onChange={(e) => setQuickBrandWebsite(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickBrandModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-sky-600/30 transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Brand</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK ADD MODAL 4: Warranty Plan */}
+      {isQuickWarrantyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-600/20 rounded-xl text-indigo-400">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Quick Add Warranty Plan</h3>
+                  <p className="text-[11px] text-slate-400">Configure plan and assign it instantly</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickWarrantyModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickWarrantyError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{quickWarrantyError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveQuickWarranty} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Warranty Plan Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 1 Year Replacement Guarantee, 6 Months Service Warranty"
+                  value={quickWarrantyName}
+                  onChange={(e) => setQuickWarrantyName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Duration Value *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={quickWarrantyDurationValue}
+                    onChange={(e) => setQuickWarrantyDurationValue(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Duration Type *</label>
+                  <select
+                    value={quickWarrantyDurationType}
+                    onChange={(e) => setQuickWarrantyDurationType(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="days">Days</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Terms & Policy Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Covers manufacturing defects only. Requires proof of purchase."
+                  value={quickWarrantyDescription}
+                  onChange={(e) => setQuickWarrantyDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 text-white text-xs p-3 rounded-xl focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickWarrantyModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Warranty</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

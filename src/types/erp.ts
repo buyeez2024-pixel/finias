@@ -77,7 +77,12 @@ export type NotificationTemplate = any;
 export type NotificationType = any;
 export type NotificationChannel = any;
 export type NotificationDeliveryLog = any;
-export type ProductAttribute = any;
+export interface VariationTemplate {
+  id: string;
+  name: string;
+  values: string[];
+}
+export type ProductAttribute = VariationTemplate;
 export type ProductVariation = any;
 export type ComboItem = any;
 export type StockAdjustmentItem = any;

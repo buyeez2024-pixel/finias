@@ -217,19 +217,21 @@ export const BrandsView: React.FC = () => {
 
   // Filtered brands
   const filteredBrands = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return brands.filter((b) => {
       const matchesSearch =
-        b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (b.shortCode && b.shortCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (b.originCountry && b.originCountry.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (b.description && b.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        !q ||
+        (b.name && b.name.toLowerCase().includes(q)) ||
+        (b.code && b.code.toLowerCase().includes(q)) ||
+        (b.shortCode && b.shortCode.toLowerCase().includes(q)) ||
+        (b.originCountry && b.originCountry.toLowerCase().includes(q)) ||
+        (b.description && b.description.toLowerCase().includes(q));
 
       const matchesStatus =
-        statusFilter === 'all' ? true : b.status === statusFilter;
+        statusFilter === 'all' ? true : (b.status || 'active') === statusFilter;
 
       const matchesCountry =
-        countryFilter === 'all' ? true : b.originCountry === countryFilter;
+        countryFilter === 'all' ? true : (b.originCountry || '') === countryFilter;
 
       return matchesSearch && matchesStatus && matchesCountry;
     });
@@ -269,7 +271,7 @@ export const BrandsView: React.FC = () => {
   // Metrics calculation
   const metrics = useMemo(() => {
     const total = brands.length;
-    const active = brands.filter((b) => b.status === 'active').length;
+    const active = brands.filter((b) => (b.status || 'active') === 'active').length;
     const inactive = total - active;
     const totalLinkedProducts = Object.values(brandProductCounts).reduce<number>((a, b) => a + Number(b || 0), 0);
     const totalCountries = originCountries.length;
@@ -282,6 +284,7 @@ export const BrandsView: React.FC = () => {
     setEditingBrand(null);
     setFormData(initialFormState);
     setFormError(null);
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
@@ -289,30 +292,70 @@ export const BrandsView: React.FC = () => {
   const handleOpenEditModal = (brand: Brand) => {
     setEditingBrand(brand);
     setFormData({
-      name: brand.name,
-      code: brand.code,
+      name: brand.name || '',
+      code: brand.code || '',
       shortCode: brand.shortCode || '',
       description: brand.description || '',
       website: brand.website || '',
       originCountry: brand.originCountry || '',
       color: brand.color || '#6366f1',
       logo: brand.logo || '',
-      status: brand.status,
+      status: brand.status || 'active',
     });
     setFormError(null);
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
+  // Toggle single brand status directly from table / view modal
+  const handleToggleBrandStatus = (brand: Brand) => {
+    const currentStatus = brand.status || 'active';
+    const nextStatus: 'active' | 'inactive' = currentStatus === 'active' ? 'inactive' : 'active';
+    updateBrand(brand.id, { status: nextStatus });
+    if (viewingBrand && viewingBrand.id === brand.id) {
+      setViewingBrand({ ...viewingBrand, status: nextStatus });
+    }
+    setStatusMessage({
+      type: 'success',
+      text: `Status for "${brand.name}" changed to ${nextStatus.toUpperCase()}.`,
+    });
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  // Bulk status update for selected brands
+  const handleBulkChangeStatus = (newStatus: 'active' | 'inactive') => {
+    if (selectedBrandIds.size === 0) return;
+    const count = selectedBrandIds.size;
+    selectedBrandIds.forEach((id) => {
+      updateBrand(id, { status: newStatus });
+    });
+    setStatusMessage({
+      type: 'success',
+      text: `Updated status to ${newStatus.toUpperCase()} for ${count} brand(s).`,
+    });
+    setSelectedBrandIds(new Set());
+    setTimeout(() => setStatusMessage(null), 3500);
+  };
+
   // Form submission handler
-  const handleSaveBrand = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveBrand = (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     setFormError(null);
     setFieldErrors({});
 
+    const trimmedName = (formData.name || '').trim();
+    if (!trimmedName) {
+      setFieldErrors({ name: 'Brand Name is required.' });
+      setFormError('Please enter a Brand Name.');
+      return;
+    }
+
     const schemaRes = validateMasterEntityData({
-      name: formData.name,
-      shortName: formData.shortCode,
-      code: formData.code,
+      name: trimmedName,
+      shortName: (formData.shortCode || '').trim(),
+      code: (formData.code || '').trim(),
       entityLabel: 'Brand Name',
     });
 
@@ -322,34 +365,36 @@ export const BrandsView: React.FC = () => {
       return;
     }
 
-    const trimmedName = formData.name.trim();
-
     // Auto-generate code if empty
     const codeToUse =
-      formData.code.trim() ||
-      `BRD-${trimmedName.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '')}`;
+      (formData.code || '').trim() ||
+      `BRD-${trimmedName.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN'}`;
 
     const shortCodeToUse =
-      formData.shortCode.trim() ||
+      (formData.shortCode || '').trim() ||
       trimmedName.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-    // Duplicate check for name & code
+    // Duplicate check for name & code (safe with undefined values)
     const isDuplicateName = brands.some(
       (b) =>
-        b.name.toLowerCase() === trimmedName.toLowerCase() &&
+        (b.name || '').trim().toLowerCase() === trimmedName.toLowerCase() &&
         (!editingBrand || b.id !== editingBrand.id)
     );
     if (isDuplicateName) {
+      setFieldErrors((prev) => ({ ...prev, name: `A brand named "${trimmedName}" already exists.` }));
       setFormError(`A brand named "${trimmedName}" already exists.`);
       return;
     }
 
-    const isDuplicateCode = brands.some(
-      (b) =>
-        b.code.toLowerCase() === codeToUse.toLowerCase() &&
-        (!editingBrand || b.id !== editingBrand.id)
-    );
+    const isDuplicateCode = codeToUse
+      ? brands.some(
+          (b) =>
+            (b.code || '').trim().toLowerCase() === codeToUse.toLowerCase() &&
+            (!editingBrand || b.id !== editingBrand.id)
+        )
+      : false;
     if (isDuplicateCode) {
+      setFieldErrors((prev) => ({ ...prev, code: `A brand with code "${codeToUse}" already exists.` }));
       setFormError(`A brand with code "${codeToUse}" already exists.`);
       return;
     }
@@ -359,12 +404,12 @@ export const BrandsView: React.FC = () => {
         name: trimmedName,
         code: codeToUse,
         shortCode: shortCodeToUse,
-        description: formData.description.trim(),
-        website: formData.website.trim(),
-        originCountry: formData.originCountry.trim(),
-        color: formData.color,
+        description: (formData.description || '').trim(),
+        website: (formData.website || '').trim(),
+        originCountry: (formData.originCountry || '').trim(),
+        color: formData.color || '#6366f1',
         logo: formData.logo || '',
-        status: formData.status,
+        status: formData.status || 'active',
       });
       setStatusMessage({
         type: 'success',
@@ -375,12 +420,12 @@ export const BrandsView: React.FC = () => {
         name: trimmedName,
         code: codeToUse,
         shortCode: shortCodeToUse,
-        description: formData.description.trim(),
-        website: formData.website.trim(),
-        originCountry: formData.originCountry.trim(),
-        color: formData.color,
+        description: (formData.description || '').trim(),
+        website: (formData.website || '').trim(),
+        originCountry: (formData.originCountry || '').trim(),
+        color: formData.color || '#6366f1',
         logo: formData.logo || '',
-        status: formData.status,
+        status: formData.status || 'active',
       });
       setStatusMessage({
         type: 'success',
@@ -389,6 +434,8 @@ export const BrandsView: React.FC = () => {
     }
 
     setIsModalOpen(false);
+    setEditingBrand(null);
+    setFormData(initialFormState);
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
@@ -520,8 +567,8 @@ export const BrandsView: React.FC = () => {
             </button>
             <button
               id="brand-form-submit-btn"
-              type="submit"
-              form="brand-main-form"
+              type="button"
+              onClick={() => handleSaveBrand()}
               className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-1.5 active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -531,7 +578,14 @@ export const BrandsView: React.FC = () => {
         </div>
 
         {/* Full Page Form Grid */}
-        <form id="brand-main-form" onSubmit={handleSaveBrand} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form
+          id="brand-main-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveBrand(e);
+          }}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+        >
           {/* Main Form Area (8 cols) */}
           <div className="lg:col-span-8 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-5">
             <div className="border-b border-slate-800 pb-3">
@@ -560,7 +614,6 @@ export const BrandsView: React.FC = () => {
                 <input
                   id="brand-form-name-input"
                   type="text"
-                  required
                   placeholder="e.g. Apex Tech, Sony, Nike"
                   value={formData.name}
                   onChange={(e) => {
@@ -591,7 +644,6 @@ export const BrandsView: React.FC = () => {
                 <input
                   id="brand-form-code-input"
                   type="text"
-                  required
                   placeholder="e.g. BRD-APEX"
                   value={formData.code}
                   onChange={(e) => {
@@ -914,8 +966,9 @@ export const BrandsView: React.FC = () => {
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
                 id="brand-form-bottom-submit-btn"
+                onClick={() => handleSaveBrand()}
                 className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-lg shadow-sky-600/30 flex items-center gap-2 cursor-pointer active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -1096,7 +1149,7 @@ export const BrandsView: React.FC = () => {
               <div className={`flex items-center gap-2 p-1.5 pl-3 rounded-xl animate-fadeIn whitespace-nowrap border ${
                 isLight ? 'bg-sky-50 border-sky-200' : 'bg-sky-950/40 border-sky-500/20'
               }`}>
-                <div className="flex items-center gap-2 mr-2">
+                <div className="flex items-center gap-2 mr-1">
                   <span className="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-black shadow">
                     {selectedBrandIds.size}
                   </span>
@@ -1104,10 +1157,30 @@ export const BrandsView: React.FC = () => {
                     Selected
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
+                  {isAdminOrManager && (
+                    <>
+                      <button
+                        onClick={() => handleBulkChangeStatus('active')}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                        title="Set all selected brands to Active"
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Active</span>
+                      </button>
+                      <button
+                        onClick={() => handleBulkChangeStatus('inactive')}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                        title="Set all selected brands to Inactive"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        <span>Inactive</span>
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={handleExportCsv}
-                    className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                    className="p-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-bold transition cursor-pointer"
                     title={`Export ${selectedBrandIds.size} selected to CSV`}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -1140,36 +1213,39 @@ export const BrandsView: React.FC = () => {
             )}
 
             {/* Status Filter */}
-            <div className={`flex items-center gap-1 p-1 rounded-xl border text-xs ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-700'}`}>
+            <div className={`flex items-center gap-1 p-1 rounded-xl border text-xs ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-950 border-slate-800'}`}>
               <button
                 id="brands-filter-status-all"
+                type="button"
                 onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg transition ${
                   statusFilter === 'all'
-                    ? 'bg-sky-600 text-white font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? (isLight ? 'bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-lg shadow-sky-600/30 active:scale-95' : 'bg-slate-800 text-white shadow-sm font-bold')
+                    : (isLight ? 'text-slate-700 hover:bg-sky-600 hover:text-white hover:font-bold hover:shadow-lg hover:shadow-sky-600/30 active:scale-95 font-medium' : 'text-slate-400 hover:text-slate-200 font-bold')
                 }`}
               >
                 All ({brands.length})
               </button>
               <button
                 id="brands-filter-status-active"
+                type="button"
                 onClick={() => setStatusFilter('active')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg transition ${
                   statusFilter === 'active'
-                    ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? (isLight ? 'bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-lg shadow-sky-600/30 active:scale-95' : 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 shadow-sm font-bold')
+                    : (isLight ? 'text-slate-700 hover:bg-sky-600 hover:text-white hover:font-bold hover:shadow-lg hover:shadow-sky-600/30 active:scale-95 font-medium' : 'text-slate-400 hover:text-slate-200 font-bold')
                 }`}
               >
                 Active ({metrics.active})
               </button>
               <button
                 id="brands-filter-status-inactive"
+                type="button"
                 onClick={() => setStatusFilter('inactive')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg transition ${
                   statusFilter === 'inactive'
-                    ? 'bg-rose-600 text-white font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? (isLight ? 'bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-lg shadow-sky-600/30 active:scale-95' : 'bg-slate-800 text-slate-300 shadow-sm font-bold')
+                    : (isLight ? 'text-slate-700 hover:bg-sky-600 hover:text-white hover:font-bold hover:shadow-lg hover:shadow-sky-600/30 active:scale-95 font-medium' : 'text-slate-400 hover:text-slate-200 font-bold')
                 }`}
               >
                 Inactive ({metrics.inactive})
@@ -1365,20 +1441,42 @@ export const BrandsView: React.FC = () => {
 
                       {/* Status */}
                       <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            brand.status === 'active'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        <button
+                          type="button"
+                          id={`brand-status-toggle-${brand.id}`}
+                          disabled={!isAdminOrManager}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isAdminOrManager) return;
+                            handleToggleBrandStatus(brand);
+                          }}
+                          title={
+                            isAdminOrManager
+                              ? `Click to toggle status (currently ${brand.status || 'active'})`
+                              : `Status: ${brand.status || 'active'}`
+                          }
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer select-none active:scale-95 ${
+                            (brand.status || 'active') === 'active'
+                              ? isLight
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-xs'
+                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-500/50'
+                              : isLight
+                                ? 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 hover:border-rose-400 shadow-xs'
+                                : 'bg-rose-500/20 text-rose-300 border-rose-500/30 hover:bg-rose-500/30 hover:border-rose-500/50'
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              brand.status === 'active' ? 'bg-emerald-400' : 'bg-rose-400'
+                              (brand.status || 'active') === 'active' ? 'bg-emerald-400' : 'bg-rose-400'
                             }`}
                           />
-                          <span className="capitalize">{brand.status}</span>
-                        </span>
+                          <span className="capitalize">{brand.status || 'active'}</span>
+                          {isAdminOrManager && (
+                            <span className="text-[10px] opacity-70 ml-0.5" title="Click to toggle status">
+                              ⇄
+                            </span>
+                          )}
+                        </button>
                       </td>
 
                       {/* Actions */}
@@ -1581,20 +1679,25 @@ export const BrandsView: React.FC = () => {
                     <h3 className={`font-bold text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       {viewingBrand.name}
                     </h3>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        viewingBrand.status === 'active'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    <button
+                      type="button"
+                      disabled={!isAdminOrManager}
+                      onClick={() => handleToggleBrandStatus(viewingBrand)}
+                      title={isAdminOrManager ? "Click to toggle status" : undefined}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition cursor-pointer select-none ${
+                        (viewingBrand.status || 'active') === 'active'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          viewingBrand.status === 'active' ? 'bg-emerald-400' : 'bg-rose-400'
+                          (viewingBrand.status || 'active') === 'active' ? 'bg-emerald-400' : 'bg-rose-400'
                         }`}
                       />
                       <span className="capitalize">{viewingBrand.status || 'active'}</span>
-                    </span>
+                      {isAdminOrManager && <span className="text-[10px] opacity-70 ml-0.5">⇄</span>}
+                    </button>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
                     <span className="font-mono text-sky-400 font-semibold">{viewingBrand.code}</span>
