@@ -348,6 +348,10 @@ export const BusinessSettingsTab: React.FC = () => {
         next.gstin = value;
         (next as any).tax1No = value;
         updateSettings({ taxNumber: value, gstin: value, tax1No: value });
+      } else if (field === 'enableExpiry' || (field as any) === 'enableProductExpiry') {
+        next.enableExpiry = value;
+        next.enableProductExpiry = value;
+        updateSettings({ enableExpiry: value, enableProductExpiry: value });
       } else {
         updateSettings({ [field]: value });
       }
@@ -1271,6 +1275,7 @@ export const BusinessSettingsTab: React.FC = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
+                      { key: 'enableExpiry', label: 'Enable Expiry', desc: 'Manage product shelf-life expiry duration and units (Days, Months, Not Applicable)' },
                       { key: 'enableBrand', label: 'Enable Brand Field', desc: 'Allows organizing products under brands' },
                       { key: 'enableCategory', label: 'Enable Category Field', desc: 'Classify inventory by main category' },
                       { key: 'enableSubCategory', label: 'Enable Sub-Category Field', desc: 'Granular secondary categorization' },
@@ -1280,7 +1285,9 @@ export const BusinessSettingsTab: React.FC = () => {
                       { key: 'enablePositions', label: 'Enable Warehouse Position', desc: 'Track bin/shelf position' },
                       { key: 'enableWarranty', label: 'Enable Warranty Tracking', desc: 'Track manufacturer and store warranty periods' },
                     ].map((item) => {
-                      const isChecked = Boolean((formData as any)[item.key]);
+                      const isChecked = item.key === 'enableExpiry'
+                        ? Boolean(formData.enableExpiry ?? formData.enableProductExpiry ?? true)
+                        : Boolean((formData as any)[item.key]);
                       return (
                         <div
                           key={item.key}

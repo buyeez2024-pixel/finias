@@ -16,6 +16,7 @@ import {
   RefreshCw,
   UploadCloud,
   Image as ImageIcon,
+  Calendar,
 } from 'lucide-react';
 
 interface ProductModalProps {
@@ -39,6 +40,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [taxType, setTaxType] = useState<'exclusive' | 'inclusive' | 'exempt'>(productToEdit?.taxType || settings.taxCalculationType || 'exclusive');
   const [category, setCategory] = useState(productToEdit?.category || 'Electronics');
   const [brand, setBrand] = useState(productToEdit?.brand || 'Apex Tech');
+  const [expiryPeriod, setExpiryPeriod] = useState<string>(
+    productToEdit?.expiryPeriod !== undefined ? String(productToEdit.expiryPeriod) : ''
+  );
+  const [expiryPeriodType, setExpiryPeriodType] = useState<'Months' | 'Days' | 'Not Applicable'>(
+    productToEdit?.expiryPeriodType || 'Months'
+  );
   const [unit, setUnit] = useState(productToEdit?.unit || 'Pcs');
   const [costPrice, setCostPrice] = useState(productToEdit?.costPrice?.toString() || '50.00');
   const [sellingPrice, setSellingPrice] = useState(productToEdit?.sellingPrice?.toString() || '99.00');
@@ -166,6 +173,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         taxType,
         category,
         brand,
+        expiryPeriod: (expiryPeriod && expiryPeriodType !== 'Not Applicable') ? parseFloat(expiryPeriod) : undefined,
+        expiryPeriodType: expiryPeriodType || 'Months',
         unit,
         costPrice: cost,
         sellingPrice: price,
@@ -185,6 +194,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         name,
         category,
         brand,
+        expiryPeriod: (expiryPeriod && expiryPeriodType !== 'Not Applicable') ? parseFloat(expiryPeriod) : undefined,
+        expiryPeriodType: expiryPeriodType || 'Months',
         unit,
         costPrice: cost,
         sellingPrice: price,
@@ -402,6 +413,50 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 </select>
                 <FormFieldError error={fieldErrors.unit} />
               </div>
+
+              {/* Product Expiry Configuration */}
+              {Boolean(settings?.enableExpiry !== false && settings?.enableExpiry !== undefined ? settings.enableExpiry : (settings?.enableProductExpiry ?? true)) && (
+                <div className="sm:col-span-2">
+                  <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold flex items-center justify-between mb-1`}>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Expires in:</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal">(Product shelf-life)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      disabled={expiryPeriodType === 'Not Applicable'}
+                      value={expiryPeriodType === 'Not Applicable' ? '' : expiryPeriod}
+                      onChange={(e) => setExpiryPeriod(e.target.value)}
+                      placeholder={expiryPeriodType === 'Not Applicable' ? 'Not Applicable' : 'e.g. 6'}
+                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none text-xs font-medium ${
+                        expiryPeriodType === 'Not Applicable'
+                          ? isLight ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-slate-950 text-slate-600 border-slate-800 cursor-not-allowed'
+                          : isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                      }`}
+                    />
+                    <select
+                      value={expiryPeriodType}
+                      onChange={(e) => {
+                        const newType = e.target.value as 'Months' | 'Days' | 'Not Applicable';
+                        setExpiryPeriodType(newType);
+                        if (newType === 'Not Applicable') setExpiryPeriod('');
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none text-xs font-medium ${
+                        isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                      }`}
+                    >
+                      <option value="Months">Months</option>
+                      <option value="Days">Days</option>
+                      <option value="Not Applicable">Not Applicable</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Live Barcode Graphic Preview Card */}

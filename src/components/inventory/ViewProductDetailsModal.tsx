@@ -2,7 +2,7 @@ import React from 'react';
 import { Product } from '../../types/erp';
 import { useErp } from '../../context/ErpContext';
 import { formatCurrency } from '../../utils/formatters';
-import { X, Printer, Monitor, Leaf, History } from 'lucide-react';
+import { X, Printer, History } from 'lucide-react';
 
 interface ViewProductDetailsModalProps {
   isOpen: boolean;
@@ -11,98 +11,60 @@ interface ViewProductDetailsModalProps {
   onOpenHistory?: (product: Product) => void;
 }
 
-const getThemeClasses = (accent: string = 'indigo') => {
-  switch (accent) {
-    case 'emerald':
-      return {
-        headerBg: 'bg-emerald-600 text-white',
-        buttonBg: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 text-white',
-        textAccent: 'text-emerald-400',
-      };
-    case 'violet':
-      return {
-        headerBg: 'bg-violet-600 text-white',
-        buttonBg: 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/30 text-white',
-        textAccent: 'text-violet-400',
-      };
-    case 'amber':
-      return {
-        headerBg: 'bg-amber-600 text-white',
-        buttonBg: 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30 text-white',
-        textAccent: 'text-amber-400',
-      };
-    case 'rose':
-      return {
-        headerBg: 'bg-rose-600 text-white',
-        buttonBg: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30 text-white',
-        textAccent: 'text-rose-400',
-      };
-    case 'cyan':
-      return {
-        headerBg: 'bg-cyan-600 text-white',
-        buttonBg: 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/30 text-white',
-        textAccent: 'text-cyan-400',
-      };
-    case 'orange':
-      return {
-        headerBg: 'bg-orange-600 text-white',
-        buttonBg: 'bg-orange-600 hover:bg-orange-500 shadow-orange-600/30 text-white',
-        textAccent: 'text-orange-400',
-      };
-    case 'teal':
-      return {
-        headerBg: 'bg-teal-600 text-white',
-        buttonBg: 'bg-teal-600 hover:bg-teal-500 shadow-teal-600/30 text-white',
-        textAccent: 'text-teal-400',
-      };
-    case 'fuchsia':
-      return {
-        headerBg: 'bg-fuchsia-600 text-white',
-        buttonBg: 'bg-fuchsia-600 hover:bg-fuchsia-500 shadow-fuchsia-600/30 text-white',
-        textAccent: 'text-fuchsia-400',
-      };
-    case 'sky':
-      return {
-        headerBg: 'bg-sky-600 text-white',
-        buttonBg: 'bg-sky-600 hover:bg-sky-500 shadow-sky-600/30 text-white',
-        textAccent: 'text-sky-400',
-      };
-    case 'lime':
-      return {
-        headerBg: 'bg-lime-600 text-white',
-        buttonBg: 'bg-lime-600 hover:bg-lime-500 shadow-lime-600/30 text-white',
-        textAccent: 'text-lime-400',
-      };
-    case 'indigo':
-    default:
-      return {
-        headerBg: 'bg-indigo-600 text-white',
-        buttonBg: 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 text-white',
-        textAccent: 'text-indigo-400',
-      };
-  }
-};
-
 export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = ({
   isOpen,
   product,
   onClose,
   onOpenHistory,
 }) => {
-  const { settings, locations = [], transactions = [], stockTransfers = [], stockAdjustments = [] } = useErp();
+  const { settings, products = [], locations = [], transactions = [], stockTransfers = [], stockAdjustments = [] } = useErp();
 
   if (!isOpen || !product) return null;
 
-  const isLight = settings.themeMode === 'light';
-  const accent = settings.themeAccent || 'indigo';
-  const theme = getThemeClasses(accent);
-
-  const cost = product.costPrice ?? 0;
-  const price = product.sellingPrice ?? 0;
-  const margin = price > 0 ? (((price - cost) / price) * 100).toFixed(2) : '0.00';
+  const cost = Number(product.costPrice) || 0;
+  const price = Number(product.sellingPrice) || 0;
+  const isComboProduct = product.type === 'combo' || (Array.isArray(product.comboItems) && product.comboItems.length > 0);
   const isVariableProduct = product.type === 'variable' || (Array.isArray(product.variations) && product.variations.length > 0);
   const variationsList = isVariableProduct && product.variations && product.variations.length > 0 ? product.variations : [];
-  
+
+  // Available locations text
+  const availableLocationNames = (product.locationIds && product.locationIds.length > 0)
+    ? locations.filter((l) => product.locationIds?.includes(l.id)).map((l) => l.name).join(', ')
+    : (product.locationId || product.branchId)
+    ? (locations.find((l) => l.id === (product.locationId || product.branchId))?.name || 'None')
+    : (locations.length > 0 ? locations.map(l => l.name).join(', ') : 'None');
+
+  // Combo items formatted list
+  const comboItemsList = (product.comboItems || []).map((ci: any) => {
+    const componentProd = products.find((p) => p.id === ci.productId);
+    const costExc = ci.costPrice !== undefined ? Number(ci.costPrice) : (Number(componentProd?.costPrice) || 0);
+    const taxRateVal = Number(componentProd?.taxRate ?? product.taxRate ?? 0);
+    const costInc = taxRateVal > 0 ? (costExc * (1 + taxRateVal / 100)) : costExc;
+    const sellExc = ci.unitPrice !== undefined ? Number(ci.unitPrice) : (Number(componentProd?.sellingPrice) || 0);
+    const sellInc = taxRateVal > 0 ? (sellExc * (1 + taxRateVal / 100)) : sellExc;
+    const marginPct = costExc > 0 ? (((sellExc - costExc) / costExc) * 100).toFixed(2) : '0.00';
+    const qty = Number(ci.quantity) || 1;
+    const unitLabel = componentProd?.unit || 'Pieces';
+    const totalExc = costExc * qty;
+    const image = ci.image || componentProd?.image;
+    const sku = ci.sku || componentProd?.sku || '';
+    const nameWithSku = `${ci.productName || componentProd?.name || 'Product'} ${sku ? `(${sku})` : ''}`.trim();
+
+    return {
+      ...ci,
+      nameWithSku,
+      costExc,
+      costInc,
+      marginPct,
+      sellExc,
+      sellInc,
+      qty,
+      unitLabel,
+      totalExc,
+      image,
+    };
+  });
+
   const totalVariationsStock = variationsList.reduce((sum, v) => sum + (Number(v.currentStock ?? v.openingStock) || 0), 0);
   const totalVariationsStockValue = variationsList.reduce((sum, v) => sum + ((Number(v.currentStock ?? v.openingStock) || 0) * (v.sellingPrice ?? price)), 0);
 
@@ -144,262 +106,346 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className={`border rounded-2xl w-full max-w-6xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200 ${
-        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-100'
-      }`}>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      <div className="bg-white text-slate-900 border border-slate-200 rounded-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col font-sans">
         
         {/* Header Title Bar */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b sticky top-0 z-20 ${
-          isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-800'
-        }`}>
-          <div className="flex items-center gap-3">
-            <h2 className={`text-lg font-black ${isLight ? 'text-slate-950' : 'text-white'}`}>
-              {product.name}
-            </h2>
-          </div>
+        <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 sticky top-0 bg-white z-20">
+          <h2 className="text-lg font-bold text-slate-800">
+            Check Product
+          </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl transition cursor-pointer flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white active:scale-95"
-            title="Close modal"
+            className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1 rounded-lg transition cursor-pointer"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-6 text-xs">
+        <div className="p-6 space-y-6 text-[13px]">
           
           {/* Top Info Grid (3 columns + graphic) */}
-          <div className={`p-6 rounded-2xl border items-center grid grid-cols-1 lg:grid-cols-12 gap-6 ${
-            isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
-          }`}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             
-            <div className="lg:col-span-3 space-y-2">
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>SKU:</span> <span className={`font-mono font-bold ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{product.sku}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Brand:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>{product.brand || '--'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Unit:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>{product.unit || 'Pc(s)'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Barcode Type:</span> <span className={`font-mono ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>C128</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Available in locations:</span> <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>MS Agencies</span></div>
+            {/* Column 1 */}
+            <div className="md:col-span-3 space-y-1.5 leading-relaxed">
+              <div><strong className="text-slate-900 font-bold">SKU:</strong> <span className="text-slate-700">{product.sku}</span></div>
+              <div><strong className="text-slate-900 font-bold">Brand:</strong> <span className="text-slate-700">{product.brand || '--'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Unit:</strong> <span className="text-slate-700">{product.unit || 'Pc(s)'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Barcode Type:</strong> <span className="text-slate-700">C128</span></div>
+              <div><strong className="text-slate-900 font-bold">Available in locations:</strong> <span className="text-slate-700">{availableLocationNames}</span></div>
             </div>
 
-            <div className="lg:col-span-3 space-y-2">
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Category:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>{product.category || '--'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Sub category:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>{product.subCategory || '--'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Manage Stock?:</span> <span className="text-emerald-600 font-bold">Yes</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Alert quantity:</span> <span className={`font-mono ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{(product.alertQuantity || 0).toFixed(4)}</span></div>
+            {/* Column 2 */}
+            <div className="md:col-span-3 space-y-1.5 leading-relaxed">
+              <div><strong className="text-slate-900 font-bold">Category:</strong> <span className="text-slate-700">{product.category || '--'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Sub category:</strong> <span className="text-slate-700">{product.subCategory || '--'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Manage Stock?:</strong> <span className="text-slate-700">{isComboProduct ? 'No' : 'Yes'}</span></div>
             </div>
 
-            <div className="lg:col-span-3 space-y-2">
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Expires in:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>Not Applicable</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Applicable Tax:</span> <span className={isLight ? 'text-slate-900' : 'text-slate-200'}>{product.taxRate ? `${product.taxRate}%` : 'None'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Selling Price Tax Type:</span> <span className={`capitalize ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>{product.taxType || 'Inclusive'}</span></div>
-              <div><span className={isLight ? 'text-slate-500 font-semibold' : 'text-slate-400 font-semibold'}>Product Type:</span> <span className={`font-bold capitalize ${theme.textAccent}`}>{product.type || 'Single'}</span></div>
+            {/* Column 3 */}
+            <div className="md:col-span-3 space-y-1.5 leading-relaxed">
+              <div>
+                <strong className="text-slate-900 font-bold">Expires in:</strong>{' '}
+                <span className="text-slate-700">
+                  {product.expiryPeriod && product.expiryPeriodType !== 'Not Applicable'
+                    ? `${product.expiryPeriod} ${product.expiryPeriodType}`
+                    : 'Not Applicable'}
+                </span>
+              </div>
+              <div><strong className="text-slate-900 font-bold">Applicable Tax:</strong> <span className="text-slate-700">{product.taxRate ? `${product.taxRate}%` : 'None'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Selling Price Tax Type:</strong> <span className="text-slate-700 capitalize">{product.taxType || 'Exclusive'}</span></div>
+              <div><strong className="text-slate-900 font-bold">Product Type:</strong> <span className="text-slate-700 capitalize">{isComboProduct ? 'Combo' : (isVariableProduct ? 'Variable' : 'Single')}</span></div>
             </div>
 
-            <div className={`lg:col-span-3 flex items-center justify-center p-4 rounded-xl border gap-4 ${
-              isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-            }`}>
-              {product.image ? (
-                <img src={product.image} alt={product.name} className="w-24 h-24 object-cover rounded-xl" />
-              ) : (
-                <div className={`flex items-center gap-3 ${theme.textAccent}`}>
-                  <Monitor className="w-12 h-12 opacity-80" />
-                  <Leaf className="w-10 h-10 text-emerald-500 opacity-90" />
-                </div>
-              )}
+            {/* Column 4: Graphic / Illustration Box */}
+            <div className="md:col-span-3 flex items-center justify-center">
+              <div className="w-full h-32 max-w-[240px] p-2 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
+                {product.image ? (
+                  <img src={product.image} alt={product.name} className="w-full h-full object-contain rounded-lg" />
+                ) : (
+                  <svg className="w-full h-full max-h-24" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Computer monitor with invoice */}
+                    <rect x="25" y="15" width="45" height="50" rx="4" fill="#334155" />
+                    <rect x="28" y="18" width="39" height="38" rx="2" fill="#0f172a" />
+                    <path d="M42 65 L48 78 L32 78 Z" fill="#475569" />
+                    <rect x="26" y="78" width="36" height="4" rx="2" fill="#334155" />
+                    {/* Sheet coming out */}
+                    <rect x="33" y="8" width="32" height="42" rx="3" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.5" />
+                    <rect x="38" y="16" width="12" height="12" rx="2" fill="#fbbf24" opacity="0.8" />
+                    <line x1="38" y1="34" x2="58" y2="34" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="38" y1="40" x2="52" y2="40" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" />
+                    {/* 3D Parcel Box */}
+                    <g transform="translate(68, 36)">
+                      <path d="M16 0 L32 8 L16 16 L0 8 Z" fill="#fcd34d" />
+                      <path d="M0 8 L16 16 L16 35 L0 27 Z" fill="#f59e0b" />
+                      <path d="M32 8 L16 16 L16 35 L32 27 Z" fill="#d97706" />
+                      <path d="M16 0 L16 16" stroke="#ffffff" strokeWidth="1.5" opacity="0.6" />
+                      <path d="M8 4 L24 12" stroke="#ffffff" strokeWidth="1.5" opacity="0.6" />
+                      <path d="M8 22 L8 31" stroke="#ffffff" strokeWidth="1.5" opacity="0.6" />
+                    </g>
+                    {/* Plant sprout logo */}
+                    <g transform="translate(125, 14)">
+                      <path d="M22 28 C15 18 8 22 10 32 C12 36 20 34 22 28 Z" fill="#0ea5e9" />
+                      <path d="M25 24 C25 10 35 10 35 24 C35 30 25 30 25 24 Z" fill="#0284c7" />
+                      <path d="M28 28 C35 18 42 22 40 32 C38 36 30 34 28 28 Z" fill="#0369a1" />
+                      <path d="M25 28 L25 46" stroke="#0284c7" strokeWidth="3" strokeLinecap="round" />
+                      <text x="2" y="44" fill="#0284c7" fontSize="10" fontWeight="bold" fontFamily="monospace">&lt;/&gt;</text>
+                      <text x="24" y="60" textAnchor="middle" fill="#0284c7" fontSize="20" fontWeight="900" fontFamily="sans-serif">tit</text>
+                      <circle cx="34" cy="46" r="2.5" fill="#0284c7" />
+                    </g>
+                  </svg>
+                )}
+              </div>
             </div>
 
           </div>
 
-          {/* Default Pricing Table */}
-          <div className={`rounded-xl border overflow-hidden shadow-sm ${
-            isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-          }`}>
-            <table className="w-full text-left text-xs">
-              <thead className={`${theme.headerBg} font-bold uppercase text-[10px] tracking-wider`}>
-                <tr>
-                  {isVariableProduct && variationsList.length > 0 && (
-                    <th className="py-3 px-4">Variation</th>
-                  )}
-                  {isVariableProduct && variationsList.length > 0 && (
-                    <th className="py-3 px-4">SKU</th>
-                  )}
-                  <th className="py-3 px-4">Default Purchase Price (Exc. tax)</th>
-                  <th className="py-3 px-4">Default Purchase Price (Inc. tax)</th>
-                  <th className="py-3 px-4">x Margin(%)</th>
-                  <th className="py-3 px-4">Default Selling Price (Exc. tax)</th>
-                  <th className="py-3 px-4">Default Selling Price (Inc. tax)</th>
-                  <th className="py-3 px-4">Variation Images</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y font-mono ${
-                isLight ? 'divide-slate-200 bg-white text-slate-900' : 'divide-slate-800 bg-slate-950 text-slate-200'
-              }`}>
-                {isVariableProduct && variationsList.length > 0 ? (
-                  variationsList.map((v, idx) => {
-                    const vCost = v.costPrice ?? cost;
-                    const vCostInc = v.costPriceIncTax ?? (product.taxRate ? vCost * (1 + product.taxRate / 100) : vCost);
-                    const vPrice = v.sellingPrice ?? price;
-                    const vPriceInc = v.sellingPriceIncTax ?? (product.taxRate ? vPrice * (1 + product.taxRate / 100) : vPrice);
-                    const vMargin = v.margin !== undefined ? Number(v.margin).toFixed(2) : (vPrice > 0 ? (((vPrice - vCost) / vPrice) * 100).toFixed(2) : margin);
-                    const vSku = v.sku || `${product.sku}-${idx + 1}`;
-                    const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
+          {/* Section: Combo Products Table View */}
+          {isComboProduct ? (
+            <div className="space-y-3 pt-2">
+              <h3 className="text-base font-semibold text-slate-800">
+                Combo:
+              </h3>
 
-                    return (
-                      <tr key={v.id || idx} className="hover:bg-slate-900/40 transition-colors">
-                        <td className="py-3 px-4 font-sans font-bold text-white">
-                          <span className="inline-block px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-lg text-xs">
-                            {vValue}
-                          </span>
-                        </td>
-                        <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{vSku}</td>
-                        <td className="py-3 px-4">{formatCurrency(vCost, settings)}</td>
-                        <td className="py-3 px-4">{formatCurrency(vCostInc, settings)}</td>
-                        <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{vMargin}%</td>
-                        <td className="py-3 px-4">{formatCurrency(vPrice, settings)}</td>
-                        <td className="py-3 px-4">{formatCurrency(vPriceInc, settings)}</td>
-                        <td className="py-3 px-4">
-                          {v.image ? (
-                            <img src={v.image} alt={vValue} className="w-9 h-9 object-cover rounded-lg border border-slate-700 bg-slate-900" />
-                          ) : (
-                            <span className="text-slate-500">—</span>
-                          )}
+              <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-[#26c281] text-white font-bold text-[11px] leading-tight select-none">
+                    <tr>
+                      <th className="py-3 px-3.5">Product Name</th>
+                      <th className="py-3 px-3">Default Purchase Price (Exc. tax)</th>
+                      <th className="py-3 px-3">Default Purchase Price (Inc. tax)</th>
+                      <th className="py-3 px-3">x Margin(%)</th>
+                      <th className="py-3 px-3">Default Selling Price (Exc. tax)</th>
+                      <th className="py-3 px-3">Default Selling Price (Inc. tax)</th>
+                      <th className="py-3 px-3">Quantity</th>
+                      <th className="py-3 px-3">Total Amount (Exc. Tax)</th>
+                      <th className="py-3 px-3">Variation Images</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-sans text-slate-800 text-xs">
+                    {comboItemsList.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-slate-400 bg-slate-50">
+                          No component items configured for this combo bundle.
                         </td>
                       </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
-                    <td className="py-3 px-4">{formatCurrency(cost, settings)}</td>
-                    <td className={`py-3 px-4 font-bold ${theme.textAccent}`}>{margin}</td>
-                    <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
-                    <td className="py-3 px-4">{formatCurrency(price, settings)}</td>
-                    <td className="py-3 px-4 text-slate-400">—</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ) : (
+                      comboItemsList.map((ci, idx) => (
+                        <tr
+                          key={ci.productId || idx}
+                          className={idx % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-[#eef2f6]/70 hover:bg-slate-100/80'}
+                        >
+                          <td className="py-3 px-3.5 font-medium text-slate-900">
+                            {ci.nameWithSku}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {formatCurrency(ci.costExc, settings)}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {formatCurrency(ci.costInc, settings)}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap font-medium">
+                            {ci.marginPct}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {formatCurrency(ci.sellExc, settings)}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {formatCurrency(ci.sellInc, settings)}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {ci.qty.toFixed(2)} {ci.unitLabel}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap font-medium">
+                            {formatCurrency(ci.totalExc, settings)}
+                          </td>
+                          <td className="py-3 px-3">
+                            {ci.image ? (
+                              <img
+                                src={ci.image}
+                                alt={ci.nameWithSku}
+                                className="w-8 h-8 object-cover rounded border border-slate-300"
+                              />
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Product Stock Details Section */}
-          <div className="space-y-3">
-            <h3 className={`font-extrabold text-sm tracking-wide ${isLight ? 'text-slate-900' : 'text-white'}`}>Product Stock Details</h3>
-            
-            <div className={`rounded-xl border overflow-hidden shadow-sm ${
-              isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-            }`}>
-              <table className="w-full text-left text-xs">
-                <thead className={`${theme.headerBg} font-bold uppercase text-[10px] tracking-wider`}>
-                  <tr>
-                    <th className="py-3 px-3">SKU</th>
-                    <th className="py-3 px-3">Product</th>
-                    <th className="py-3 px-3">Location</th>
-                    <th className="py-3 px-3">Unit Price</th>
-                    <th className="py-3 px-3">Current stock</th>
-                    <th className="py-3 px-3">Current stock Value</th>
-                    <th className="py-3 px-3">Total unit sold</th>
-                    <th className="py-3 px-3">Total Unit Transferred</th>
-                    <th className="py-3 px-3">Total Unit Adjusted</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y font-mono ${
-                  isLight ? 'divide-slate-200 bg-white text-slate-900' : 'divide-slate-800 bg-slate-950 text-slate-200'
-                }`}>
-                  {isVariableProduct && variationsList.length > 0 ? (
-                    <>
-                      {variationsList.map((v, idx) => {
-                        const vSku = v.sku || `${product.sku}-${idx + 1}`;
+              {/* Right Aligned Default Selling Price Total */}
+              <div className="flex justify-end pt-2 pr-1">
+                <div className="text-sm text-slate-900">
+                  <span className="font-bold">Default Selling Price:</span>{' '}
+                  <span className="font-normal">{formatCurrency(price, settings)}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Single & Variable Products Default Pricing Table */
+            <div className="space-y-6">
+              <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#26c281] text-white font-bold text-[11px] leading-tight">
+                    <tr>
+                      {isVariableProduct && variationsList.length > 0 && (
+                        <th className="py-3 px-3.5">Variation</th>
+                      )}
+                      {isVariableProduct && variationsList.length > 0 && (
+                        <th className="py-3 px-3">SKU</th>
+                      )}
+                      <th className="py-3 px-3">Default Purchase Price (Exc. tax)</th>
+                      <th className="py-3 px-3">Default Purchase Price (Inc. tax)</th>
+                      <th className="py-3 px-3">x Margin(%)</th>
+                      <th className="py-3 px-3">Default Selling Price (Exc. tax)</th>
+                      <th className="py-3 px-3">Default Selling Price (Inc. tax)</th>
+                      <th className="py-3 px-3">Variation Images</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-sans text-slate-800">
+                    {isVariableProduct && variationsList.length > 0 ? (
+                      variationsList.map((v, idx) => {
+                        const vCost = v.costPrice ?? cost;
+                        const vCostInc = v.costPriceIncTax ?? (product.taxRate ? vCost * (1 + product.taxRate / 100) : vCost);
                         const vPrice = v.sellingPrice ?? price;
-                        const vStock = Number(v.currentStock ?? v.openingStock ?? 0);
-                        const vStockVal = vStock * vPrice;
+                        const vPriceInc = v.sellingPriceIncTax ?? (product.taxRate ? vPrice * (1 + product.taxRate / 100) : vPrice);
+                        const vMargin = v.margin !== undefined ? Number(v.margin).toFixed(2) : (vPrice > 0 ? (((vPrice - vCost) / vPrice) * 100).toFixed(2) : '0.00');
+                        const vSku = v.sku || `${product.sku}-${idx + 1}`;
                         const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
 
                         return (
-                          <tr key={v.id || idx} className="hover:bg-slate-900/40 transition-colors">
-                            <td className={`py-3 px-3 font-bold ${theme.textAccent}`}>{vSku}</td>
-                            <td className={`py-3 px-3 font-sans font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                              <div className="flex items-center gap-1.5">
-                                <span>{product.name}</span>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-                                  {vValue}
-                                </span>
-                              </div>
+                          <tr key={v.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#eef2f6]/70'}>
+                            <td className="py-3 px-3.5 font-bold text-slate-900">
+                              <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-xs">
+                                {vValue}
+                              </span>
                             </td>
-                            <td className={`py-3 px-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{defaultLocationName}</td>
+                            <td className="py-3 px-3 font-semibold text-slate-700">{vSku}</td>
+                            <td className="py-3 px-3">{formatCurrency(vCost, settings)}</td>
+                            <td className="py-3 px-3">{formatCurrency(vCostInc, settings)}</td>
+                            <td className="py-3 px-3 font-semibold text-slate-900">{vMargin}%</td>
                             <td className="py-3 px-3">{formatCurrency(vPrice, settings)}</td>
-                            <td className="py-3 px-3 font-bold text-emerald-600">{vStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                            <td className="py-3 px-3 font-bold text-amber-500">{formatCurrency(vStockVal, settings)}</td>
-                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
-                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
-                            <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                            <td className="py-3 px-3">{formatCurrency(vPriceInc, settings)}</td>
+                            <td className="py-3 px-3">
+                              {v.image ? (
+                                <img src={v.image} alt={vValue} className="w-8 h-8 object-cover rounded border border-slate-300" />
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
                           </tr>
                         );
-                      })}
-                      {/* Summary Total Row for Variable Product */}
-                      <tr className={`font-bold ${isLight ? 'bg-slate-100/90 text-slate-950' : 'bg-slate-900/90 text-white'}`}>
-                        <td className={`py-3 px-3 ${theme.textAccent}`}>Total</td>
-                        <td className="py-3 px-3 font-sans">{product.name} ({variationsList.length} Variations)</td>
-                        <td className="py-3 px-3">All Locations</td>
-                        <td className="py-3 px-3 text-slate-500">—</td>
-                        <td className="py-3 px-3 font-bold text-emerald-500">{totalVariationsStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                        <td className="py-3 px-3 font-bold text-amber-400">{formatCurrency(totalVariationsStockValue, settings)}</td>
-                        <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                        <td className="py-3 px-3">{totalTransferred.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                        <td className="py-3 px-3">{totalAdjusted.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                      })
+                    ) : (
+                      <tr className="bg-white">
+                        <td className="py-3 px-3.5">{formatCurrency(cost, settings)}</td>
+                        <td className="py-3 px-3">{formatCurrency(cost, settings)}</td>
+                        <td className="py-3 px-3 font-semibold">{price > 0 ? (((price - cost) / price) * 100).toFixed(2) : '0.00'}%</td>
+                        <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
+                        <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
+                        <td className="py-3 px-3 text-slate-400">—</td>
                       </tr>
-                    </>
-                  ) : (
-                    <tr>
-                      <td className={`py-3 px-3 font-bold ${theme.textAccent}`}>{product.sku}</td>
-                      <td className={`py-3 px-3 font-sans font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{product.name}</td>
-                      <td className={`py-3 px-3 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{defaultLocationName}</td>
-                      <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
-                      <td className="py-3 px-3 font-bold text-emerald-600">{currentStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                      <td className="py-3 px-3 font-bold text-amber-500">{formatCurrency(stockValue, settings)}</td>
-                      <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                      <td className="py-3 px-3">{totalTransferred.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                      <td className="py-3 px-3">{totalAdjusted.toFixed(2)} {product.unit || 'Pc(s)'}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Product Stock Details Section for Single & Variable */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-sm text-slate-800">Product Stock Details</h3>
+                
+                <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#26c281] text-white font-bold text-[11px] leading-tight">
+                      <tr>
+                        <th className="py-3 px-3">SKU</th>
+                        <th className="py-3 px-3">Product</th>
+                        <th className="py-3 px-3">Location</th>
+                        <th className="py-3 px-3">Unit Price</th>
+                        <th className="py-3 px-3">Current stock</th>
+                        <th className="py-3 px-3">Current stock Value</th>
+                        <th className="py-3 px-3">Total unit sold</th>
+                        <th className="py-3 px-3">Total Unit Transferred</th>
+                        <th className="py-3 px-3">Total Unit Adjusted</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-sans text-slate-800">
+                      {isVariableProduct && variationsList.length > 0 ? (
+                        <>
+                          {variationsList.map((v, idx) => {
+                            const vSku = v.sku || `${product.sku}-${idx + 1}`;
+                            const vPrice = v.sellingPrice ?? price;
+                            const vStock = Number(v.currentStock ?? v.openingStock ?? 0);
+                            const vStockVal = vStock * vPrice;
+                            const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
+
+                            return (
+                              <tr key={v.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#eef2f6]/70'}>
+                                <td className="py-3 px-3 font-semibold text-slate-700">{vSku}</td>
+                                <td className="py-3 px-3 font-medium text-slate-900">
+                                  {product.name} ({vValue})
+                                </td>
+                                <td className="py-3 px-3 text-slate-600">{defaultLocationName}</td>
+                                <td className="py-3 px-3">{formatCurrency(vPrice, settings)}</td>
+                                <td className="py-3 px-3 font-bold text-emerald-600">{vStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                                <td className="py-3 px-3 font-bold text-amber-600">{formatCurrency(vStockVal, settings)}</td>
+                                <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                                <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                                <td className="py-3 px-3">0.00 {product.unit || 'Pc(s)'}</td>
+                              </tr>
+                            );
+                          })}
+                        </>
+                      ) : (
+                        <tr className="bg-white">
+                          <td className="py-3 px-3 font-semibold text-slate-700">{product.sku}</td>
+                          <td className="py-3 px-3 font-medium text-slate-900">{product.name}</td>
+                          <td className="py-3 px-3 text-slate-600">{defaultLocationName}</td>
+                          <td className="py-3 px-3">{formatCurrency(price, settings)}</td>
+                          <td className="py-3 px-3 font-bold text-emerald-600">{currentStock.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                          <td className="py-3 px-3 font-bold text-amber-600">{formatCurrency(stockValue, settings)}</td>
+                          <td className="py-3 px-3">{totalSold.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                          <td className="py-3 px-3">{totalTransferred.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                          <td className="py-3 px-3">{totalAdjusted.toFixed(2)} {product.unit || 'Pc(s)'}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 
         {/* Footer Actions */}
-        <div className={`flex items-center justify-end gap-3 px-6 py-4 border-t sticky bottom-0 z-20 ${
-          isLight ? 'bg-white border-slate-200' : 'bg-slate-950/95 backdrop-blur-md border-slate-800'
-        }`}>
+        <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-slate-200 sticky bottom-0 bg-white z-20">
           {onOpenHistory && (
             <button
               onClick={() => onOpenHistory(product)}
-              className="px-5 py-2.5 font-bold rounded-xl text-xs shadow-md flex items-center gap-2 transition cursor-pointer active:scale-95 bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30"
+              className="px-4 py-2 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 mr-auto"
               title="View stock movement history ledger"
             >
-              <History className="w-4 h-4" />
-              <span>Product History</span>
+              <History className="w-4 h-4 text-slate-500" />
+              <span>History</span>
             </button>
           )}
           <button
             onClick={handlePrint}
-            className={`px-6 py-2.5 font-bold rounded-xl text-xs shadow-md flex items-center gap-2 transition cursor-pointer active:scale-95 text-white ${theme.buttonBg}`}
+            className="px-4 py-2 font-semibold rounded-lg text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer active:scale-95 text-white bg-[#6f42c1] hover:bg-[#5f33b1]"
           >
             <Printer className="w-4 h-4" />
             <span>Print</span>
           </button>
           <button
             onClick={onClose}
-            className={
-              isLight
-                ? "px-5 py-2.5 font-bold rounded-xl text-xs shadow-md flex items-center gap-2 transition cursor-pointer active:scale-95 bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30"
-                : `px-6 py-2.5 font-bold rounded-xl text-xs transition cursor-pointer active:scale-95 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white`
-            }
+            className="px-4 py-2 font-semibold rounded-lg text-xs transition cursor-pointer active:scale-95 text-white bg-[#212529] hover:bg-[#000000]"
           >
-            {isLight && <History className="w-4 h-4" />}
             <span>Close</span>
           </button>
         </div>

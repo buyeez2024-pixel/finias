@@ -370,6 +370,7 @@ export const initialSettings = {
   enableUnits: true,
   enablePriceTax: true,
   enablePriceAndTaxInfo: true,
+  enableExpiry: true,
   enableProductExpiry: true,
   name: 'Royal POSfini',
   businessName: 'Royal POSfini',

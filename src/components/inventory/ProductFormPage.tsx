@@ -45,6 +45,7 @@ import {
   Square,
   Minus,
   ShoppingBag,
+  Calendar,
 } from 'lucide-react';
 
 interface ProductFormPageProps {
@@ -164,6 +165,12 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   const [subCategory, setSubCategory] = useState(productToEdit?.subCategory || '');
   const [brand, setBrand] = useState(productToEdit?.brand || '');
   const [warrantyId, setWarrantyId] = useState(productToEdit?.warrantyId || '');
+  const [expiryPeriod, setExpiryPeriod] = useState<string>(
+    productToEdit?.expiryPeriod !== undefined ? String(productToEdit.expiryPeriod) : ''
+  );
+  const [expiryPeriodType, setExpiryPeriodType] = useState<'Months' | 'Days' | 'Not Applicable'>(
+    productToEdit?.expiryPeriodType || 'Months'
+  );
   const [unit, setUnit] = useState(productToEdit?.unit || '');
   const [costPrice, setCostPrice] = useState(productToEdit?.costPrice?.toString() || '');
   const [sellingPrice, setSellingPrice] = useState(productToEdit?.sellingPrice?.toString() || '');
@@ -1433,6 +1440,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       subCategory: subCategory.trim() || undefined,
       brand: brand.trim(),
       warrantyId: warrantyId || undefined,
+      expiryPeriod: (expiryPeriod && expiryPeriodType !== 'Not Applicable') ? parseFloat(expiryPeriod) : undefined,
+      expiryPeriodType: expiryPeriodType || 'Months',
       unit,
       costPrice: productType === 'variable' ? (effectiveVariations[0]?.costPrice || cost) : cost,
       sellingPrice: productType === 'variable' ? (effectiveVariations[0]?.sellingPrice || price) : price,
@@ -2192,6 +2201,63 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                       </select>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Product Expiry Configuration */}
+              {Boolean(settings?.enableExpiry !== false && settings?.enableExpiry !== undefined ? settings.enableExpiry : (settings?.enableProductExpiry ?? true)) && (
+                <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-300 font-semibold flex items-center gap-1.5 text-xs">
+                      <Calendar className="w-4 h-4 text-amber-400" />
+                      <span>Expires in:</span>
+                      <span className="text-[10px] text-slate-400 font-normal">(Product shelf-life duration)</span>
+                    </label>
+                    {expiryPeriodType !== 'Not Applicable' && expiryPeriod && (
+                      <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-full font-bold border border-amber-500/20">
+                        Expires in {expiryPeriod} {expiryPeriodType}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Number input for duration */}
+                    <div className="relative">
+                      <input
+                        id="prod-input-expiry-period"
+                        type="number"
+                        min="0"
+                        step="1"
+                        disabled={expiryPeriodType === 'Not Applicable'}
+                        value={expiryPeriodType === 'Not Applicable' ? '' : expiryPeriod}
+                        onChange={(e) => setExpiryPeriod(e.target.value)}
+                        placeholder={expiryPeriodType === 'Not Applicable' ? 'Not Applicable' : 'e.g. 6'}
+                        className={`w-full bg-slate-900 text-white font-mono font-bold px-3.5 py-2.5 rounded-xl border ${
+                          expiryPeriodType === 'Not Applicable' ? 'border-slate-800 opacity-50 cursor-not-allowed bg-slate-950 text-slate-500' : 'border-slate-700'
+                        } focus:outline-none focus:border-amber-500 text-xs`}
+                      />
+                    </div>
+
+                    {/* Dropdown select for unit: Months, Days, Not Applicable */}
+                    <div>
+                      <select
+                        id="prod-select-expiry-type"
+                        value={expiryPeriodType}
+                        onChange={(e) => {
+                          const newType = e.target.value as 'Months' | 'Days' | 'Not Applicable';
+                          setExpiryPeriodType(newType);
+                          if (newType === 'Not Applicable') {
+                            setExpiryPeriod('');
+                          }
+                        }}
+                        className="w-full bg-slate-900 text-white font-medium px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-500 text-xs"
+                      >
+                        <option value="Months">Months</option>
+                        <option value="Days">Days</option>
+                        <option value="Not Applicable">Not Applicable</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
 
