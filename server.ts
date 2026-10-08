@@ -595,6 +595,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
       }
 
       // Check if custom SMTP credentials are provided
+      console.log("SMTP Config received:", smtpConfig);
       const host = smtpConfig?.host?.trim() || process.env.SMTP_HOST;
       const port = Number(smtpConfig?.port) || Number(process.env.SMTP_PORT) || 587;
       const user = smtpConfig?.username?.trim() || process.env.SMTP_USER;
@@ -718,7 +719,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
       return res.status(500).json({
         success: false,
         error: getSafeErrorMessage(err, "SMTP connection verification failed"),
-        tip: "Check hostname, port (587 for TLS, 465 for SSL), username, and app password.",
+        tip: `Check hostname, port (587 for TLS, 465 for SSL), username, and app password. Detailed error: ${err.message}`,
       });
     }
   });

@@ -239,7 +239,7 @@ export const TaxSettingsTab: React.FC = () => {
       setEditingGroup(group);
       setGroupForm({
         name: group.name,
-        subTaxIds: group.subTaxIds,
+        subTaxIds: group.subTaxIds || [],
         description: group.description || '',
         isDefault: group.isDefault || false,
       });
@@ -924,7 +924,7 @@ export const TaxSettingsTab: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 w-full min-w-0">
           {taxGroups.map((group) => {
-            const subRates = group.subTaxIds
+            const subRates = (group.subTaxIds || [])
               .map((id) => taxRates.find((r) => r.id === id))
               .filter(Boolean) as TaxRate[];
 

@@ -246,6 +246,7 @@ export const NotificationTemplatesView: React.FC = () => {
   };
 
   const handleSaveGateways = () => {
+    console.log("Saving email settings:", smtpDraft);
     updateSettings({
       emailSettings: smtpDraft as any,
       smsSettings: smsDraft as any,

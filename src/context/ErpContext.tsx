@@ -4661,8 +4661,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Auto-send welcome notification
     sendOneClickNotifications({
       templateType: 'new_customer_registration',
-      recipientContactId: newCust.id,
-    });
+      customRecipient: { name: newCust.name, email: newCust.email },
+    }).catch(err => console.error("Error in customer registration notification:", err));
 
     return newCust;
   };
@@ -4915,6 +4915,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setTransactions((prev) => [paymentTxn, ...prev]);
+
+    // Auto-send payment received notification
+    sendOneClickNotifications({
+      templateType: 'payment_received',
+      recipientContactId: customerId,
+      variables: {
+        '{invoice_number}': receiptNo,
+        '{received_amount}': formatMoney(amount),
+        '{payment_method}': paymentMethod,
+        '{payment_ref_no}': receiptNo,
+      }
+    }).catch(err => console.error("Error in payment received notification:", err));
   };
 
   const recordSupplierPayment = (
@@ -6190,6 +6202,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Auto-send sale notification
+    console.log("CreateSale: Auto-sending notification. Settings email settings:", settings.emailSettings);
     sendOneClickNotifications({
       templateType: 'new_sale',
       recipientContactId: newSale.customerId,
@@ -6199,7 +6212,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         '{paid_amount}': formatMoney(newSale.paidAmount),
         '{due_amount}': formatMoney(newSale.totalAmount - saleData.paidAmount),
       }
-    });
+    }).catch(err => console.error("CreateSale: Error in auto-sending notification:", err));
 
     return newSale;
   };
@@ -6253,6 +6266,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return s;
         }, 0);
         const effectiveTax = Math.max(directTax, itemsTax);
+
+        // Auto-send order status notification if status changed
+        if (t.status !== merged.status) {
+            sendOneClickNotifications({
+              templateType: 'order_status',
+              recipientContactId: merged.customerId,
+              variables: {
+                '{invoice_number}': merged.invoiceNo,
+                '{order_status}': merged.status,
+                '{location_name}': currentLocation?.name || 'Main Branch',
+              }
+            }).catch(err => console.error("Error in order status notification:", err));
+        }
 
         return {
           ...merged,
