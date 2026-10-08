@@ -60,6 +60,8 @@ interface ParsedPurchaseRow {
   matchedProductName?: string;
   matchedSupplierId?: string;
   matchedLocationId?: string;
+  marginPercent?: number;
+  sellingPrice?: number;
   subtotal: number;
   total: number;
   // Validation state
@@ -125,6 +127,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       'Tax Rate (%)',
       'Discount Amount',
       'Shipping Charges',
+      'Profit Margin (%)',
+      'Selling Price',
       'Lot / Batch Number',
       'Purchase Status (received/ordered/pending)',
       'Payment Status (paid/partial/due)',
@@ -149,6 +153,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         '18',
         '0',
         '25.00',
+        '25.0',
+        '66.38',
         'LOT-2026-09A',
         'received',
         'paid',
@@ -168,6 +174,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         '5',
         '15.00',
         '10.00',
+        '20.0',
+        '10.71',
         'LOT-2026-09B',
         'received',
         'due',
@@ -187,6 +195,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         '18',
         '0',
         '50.00',
+        '30.0',
+        '184.08',
         'LOT-2026-09C',
         'received',
         'partial',
@@ -216,6 +226,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       { wch: 14 }, // Tax Rate (%)
       { wch: 16 }, // Discount Amount
       { wch: 16 }, // Shipping Charges
+      { wch: 18 }, // Profit Margin (%)
+      { wch: 16 }, // Selling Price
       { wch: 18 }, // Lot / Batch Number
       { wch: 30 }, // Purchase Status
       { wch: 25 }, // Payment Status
@@ -295,6 +307,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       const discountStr = findVal('Discount Amount', 'Discount', 'Discount ($)');
       const shippingStr = findVal('Shipping Charges', 'Shipping', 'Freight', 'Delivery Charges');
       const lotNumber = findVal('Lot / Batch Number', 'Lot Number', 'Batch Number', 'Lot', 'Batch');
+      const marginStr = findVal('Profit Margin (%)', 'Profit Margin', 'Margin (%)', 'Margin', 'Default Margin');
+      const sellingPriceStr = findVal('Selling Price', 'Selling Price*', 'Selling Price (Optional)', 'Sale Price', 'Retail Price', 'MRP', 'Default Selling Price');
       const statusRaw = findVal('Purchase Status (received/ordered/pending)', 'Purchase Status', 'Status', 'Order Status').toLowerCase();
       const payStatusRaw = findVal('Payment Status (paid/partial/due)', 'Payment Status', 'Pay Status').toLowerCase();
       const paidStr = findVal('Paid Amount', 'Amount Paid', 'Paid');
@@ -363,6 +377,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       const taxRate = !isNaN(parseFloat(taxStr)) ? parseFloat(taxStr) : 0;
       const discountAmount = !isNaN(parseFloat(discountStr)) ? parseFloat(discountStr) : 0;
       const shippingCharges = !isNaN(parseFloat(shippingStr)) ? parseFloat(shippingStr) : 0;
+      const parsedMargin = !isNaN(parseFloat(marginStr)) ? parseFloat(marginStr) : undefined;
+      const parsedSellingPrice = !isNaN(parseFloat(sellingPriceStr)) && parseFloat(sellingPriceStr) > 0 ? parseFloat(sellingPriceStr) : undefined;
 
       // Calculate totals
       const validQty = isNaN(quantity) || quantity <= 0 ? 0 : quantity;
@@ -479,6 +495,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         matchedProductName: matchedProduct?.name,
         matchedSupplierId: matchedSupplier?.id,
         matchedLocationId,
+        marginPercent: parsedMargin,
+        sellingPrice: parsedSellingPrice,
         subtotal,
         total,
         isValid,
@@ -630,7 +648,10 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           handledNewProductKeys.add(keySku);
           handledNewProductKeys.add(keyName);
           const cost = r.unitCostPrice || 10;
-          const sellingPrice = Math.round(cost * 1.35 * 100) / 100;
+          const defaultMargin = r.marginPercent !== undefined ? r.marginPercent : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
+          const sellingPrice = (r.sellingPrice && r.sellingPrice > 0)
+            ? r.sellingPrice
+            : Math.round(cost * (1 + defaultMargin / 100) * 100) / 100;
 
           const itemLot = r.lotNumber ? r.lotNumber.trim() : undefined;
           newProductsToCreate.push({
@@ -641,6 +662,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
             unit: 'Pcs',
             costPrice: cost,
             sellingPrice,
+            profitMargin: defaultMargin,
             taxRate: r.taxRate || 0,
             alertQuantity: 10,
             currentStock: 0,
@@ -703,6 +725,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           tax: number;
           discount: number;
           total: number;
+          marginPercent?: number;
+          sellingPrice?: number;
           supplierId?: string;
           supplierName?: string;
         }[];
@@ -767,6 +791,21 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         const itemDiscount = row.discountAmount || 0;
         const itemTotal = Math.max(0, itemSubtotal + itemTax - itemDiscount);
 
+        const inclTax = row.unitCostPrice * (1 + (row.taxRate || 0) / 100);
+        const itemMargin = row.marginPercent !== undefined && !isNaN(row.marginPercent)
+          ? row.marginPercent
+          : (prod?.profitMargin !== undefined && prod.profitMargin !== null && !isNaN(Number(prod.profitMargin)))
+            ? Number(prod.profitMargin)
+            : (prod?.costPrice && prod.costPrice > 0 && prod?.sellingPrice && prod.sellingPrice > 0)
+              ? Number((((prod.sellingPrice - prod.costPrice) / prod.costPrice) * 100).toFixed(2))
+              : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
+
+        const itemSellingPrice = (row.sellingPrice && row.sellingPrice > 0)
+          ? row.sellingPrice
+          : (prod?.sellingPrice && prod.sellingPrice > 0)
+            ? prod.sellingPrice
+            : Number((inclTax * (1 + itemMargin / 100)).toFixed(2));
+
         const purchaseItem = {
           productId: prodId,
           productName: prodName,
@@ -779,6 +818,8 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
           tax: itemTax,
           discount: itemDiscount,
           total: itemTotal,
+          marginPercent: itemMargin,
+          sellingPrice: itemSellingPrice,
           supplierId: suppId,
           supplierName: cleanSuppName,
           lotNumber: row.lotNumber ? row.lotNumber.trim() : undefined,

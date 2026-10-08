@@ -1,5 +1,7 @@
 import React from 'react';
+import { useErp } from '../../context/ErpContext';
 import { getDynamicInvoiceTitle } from '../../utils/invoiceHeadingHelper';
+import { applyAmountRounding } from '../../utils/formatters';
 import {
   Transaction,
   InvoiceLayoutType,
@@ -112,6 +114,27 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
   className = '',
   hideActionButtons = false,
 }) => {
+  const { customerGroups = [] } = useErp() || {};
+
+  const matchedGroup = React.useMemo(() => {
+    if (!customer || !customerGroups) return null;
+    return customerGroups.find(
+      (g) =>
+        (customer.customerGroupId && g.id === customer.customerGroupId) ||
+        (customer.customerGroup && g.name.toLowerCase() === customer.customerGroup.toLowerCase())
+    );
+  }, [customer, customerGroups]);
+
+  const groupDiscountText = React.useMemo(() => {
+    if (!matchedGroup) return '';
+    const pct = Number(matchedGroup.calculationPercentage || matchedGroup.percentage || 0);
+    if (pct === 0) return '';
+    if (pct < 0) {
+      return `${matchedGroup.name} (${Math.abs(pct)}% Group Discount Applied to base prices)`;
+    }
+    return `${matchedGroup.name} (${pct}% Group Markup Applied to base prices)`;
+  }, [matchedGroup]);
+
   const defaultTitle = settings?.invoiceLayoutConfig?.invoiceTitle || 'TAX INVOICE';
   const autoTitle = getDynamicInvoiceTitle(transaction, defaultTitle);
   const resolvedInvoiceTitle = customConfig?.invoiceTitle !== undefined ? customConfig.invoiceTitle : autoTitle;
@@ -312,8 +335,32 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
     );
   };
 
+  const effectiveRoundOff = React.useMemo(() => {
+    const rawTot = (transaction.subtotal || 0) - (transaction.discountAmount || 0) + (transaction.taxAmount || 0) + (transaction.shippingCharges || 0) + (transaction.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0);
+    if (transaction.roundOff !== undefined && transaction.roundOff !== null && Number(transaction.roundOff) !== 0) {
+      return Number(transaction.roundOff);
+    }
+    const roundedTot = applyAmountRounding(rawTot > 0 ? rawTot : transaction.totalAmount, settings?.amountRoundingMethod);
+    const calculated = Math.round((roundedTot - rawTot) * 100) / 100;
+    if (calculated !== 0) {
+      return calculated;
+    }
+    if (transaction.roundOff !== undefined && transaction.roundOff !== null) {
+      return Number(transaction.roundOff);
+    }
+    return Math.round(((transaction.totalAmount || 0) - rawTot) * 100) / 100;
+  }, [transaction, settings?.amountRoundingMethod]);
+
+  const displayTotalAmount = React.useMemo(() => {
+    const rawTot = (transaction.subtotal || 0) - (transaction.discountAmount || 0) + (transaction.taxAmount || 0) + (transaction.shippingCharges || 0) + (transaction.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0);
+    if (effectiveRoundOff !== 0 && rawTot > 0) {
+      return Math.round((rawTot + effectiveRoundOff) * 100) / 100;
+    }
+    return transaction.totalAmount ?? 0;
+  }, [transaction, effectiveRoundOff]);
+
   const totalInWords = convertNumberToWords(
-    transaction.totalAmount,
+    displayTotalAmount,
     settings.currencyCode || settings.currency || 'USD'
   );
 
@@ -466,6 +513,11 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                     Billed To:
                   </span>
                   <p className="font-bold text-sm text-slate-900">{customer?.name || 'Walk-In Customer'}</p>
+                  {groupDiscountText && (
+                    <div className="mt-1 text-[11px] font-extrabold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                      ✓ {groupDiscountText}
+                    </div>
+                  )}
                   {customer?.businessName && (
                     <p className="text-xs font-semibold text-slate-700">{customer.businessName}</p>
                   )}
@@ -666,9 +718,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                       <span className="font-mono font-semibold">{formatCur(exp.amount)}</span>
                     </div>
                   ))}
+                  {effectiveRoundOff !== 0 && (
+                    <div className="flex justify-between text-xs text-slate-700">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-semibold">
+                        {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t-2 border-slate-200">
                     <span>GRAND TOTAL:</span>
-                    <span className="font-mono text-base">{formatCur(transaction.totalAmount)}</span>
+                    <span className="font-mono text-base">{formatCur(displayTotalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-xs text-emerald-700 font-bold pt-1">
                     <span>Amount Paid:</span>
@@ -773,6 +833,11 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                   Billed To / Recipient:
                 </span>
                 <p className="font-bold text-xs text-slate-900">{customer?.name || 'Valued Walk-In Customer'}</p>
+                {groupDiscountText && (
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                    ✓ {groupDiscountText}
+                  </div>
+                )}
                 {customer?.businessName && <p className="text-xs font-semibold text-slate-700">{customer.businessName}</p>}
                 {customer?.address && <p className="text-xs text-slate-600">{customer.address}</p>}
                 <p className="text-xs text-slate-600">{customer?.phone ? `Tel: ${customer.phone}` : 'Retail Counter Sale'}</p>
@@ -883,9 +948,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                       <span className="font-mono">{formatCur(exp.amount)}</span>
                     </div>
                   ))}
+                  {effectiveRoundOff !== 0 && (
+                    <div className={settings.themeMode === 'light' ? 'flex justify-between text-xs text-slate-600 font-medium' : 'flex justify-between text-xs text-indigo-200'}>
+                      <span>Round Off:</span>
+                      <span className="font-mono">
+                        {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                      </span>
+                    </div>
+                  )}
                   <div className={settings.themeMode === 'light' ? 'flex justify-between text-sm font-black pt-2 border-t border-slate-200 text-slate-950' : 'flex justify-between text-sm font-black pt-2 border-t border-indigo-700/60'}>
                     <span>AMOUNT DUE:</span>
-                    <span className={settings.themeMode === 'light' ? 'font-mono text-lg text-indigo-700' : 'font-mono text-lg text-emerald-400'}>{formatCur(transaction.totalAmount)}</span>
+                    <span className={settings.themeMode === 'light' ? 'font-mono text-lg text-indigo-700' : 'font-mono text-lg text-emerald-400'}>{formatCur(displayTotalAmount)}</span>
                   </div>
                   <div className={settings.themeMode === 'light' ? 'flex justify-between text-xs text-slate-600 pt-1 border-t border-slate-100 font-medium' : 'flex justify-between text-xs text-indigo-200 pt-1'}>
                     <span>Paid via {transaction.paymentEntries[0]?.method?.toUpperCase() || 'CASH'}:</span>
@@ -969,6 +1042,11 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
               <div className="p-4 space-y-1">
                 <span className="font-extrabold uppercase text-[10px] tracking-wider text-indigo-800 block mb-1">Details of Receiver (Billed To):</span>
                 <p className="font-bold text-slate-950 text-sm">{customer?.name || 'Walk-In Customer (Default)'}</p>
+                {groupDiscountText && (
+                  <div className="mt-1 text-[11px] font-extrabold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                    ✓ {groupDiscountText}
+                  </div>
+                )}
                 {customer?.businessName && <p className="font-medium text-slate-700">{customer.businessName}</p>}
                 {customer?.address ? <p className="text-slate-600 mt-1">{customer.address}</p> : <p className="text-slate-600 mt-1">Retail Walk-in<br/>Counter Direct Sale</p>}
                 <p className="text-slate-600 mt-1.5">Contact: {customer?.phone || '+1 (555) 000-0000'}</p>
@@ -1128,9 +1206,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                       <span className="font-mono font-bold text-slate-950">{formatCur(exp.amount)}</span>
                     </div>
                   ))}
+                  {effectiveRoundOff !== 0 && (
+                    <div className="flex justify-between text-slate-800">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-bold text-slate-950">
+                        {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-black text-slate-950 pt-2 border-t border-dashed border-slate-300">
                     <span>NET INVOICE TOTAL:</span>
-                    <span className="font-mono">{formatCur(transaction.totalAmount)}</span>
+                    <span className="font-mono">{formatCur(displayTotalAmount)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-emerald-700 pt-1">
                     <span>Paid:</span>
@@ -1205,6 +1291,11 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
               <div>
                 <span className="text-[10px] font-bold uppercase text-slate-400 block">Details of Receiver (Billed To):</span>
                 <div className="font-bold text-slate-900 text-sm mt-0.5">{customer?.name || 'Walk-In Customer'}</div>
+                {groupDiscountText && (
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded w-fit">
+                    ✓ {groupDiscountText}
+                  </div>
+                )}
                 {customer?.address && <div className="text-slate-600 mt-0.5">{customer.address}</div>}
                 {customer?.phone && customer.phone !== 'N/A' && <div className="text-slate-600">Phone: {customer.phone}</div>}
                 {customer?.email && <div className="text-slate-600">Email: {customer.email}</div>}
@@ -1313,9 +1404,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                       <span className="font-mono font-bold">{formatCur(exp.amount)}</span>
                     </div>
                   ))}
+                  {effectiveRoundOff !== 0 && (
+                    <div className="flex justify-between text-slate-800">
+                      <span>Round Off:</span>
+                      <span className="font-mono font-bold">
+                        {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm font-black text-slate-950 pt-2 border-t-2 border-slate-900">
                     <span>GRAND TOTAL:</span>
-                    <span className="font-mono">{formatCur(transaction.totalAmount)}</span>
+                    <span className="font-mono">{formatCur(displayTotalAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -1386,6 +1485,11 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                 <span>Customer:</span>
                 <span>{customer?.name || 'Walk-In'}</span>
               </div>
+              {groupDiscountText && (
+                <div className="text-[9px] font-bold text-emerald-800 bg-emerald-50 p-1 rounded text-center my-0.5 border border-emerald-200">
+                  ✓ {groupDiscountText}
+                </div>
+              )}
               {transaction.isOfflineCreated && (
                 <div className="text-[9px] font-bold text-amber-800 bg-amber-100 p-0.5 rounded text-center my-0.5 border border-amber-300">
                   ⚡ OFFLINE LOCAL STORAGE QUEUE
@@ -1461,9 +1565,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
                     <span className="font-mono">{formatCur(exp.amount)}</span>
                   </div>
                 ))}
+                {effectiveRoundOff !== 0 && (
+                  <div className="flex justify-between">
+                    <span>Round Off:</span>
+                    <span className="font-mono">
+                      {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs font-black text-slate-950 pt-1 border-t border-slate-400">
                   <span>TOTAL:</span>
-                  <span className="font-mono text-sm">{formatCur(transaction.totalAmount)}</span>
+                  <span className="font-mono text-sm">{formatCur(displayTotalAmount)}</span>
                 </div>
                 <div className="flex justify-between font-bold pt-0.5">
                   <span>Paid ({transaction.paymentEntries[0]?.method?.toUpperCase() || 'CASH'}):</span>
@@ -1583,9 +1695,17 @@ export const InvoiceRenderer: React.FC<InvoiceRendererProps> = ({
               </div>
             ) : (
               <div className="space-y-1 text-[11px] pt-1">
+                {effectiveRoundOff !== 0 && (
+                  <div className="flex justify-between text-[10px] text-slate-600">
+                    <span>Round Off:</span>
+                    <span className="font-mono">
+                      {effectiveRoundOff > 0 ? `(+) ${formatCur(effectiveRoundOff)}` : `(-) ${formatCur(Math.abs(effectiveRoundOff))}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between font-black text-xs pt-1 border-t border-slate-300">
                   <span>TOTAL AMOUNT:</span>
-                  <span className="font-mono">{formatCur(transaction.totalAmount)}</span>
+                  <span className="font-mono">{formatCur(displayTotalAmount)}</span>
                 </div>
                 <div className="flex justify-between text-[10px] text-slate-600">
                   <span>Method: {transaction.paymentEntries[0]?.method?.toUpperCase() || 'CASH'}</span>

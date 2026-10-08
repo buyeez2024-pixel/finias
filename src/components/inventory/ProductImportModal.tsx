@@ -233,6 +233,7 @@ export const ProductImportModal: React.FC<ProductImportModalProps> = ({ isOpen, 
           taxType: 'exclusive',
           source: 'bulk_import',
           creationSource: 'bulk_products_import',
+          openingStock,
           locationStocks: {
             [defaultLocId]: openingStock
           }

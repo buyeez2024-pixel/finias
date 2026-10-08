@@ -483,6 +483,7 @@ export const ImportProductsPage: React.FC = () => {
         taxType: 'exclusive',
         source: 'bulk_import',
         creationSource: 'bulk_products_import',
+        openingStock: r.openingStock,
         locationStocks: {
           [defaultLocId]: r.openingStock,
         },

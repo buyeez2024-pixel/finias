@@ -70,7 +70,17 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
       const matchSearch =
         s.invoiceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (customer?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchPayment = paymentFilter === 'all' || s.paymentStatus === paymentFilter;
+      const entriesPaid = s.paymentEntries && s.paymentEntries.length > 0
+        ? s.paymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+        : 0;
+      const effectivePaid = Math.max(Number(s.paidAmount) || 0, entriesPaid);
+      const effectiveTotal = Number(s.totalAmount) || 0;
+      const effStatus = (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01)
+        ? 'paid'
+        : effectivePaid > 0.01
+        ? 'partial'
+        : 'due';
+      const matchPayment = paymentFilter === 'all' || effStatus === paymentFilter;
       const matchStatus = statusFilter === 'all' || s.status === statusFilter;
       return matchSearch && matchPayment && matchStatus;
     });
@@ -262,17 +272,32 @@ export const SaleReturnsView: React.FC<SaleReturnsViewProps> = ({ onOpenReceipt,
                       {location?.name || 'Main Location'}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          sale.paymentStatus === 'paid'
-                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                            : sale.paymentStatus === 'partial'
-                            ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                            : 'bg-rose-950 text-rose-300 border border-rose-800'
-                        }`}
-                      >
-                        {sale.paymentStatus}
-                      </span>
+                      {(() => {
+                        const entriesPaid = sale.paymentEntries && sale.paymentEntries.length > 0
+                          ? sale.paymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+                          : 0;
+                        const effectivePaid = Math.max(Number(sale.paidAmount) || 0, entriesPaid);
+                        const effectiveTotal = Number(sale.totalAmount) || 0;
+                        const effStatus = (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01)
+                          ? 'paid'
+                          : effectivePaid > 0.01
+                          ? 'partial'
+                          : 'due';
+
+                        return (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              effStatus === 'paid'
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                : effStatus === 'partial'
+                                ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                : 'bg-rose-950 text-rose-300 border border-rose-800'
+                            }`}
+                          >
+                            {effStatus}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3 px-3 text-center">
                       <div className="flex items-center justify-center gap-1 text-slate-300 text-xs">

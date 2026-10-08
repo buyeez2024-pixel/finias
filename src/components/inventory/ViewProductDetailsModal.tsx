@@ -112,11 +112,11 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
         {/* Header Title Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 sticky top-0 bg-white z-20">
           <h2 className="text-lg font-bold text-slate-800">
-            Check Product
+            View Product
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1 rounded-lg transition cursor-pointer"
+            className="p-1.5 rounded-lg transition cursor-pointer flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white active:scale-95"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -236,7 +236,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                       comboItemsList.map((ci, idx) => (
                         <tr
                           key={ci.productId || idx}
-                          className={idx % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-[#eef2f6]/70 hover:bg-slate-100/80'}
+                          className="bg-[#eef2f6]/70 hover:bg-[#eef2f6]/70 transition-colors"
                         >
                           <td className="py-3 px-3.5 font-medium text-slate-900">
                             {ci.nameWithSku}
@@ -319,7 +319,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                         const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
 
                         return (
-                          <tr key={v.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#eef2f6]/70'}>
+                          <tr key={v.id || idx} className="bg-[#eef2f6]/70 hover:bg-[#eef2f6]/70 transition-colors">
                             <td className="py-3 px-3.5 font-bold text-slate-900">
                               <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-xs">
                                 {vValue}
@@ -342,7 +342,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                         );
                       })
                     ) : (
-                      <tr className="bg-white">
+                      <tr className="bg-[#eef2f6]/70 hover:bg-[#eef2f6]/70 transition-colors">
                         <td className="py-3 px-3.5">{formatCurrency(cost, settings)}</td>
                         <td className="py-3 px-3">{formatCurrency(cost, settings)}</td>
                         <td className="py-3 px-3 font-semibold">{price > 0 ? (((price - cost) / price) * 100).toFixed(2) : '0.00'}%</td>
@@ -385,7 +385,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                             const vValue = v.value || v.name?.replace(/^.*:\s*/, '') || `Variation #${idx + 1}`;
 
                             return (
-                              <tr key={v.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#eef2f6]/70'}>
+                              <tr key={v.id || idx} className="bg-[#eef2f6]/70 hover:bg-[#eef2f6]/70 transition-colors">
                                 <td className="py-3 px-3 font-semibold text-slate-700">{vSku}</td>
                                 <td className="py-3 px-3 font-medium text-slate-900">
                                   {product.name} ({vValue})
@@ -402,7 +402,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
                           })}
                         </>
                       ) : (
-                        <tr className="bg-white">
+                        <tr className="bg-[#eef2f6]/70 hover:bg-[#eef2f6]/70 transition-colors">
                           <td className="py-3 px-3 font-semibold text-slate-700">{product.sku}</td>
                           <td className="py-3 px-3 font-medium text-slate-900">{product.name}</td>
                           <td className="py-3 px-3 text-slate-600">{defaultLocationName}</td>
@@ -428,10 +428,10 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
           {onOpenHistory && (
             <button
               onClick={() => onOpenHistory(product)}
-              className="px-4 py-2 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 mr-auto"
+              className="px-4 py-2 font-semibold rounded-lg text-xs gap-1.5 mr-auto transition cursor-pointer flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white active:scale-95"
               title="View stock movement history ledger"
             >
-              <History className="w-4 h-4 text-slate-500" />
+              <History className="w-4 h-4 text-white" />
               <span>History</span>
             </button>
           )}
@@ -444,7 +444,7 @@ export const ViewProductDetailsModal: React.FC<ViewProductDetailsModalProps> = (
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 font-semibold rounded-lg text-xs transition cursor-pointer active:scale-95 text-white bg-[#212529] hover:bg-[#000000]"
+            className="px-4 py-2 font-semibold rounded-lg text-xs transition cursor-pointer flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white active:scale-95"
           >
             <span>Close</span>
           </button>

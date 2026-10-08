@@ -1,7 +1,7 @@
 import React from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Transaction } from '../../types/erp';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, applyAmountRounding } from '../../utils/formatters';
 import { getDynamicDetailModalHeading } from '../../utils/invoiceHeadingHelper';
 import {
   X,
@@ -37,7 +37,6 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
 
   const customer = customers.find((c) => c.id === sale.customerId);
   const location = locations.find((l) => l.id === sale.locationId);
-  const due = Math.max(0, sale.totalAmount - sale.paidAmount);
 
   const paymentEntries = sale.paymentEntries && sale.paymentEntries.length > 0
     ? sale.paymentEntries
@@ -51,6 +50,17 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
           note: sale.notes || '--',
         },
       ];
+
+  const entriesPaid = paymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const effectivePaid = Math.max(Number(sale.paidAmount) || 0, entriesPaid);
+  const effectiveTotal = Number(sale.totalAmount) || 0;
+  const due = Math.max(0, effectiveTotal - effectivePaid);
+  const effectivePaymentStatus: 'paid' | 'partial' | 'due' =
+    effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01
+      ? 'paid'
+      : effectivePaid > 0.01
+      ? 'partial'
+      : 'due';
 
   const handlePrintPackingSlip = () => {
     onOpenReceipt(sale);
@@ -108,11 +118,11 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
               <div className="text-slate-400 flex items-center gap-1.5">
                 <span>Payment Status:</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
-                  sale.paymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
+                  effectivePaymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+                  effectivePaymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
                   'bg-rose-950 text-rose-300 border border-rose-800'
                 }`}>
-                  {sale.paymentStatus}
+                  {effectivePaymentStatus}
                 </span>
               </div>
             </div>
@@ -240,7 +250,19 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
               </div>
               <div className="flex justify-between text-slate-300">
                 <span>Round Off:</span>
-                <span className="font-mono text-slate-400">₹0.00</span>
+                <span className="font-mono text-slate-300">
+                  {(() => {
+                    const rawTot = (sale.subtotal || 0) - (sale.discountAmount || 0) + (sale.taxAmount || 0) + (sale.shippingCharges || 0) + (sale.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0);
+                    const roundedTot = applyAmountRounding(rawTot > 0 ? rawTot : sale.totalAmount, settings.amountRoundingMethod);
+                    const calculated = Math.round((roundedTot - rawTot) * 100) / 100;
+                    const rOff = (sale.roundOff !== undefined && sale.roundOff !== null && Number(sale.roundOff) !== 0)
+                      ? Number(sale.roundOff)
+                      : (calculated !== 0 ? calculated : Math.round(((sale.totalAmount || 0) - rawTot) * 100) / 100);
+                    if (rOff > 0) return `(+) ${formatCurrency(rOff, settings)}`;
+                    if (rOff < 0) return `(-) ${formatCurrency(Math.abs(rOff), settings)}`;
+                    return formatCurrency(0, settings);
+                  })()}
+                </span>
               </div>
               <div className="pt-2 border-t border-slate-800 flex justify-between font-bold text-white text-sm">
                 <span>Total Payable:</span>
@@ -292,10 +314,10 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
                         <span className="px-1.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded font-bold uppercase">Status: Final</span>
                         <span className="px-1.5 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded font-bold font-mono">Total: {formatCurrency(sale.totalAmount, settings)}</span>
                         <span className={`px-1.5 py-0.5 rounded font-bold uppercase ${
-                          sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
-                          sale.paymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
+                          effectivePaymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+                          effectivePaymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
                           'bg-rose-950 text-rose-300 border border-rose-800'
-                        }`}>Payment: {sale.paymentStatus}</span>
+                        }`}>Payment: {effectivePaymentStatus}</span>
                       </div>
                     </td>
                   </tr>

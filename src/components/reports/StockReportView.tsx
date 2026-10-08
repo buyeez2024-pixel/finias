@@ -508,6 +508,67 @@ export const StockReportView: React.FC = () => {
       notes: string;
     }[] = [];
 
+    // 0. Opening Stock (non-duplicated)
+    const productPurchases = transactions.filter(
+      (t) => t.type === 'purchase' && t.status !== 'draft' && t.items?.some((i: any) => i.productId === historyProduct.id)
+    );
+
+    let openingQty = 0;
+    if (historyProduct.lots && historyProduct.lots.length > 0) {
+      historyProduct.lots.forEach((lot: any) => {
+        const isPurchaseLot =
+          lot.source === 'purchase' ||
+          (typeof lot.id === 'string' && lot.id.startsWith('lot_pur_')) ||
+          Boolean(lot.purchaseId);
+
+        const purchasedQtyInThisLot = productPurchases.reduce((sum: number, t: any) => {
+          const item = t.items?.find(
+            (i: any) =>
+              i.productId === historyProduct.id &&
+              (i.lotId === lot.id ||
+                (lot.lotNumber && (i.lotNumber?.toLowerCase() === lot.lotNumber.toLowerCase() || t.lotNumber?.toLowerCase() === lot.lotNumber.toLowerCase())))
+          );
+          return sum + (item ? Number(item.quantity || 0) : 0);
+        }, 0);
+
+        if (isPurchaseLot || (purchasedQtyInThisLot > 0 && lot.source !== 'opening_stock' && !(typeof lot.id === 'string' && (lot.id.startsWith('lot_op_') || lot.id.startsWith('lot_init_'))))) {
+          return;
+        }
+
+        const recordedInitial = Number(lot.initialStock);
+        const recordedCurrent = Number(lot.currentStock) || 0;
+        let qty = 0;
+        if (!isNaN(recordedInitial) && recordedInitial > 0) {
+          qty = purchasedQtyInThisLot > 0 && recordedInitial > purchasedQtyInThisLot ? recordedInitial - purchasedQtyInThisLot : (purchasedQtyInThisLot >= recordedInitial ? 0 : recordedInitial);
+        } else {
+          qty = Math.max(0, recordedCurrent - purchasedQtyInThisLot);
+        }
+        openingQty += qty;
+      });
+    }
+
+    if (openingQty === 0) {
+      openingQty = Number(
+        historyProduct.openingStock ??
+        historyProduct.initialLotStock ??
+        (historyProduct.variations?.reduce((s: number, v: any) => s + Number(v.openingStock || 0), 0) || 0)
+      );
+    }
+
+    if (openingQty > 0) {
+      movements.push({
+        date: historyProduct.createdAt ? historyProduct.createdAt.slice(0, 10) : '2026-01-01',
+        refNo: `OP-${historyProduct.sku || historyProduct.id.slice(-6)}`,
+        type: 'opening',
+        location: 'Initial Warehouse',
+        partyName: 'Inventory Initialization',
+        qtyChange: openingQty,
+        unitPrice: historyProduct.costPrice || 0,
+        totalValue: openingQty * (historyProduct.costPrice || 0),
+        notes: 'Initial stock on product creation',
+      });
+    }
+
     // 1. Purchases
     transactions.forEach((txn) => {
       if (txn.type === 'purchase' && txn.status !== 'draft') {
@@ -618,7 +679,14 @@ export const StockReportView: React.FC = () => {
     });
 
     // Sort chronologically ascending to calculate running balance
-    movements.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    movements.sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      if (a.type === 'opening' && b.type !== 'opening') return -1;
+      if (b.type === 'opening' && a.type !== 'opening') return 1;
+      return 0;
+    });
 
     let runningBalance = 0;
     return movements.map((m) => {

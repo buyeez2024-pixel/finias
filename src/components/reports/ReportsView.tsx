@@ -31,6 +31,14 @@ import {
   Info,
   X,
   FileText,
+  SlidersHorizontal,
+  ShieldCheck,
+  Lock,
+  RotateCcw,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Columns,
 } from 'lucide-react';
 
 export const ReportsView: React.FC = () => {
@@ -42,7 +50,7 @@ export const ReportsView: React.FC = () => {
   const isProductPurchaseReport = activeTab === 'product_purchase_report';
   const isPurchasePaymentReport = activeTab === 'purchase_payment_report';
   const isSellPaymentReport = activeTab === 'sell_payment_report';
-  const isProductSellReport = activeTab === 'product_sell_report' || activeTab === 'sale_report';
+  const isProductSellReport = activeTab === 'product_sell_report';
   const isPurchaseReport = activeTab === 'purchase_report';
   const isSaleReport = activeTab === 'sale_report';
   const isTaxReport = activeTab === 'tax_report';
@@ -79,6 +87,44 @@ export const ReportsView: React.FC = () => {
   const [searchInvoice, setSearchInvoice] = useState('');
   const [taxTab, setTaxTab] = useState<'output' | 'input' | 'expense'>('output');
   const [taxSearch, setTaxSearch] = useState('');
+  const [showColumnVisibility, setShowColumnVisibility] = useState(false);
+  const [taxVisibleColumns, setTaxVisibleColumns] = useState({
+    date: true,
+    invoiceNo: true,
+    entity: true,
+    taxNumber: true,
+    totalAmount: true,
+    paymentMethod: true,
+    discount: true,
+    sgst: true,
+    cgst: true,
+    gst: true,
+  });
+
+  const TAX_COLUMN_DEFINITIONS = [
+    { key: 'date', label: 'Date', description: 'Transaction record timestamp', locked: true },
+    { key: 'invoiceNo', label: 'Invoice No.', description: 'Voucher or reference serial', locked: false },
+    { key: 'entity', label: 'Customer / Supplier / Entity', description: 'Counterparty party name', locked: false },
+    { key: 'taxNumber', label: 'Tax Number', description: 'GSTIN / VAT registration ID', locked: false },
+    { key: 'totalAmount', label: 'Total Amount', description: 'Gross transaction value', locked: false },
+    { key: 'paymentMethod', label: 'Payment Method', description: 'Cash, Bank, UPI mode', locked: false },
+    { key: 'discount', label: 'Discount', description: 'Discount applied on order', locked: false },
+    { key: 'sgst', label: 'SGST', description: 'State Goods & Services Tax', locked: false },
+    { key: 'cgst', label: 'CGST', description: 'Central Goods & Services Tax', locked: false },
+    { key: 'gst', label: 'GST (Total Tax)', description: 'Combined tax amount', locked: false },
+  ];
+
+  const handleTaxPreset = (type: 'all' | 'standard' | 'compact' | 'reset') => {
+    if (type === 'all') {
+      setTaxVisibleColumns({ date: true, invoiceNo: true, entity: true, taxNumber: true, totalAmount: true, paymentMethod: true, discount: true, sgst: true, cgst: true, gst: true });
+    } else if (type === 'standard') {
+      setTaxVisibleColumns({ date: true, invoiceNo: true, entity: true, taxNumber: false, totalAmount: true, paymentMethod: true, discount: false, sgst: true, cgst: true, gst: true });
+    } else if (type === 'compact') {
+      setTaxVisibleColumns({ date: true, invoiceNo: true, entity: true, taxNumber: false, totalAmount: true, paymentMethod: false, discount: false, sgst: false, cgst: false, gst: true });
+    } else if (type === 'reset') {
+      setTaxVisibleColumns({ date: true, invoiceNo: true, entity: true, taxNumber: true, totalAmount: true, paymentMethod: true, discount: true, sgst: true, cgst: true, gst: true });
+    }
+  };
 
   const handlePresetChange = (preset: string) => {
     setDatePreset(preset);
@@ -135,8 +181,8 @@ export const ReportsView: React.FC = () => {
       setStartDate(format(start));
       setEndDate(format(end));
     } else if (preset === 'All Time') {
-      setStartDate('2020-01-01');
-      setEndDate(format(today));
+      setStartDate('');
+      setEndDate('');
     }
   };
 
@@ -144,23 +190,42 @@ export const ReportsView: React.FC = () => {
     window.print();
   };
 
+  // Helper classifiers for transaction types ensuring POS, standard sales, and purchases are reliably captured
+  const isSaleTransaction = (t: any): boolean => {
+    if (!t) return false;
+    if (t.type === 'sell_return' || t.type === 'sale_return' || t.status === 'cancelled') return false;
+    return t.type === 'sale' || t.type === 'pos' || t.type === 'pos_sale' || t.isPos === true || t.saleChannel === 'pos' || (!t.type && (t.customerId !== undefined || (t.items && t.items.length > 0)));
+  };
+
+  const isPurchaseTransaction = (t: any): boolean => {
+    if (!t) return false;
+    if (t.type === 'purchase_return' || t.status === 'cancelled') return false;
+    return t.type === 'purchase' || t.type === 'purchase_order' || (!t.type && t.supplierId !== undefined);
+  };
+
+  const isDateWithinRange = (dateValue: any, start: string, end: string): boolean => {
+    if (!start && !end) return true;
+    const d = normalizeDateToYMD(dateValue);
+    if (!d) return true;
+    if (start && d < start) return false;
+    if (end && d > end) return false;
+    return true;
+  };
+
   // Dynamic Financial Summary for P&L based on Selected Date Range
   const dynamicFinancialSummary = useMemo(() => {
     const salesTxns = transactions.filter((t) => {
-      if (t.type !== 'sale' || t.status !== 'final') return false;
-      const transDateStr = normalizeDateToYMD(t.date);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      if (!isSaleTransaction(t) || t.status === 'draft' || t.status === 'quotation') return false;
+      return isDateWithinRange(t.date, startDate, endDate);
     });
 
     const purchaseTxns = transactions.filter((t) => {
-      if (t.type !== 'purchase') return false;
-      const transDateStr = normalizeDateToYMD(t.date);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      if (!isPurchaseTransaction(t)) return false;
+      return isDateWithinRange(t.date, startDate, endDate);
     });
 
     const filteredExpenses = expenses.filter((e) => {
-      const expDateStr = normalizeDateToYMD(e.date);
-      return expDateStr >= startDate && expDateStr <= endDate;
+      return isDateWithinRange(e.date, startDate, endDate);
     });
 
     const grossSales = salesTxns.reduce((sum, t) => sum + t.subtotal, 0);
@@ -192,15 +257,15 @@ export const ReportsView: React.FC = () => {
 
     // Return Transactions
     const sellReturnTxns = transactions.filter((t) => {
-      if (t.type !== 'sell_return') return false;
+      if (t.type !== 'sell_return' && t.type !== 'sale_return') return false;
       const transDateStr = normalizeDateToYMD(t.date);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      return (!startDate || transDateStr >= startDate) && (!endDate || transDateStr <= endDate);
     });
 
     const purchaseReturnTxns = transactions.filter((t) => {
       if (t.type !== 'purchase_return') return false;
       const transDateStr = normalizeDateToYMD(t.date);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      return (!startDate || transDateStr >= startDate) && (!endDate || transDateStr <= endDate);
     });
 
     const totalSellReturnExcTax = sellReturnTxns.reduce((sum, t) => sum + (t.totalAmount - (t.taxAmount || 0)), 0);
@@ -290,9 +355,8 @@ export const ReportsView: React.FC = () => {
   // Sales transactions within range for sub-tab profit breakdowns
   const salesTxnsForProfit = useMemo(() => {
     return transactions.filter((t) => {
-      if (t.type !== 'sale' || t.status !== 'final') return false;
-      const transDateStr = t.date.substring(0, 10);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      if (!isSaleTransaction(t) || t.status === 'draft' || t.status === 'quotation') return false;
+      return isDateWithinRange(t.date, startDate, endDate);
     });
   }, [transactions, startDate, endDate]);
 
@@ -546,14 +610,11 @@ export const ReportsView: React.FC = () => {
   // Filter Purchase Transactions within Range
   const filteredPurchases = useMemo(() => {
     return transactions.filter((t) => {
-      if (t.type !== 'purchase') return false;
+      if (!isPurchaseTransaction(t)) return false;
 
-      // Extract canonical YYYY-MM-DD from transaction date
-      const transDateStr = normalizeDateToYMD(t.date);
-      const isWithinDate = transDateStr >= startDate && transDateStr <= endDate;
-      
+      const isWithinDate = isDateWithinRange(t.date, startDate, endDate);
       const isSupplierMatch = supplierFilter === 'all' || t.supplierId === supplierFilter;
-      const isSearchMatch = searchInvoice.trim() === '' || t.invoiceNo.toLowerCase().includes(searchInvoice.toLowerCase());
+      const isSearchMatch = searchInvoice.trim() === '' || (t.invoiceNo && t.invoiceNo.toLowerCase().includes(searchInvoice.toLowerCase()));
 
       return isWithinDate && isSupplierMatch && isSearchMatch;
     });
@@ -589,14 +650,11 @@ export const ReportsView: React.FC = () => {
   // Filter Sale Transactions within Range
   const filteredSales = useMemo(() => {
     return transactions.filter((t) => {
-      if (t.type !== 'sale') return false;
+      if (!isSaleTransaction(t)) return false;
 
-      // Extract canonical YYYY-MM-DD from transaction date
-      const transDateStr = normalizeDateToYMD(t.date);
-      const isWithinDate = transDateStr >= startDate && transDateStr <= endDate;
-      
+      const isWithinDate = isDateWithinRange(t.date, startDate, endDate);
       const isCustomerMatch = customerFilter === 'all' || t.customerId === customerFilter;
-      const isSearchMatch = searchInvoice.trim() === '' || t.invoiceNo.toLowerCase().includes(searchInvoice.toLowerCase());
+      const isSearchMatch = searchInvoice.trim() === '' || (t.invoiceNo && t.invoiceNo.toLowerCase().includes(searchInvoice.toLowerCase()));
 
       return isWithinDate && isCustomerMatch && isSearchMatch;
     });
@@ -633,9 +691,8 @@ export const ReportsView: React.FC = () => {
   const taxReportData = useMemo(() => {
     // 1. Output Tax (Sales)
     const salesTxns = transactions.filter((t) => {
-      if (t.type !== 'sale') return false;
-      const dateStr = t.date.substring(0, 10);
-      return dateStr >= startDate && dateStr <= endDate;
+      if (!isSaleTransaction(t)) return false;
+      return isDateWithinRange(t.date, startDate, endDate);
     });
 
     let totalOutputTax = 0;
@@ -643,31 +700,49 @@ export const ReportsView: React.FC = () => {
     const saleTaxEntries: any[] = [];
 
     salesTxns.forEach((t) => {
-      const taxAmt = t.taxAmount || 0;
+      const itemsTax = (t.items || []).reduce((sum, item) => {
+        const lineTax = Number(item.taxAmount) || 0;
+        if (lineTax > 0) return sum + lineTax;
+        const rate = Number(item.taxRate) || 0;
+        if (rate > 0) {
+          const base = Number(item.unitPrice || item.costPrice || 0);
+          const qty = Number(item.quantity) || 1;
+          return sum + ((base * rate) / 100) * qty;
+        }
+        return sum;
+      }, 0);
+      const directTax = Number(t.taxAmount) || 0;
+      const taxAmt = Math.max(directTax, itemsTax);
+      const taxable = Math.max(0, Number(t.totalAmount || 0) - taxAmt);
+
       totalOutputTax += taxAmt;
-      totalTaxableSales += (t.totalAmount - taxAmt);
-      if (taxAmt > 0) {
-        const rate = t.items[0]?.taxRate || Math.round((taxAmt / (t.totalAmount - taxAmt)) * 100) || 0;
+      totalTaxableSales += taxable;
+
+      if (taxAmt > 0 || taxable > 0) {
+        const primaryRate = (t as any).orderTaxRate || (t.items?.find((it: any) => (Number(it.taxRate) || 0) > 0)?.taxRate) || (taxable > 0 ? Math.round((taxAmt / taxable) * 100) : 0);
         saleTaxEntries.push({
           id: t.id,
-          date: t.date.substring(0, 10),
+          date: normalizeDateToYMD(t.date) || (t.date ? t.date.substring(0, 10) : ''),
           type: 'Sale (Output)',
           refNo: t.invoiceNo,
-          entity: customers.find(c => c.id === t.customerId)?.name || 'Walk-In Customer',
-          taxableAmount: t.totalAmount - taxAmt,
+          entity: customers.find(c => c.id === t.customerId)?.name || (t as any).customerName || 'Walk-In Customer',
+          taxableAmount: taxable,
           taxAmount: taxAmt,
-          taxRate: rate,
+          taxRate: primaryRate,
           taxNumber: customers.find(c => c.id === t.customerId)?.taxNumber || 'N/A',
-          status: 'Collected',
+          status: t.paymentStatus || 'Collected',
+          totalAmount: Number(t.totalAmount || 0),
+          discountAmount: Number(t.discountAmount || 0),
+          discountType: t.discountType || 'fixed',
+          paymentMethod: t.paymentMethod || (t.paymentEntries?.[0]?.method) || 'Cash',
         });
       }
     });
 
     // 2. Input Tax (Purchases)
     const purchaseTxns = transactions.filter((t) => {
-      if (t.type !== 'purchase') return false;
-      const dateStr = t.date.substring(0, 10);
-      return dateStr >= startDate && dateStr <= endDate;
+      if (!isPurchaseTransaction(t)) return false;
+      return isDateWithinRange(t.date, startDate, endDate);
     });
 
     let totalInputTax = 0;
@@ -675,30 +750,48 @@ export const ReportsView: React.FC = () => {
     const purchaseTaxEntries: any[] = [];
 
     purchaseTxns.forEach((t) => {
-      const taxAmt = t.taxAmount || 0;
+      const itemsTax = (t.items || []).reduce((sum, item) => {
+        const lineTax = Number(item.taxAmount) || 0;
+        if (lineTax > 0) return sum + lineTax;
+        const rate = Number(item.taxRate) || 0;
+        if (rate > 0) {
+          const base = Number(item.costPrice || item.unitPrice || 0);
+          const qty = Number(item.quantity) || 1;
+          return sum + ((base * rate) / 100) * qty;
+        }
+        return sum;
+      }, 0);
+      const directTax = Number(t.taxAmount) || 0;
+      const taxAmt = Math.max(directTax, itemsTax);
+      const taxable = Math.max(0, Number(t.totalAmount || 0) - taxAmt);
+
       totalInputTax += taxAmt;
-      totalTaxablePurchases += (t.totalAmount - taxAmt);
-      if (taxAmt > 0) {
-        const rate = t.items[0]?.taxRate || Math.round((taxAmt / (t.totalAmount - taxAmt)) * 100) || 0;
+      totalTaxablePurchases += taxable;
+
+      if (taxAmt > 0 || taxable > 0) {
+        const primaryRate = (t as any).orderTaxRate || (t.items?.find((it: any) => (Number(it.taxRate) || 0) > 0)?.taxRate) || (taxable > 0 ? Math.round((taxAmt / taxable) * 100) : 0);
         purchaseTaxEntries.push({
           id: t.id,
-          date: t.date.substring(0, 10),
+          date: normalizeDateToYMD(t.date) || (t.date ? t.date.substring(0, 10) : ''),
           type: 'Purchase (Input)',
           refNo: t.invoiceNo,
-          entity: suppliers.find(s => s.id === t.supplierId)?.name || 'Generic Supplier',
-          taxableAmount: t.totalAmount - taxAmt,
+          entity: suppliers.find(s => s.id === t.supplierId)?.name || (t as any).supplierName || 'Generic Supplier',
+          taxableAmount: taxable,
           taxAmount: taxAmt,
-          taxRate: rate,
+          taxRate: primaryRate,
           taxNumber: suppliers.find(s => s.id === t.supplierId)?.taxNumber || 'N/A',
-          status: 'Paid',
+          status: t.paymentStatus || 'Paid',
+          totalAmount: Number(t.totalAmount || 0),
+          discountAmount: Number(t.discountAmount || 0),
+          discountType: t.discountType || 'fixed',
+          paymentMethod: t.paymentMethod || (t.paymentEntries?.[0]?.method) || 'Cash',
         });
       }
     });
 
     // 3. Expense Taxes
     const inRangeExpenses = expenses.filter((e) => {
-      const dateStr = e.date.substring(0, 10);
-      return dateStr >= startDate && dateStr <= endDate;
+      return isDateWithinRange(e.date, startDate, endDate);
     });
 
     let totalExpenseTax = 0;
@@ -714,7 +807,7 @@ export const ReportsView: React.FC = () => {
         const rate = rateObj ? rateObj.rate : Math.round((taxAmt / (e.amount - taxAmt)) * 100) || 0;
         expenseTaxEntries.push({
           id: e.id,
-          date: e.date.substring(0, 10),
+          date: normalizeDateToYMD(e.date) || (e.date ? e.date.substring(0, 10) : ''),
           type: 'Expense Tax',
           refNo: e.referenceNo,
           entity: e.paidTo || e.category,
@@ -723,6 +816,10 @@ export const ReportsView: React.FC = () => {
           taxRate: rate,
           taxNumber: 'N/A',
           status: 'Paid',
+          totalAmount: Number(e.amount || 0),
+          discountAmount: 0,
+          discountType: 'fixed',
+          paymentMethod: e.paymentMethod || 'Cash',
         });
       }
     });
@@ -735,10 +832,10 @@ export const ReportsView: React.FC = () => {
     
     // Aggregate sales item taxes
     salesTxns.forEach((t) => {
-      t.items.forEach((item) => {
-        const rate = item.taxRate || 0;
-        const tax = item.taxAmount || 0;
-        const taxable = item.total - tax;
+      (t.items || []).forEach((item) => {
+        const rate = Number(item.taxRate) || 0;
+        const tax = Number(item.taxAmount) || (rate > 0 ? ((Number(item.unitPrice || item.costPrice || 0) * rate) / 100) * (Number(item.quantity) || 1) : 0);
+        const taxable = Math.max(0, (Number(item.total) || 0) - tax);
         if (rate > 0 || tax > 0) {
           if (!taxRateSummaryMap[rate]) {
             taxRateSummaryMap[rate] = { taxable: 0, tax: 0, count: 0 };
@@ -748,14 +845,25 @@ export const ReportsView: React.FC = () => {
           taxRateSummaryMap[rate].count += 1;
         }
       });
+      // Also account for transaction orderTax if not already on items
+      const orderRate = Number((t as any).orderTaxRate) || 0;
+      const orderTax = Number(t.taxAmount) || 0;
+      if (orderRate > 0 && orderTax > 0 && !(t.items || []).some((it: any) => (Number(it.taxRate) || 0) > 0)) {
+        if (!taxRateSummaryMap[orderRate]) {
+          taxRateSummaryMap[orderRate] = { taxable: 0, tax: 0, count: 0 };
+        }
+        taxRateSummaryMap[orderRate].taxable += Math.max(0, Number(t.totalAmount || 0) - orderTax);
+        taxRateSummaryMap[orderRate].tax += orderTax;
+        taxRateSummaryMap[orderRate].count += 1;
+      }
     });
 
     // Aggregate purchase item taxes
     purchaseTxns.forEach((t) => {
-      t.items.forEach((item) => {
-        const rate = item.taxRate || 0;
-        const tax = item.taxAmount || 0;
-        const taxable = item.total - tax;
+      (t.items || []).forEach((item) => {
+        const rate = Number(item.taxRate) || 0;
+        const tax = Number(item.taxAmount) || (rate > 0 ? ((Number(item.costPrice || item.unitPrice || 0) * rate) / 100) * (Number(item.quantity) || 1) : 0);
+        const taxable = Math.max(0, (Number(item.total) || 0) - tax);
         if (rate > 0 || tax > 0) {
           if (!taxRateSummaryMap[rate]) {
             taxRateSummaryMap[rate] = { taxable: 0, tax: 0, count: 0 };
@@ -765,6 +873,17 @@ export const ReportsView: React.FC = () => {
           taxRateSummaryMap[rate].count += 1;
         }
       });
+      // Also account for purchase orderTax if not already on items
+      const orderRate = Number((t as any).orderTaxRate) || 0;
+      const orderTax = Number(t.taxAmount) || 0;
+      if (orderRate > 0 && orderTax > 0 && !(t.items || []).some((it: any) => (Number(it.taxRate) || 0) > 0)) {
+        if (!taxRateSummaryMap[orderRate]) {
+          taxRateSummaryMap[orderRate] = { taxable: 0, tax: 0, count: 0 };
+        }
+        taxRateSummaryMap[orderRate].taxable += Math.max(0, Number(t.totalAmount || 0) - orderTax);
+        taxRateSummaryMap[orderRate].tax += orderTax;
+        taxRateSummaryMap[orderRate].count += 1;
+      }
     });
 
     const taxRateSummary = Object.keys(taxRateSummaryMap).map((key) => {
@@ -807,7 +926,7 @@ export const ReportsView: React.FC = () => {
     return <ProductSellReportView />;
   }
 
-  if (isPurchaseReport) {
+  if (activeTab === 'purchase_sale_product_report') {
     return <PurchaseSaleProductReportView />;
   }
 
@@ -1093,6 +1212,150 @@ export const ReportsView: React.FC = () => {
           </div>
         </div>
 
+        {/* Column Visibility Section (Reference Screenshot Style) */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-sm transition-colors duration-300 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 bg-slate-950/80 ${showColumnVisibility ? 'border-b border-slate-800' : ''}`}>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/20">
+                <Columns className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>Column Visibility</span>
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    {Object.values(taxVisibleColumns).filter(Boolean).length} of {TAX_COLUMN_DEFINITIONS.length} Visible
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 hidden sm:inline-flex">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <span>Admin Privileges</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                  Select which columns to display in the Tax Report table.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+              {showColumnVisibility && (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTaxPreset('all')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTaxPreset('standard')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTaxPreset('compact')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
+                  >
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTaxPreset('reset')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                    title="Reset to default columns"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setShowColumnVisibility(!showColumnVisibility)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                  showColumnVisibility 
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }`}
+              >
+                {showColumnVisibility ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Hide Fields</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Show Fields</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {showColumnVisibility && (
+            <div className="border-t border-slate-800/50 animate-in slide-in-from-top-2 duration-200 bg-slate-900/50 p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                {TAX_COLUMN_DEFINITIONS.map((col) => {
+                  const isVisible = taxVisibleColumns[col.key as keyof typeof taxVisibleColumns];
+                  const isLocked = col.locked;
+
+                  return (
+                    <button
+                      key={col.key}
+                      type="button"
+                      onClick={() => {
+                        if (!isLocked) {
+                          setTaxVisibleColumns(prev => ({ ...prev, [col.key]: !isVisible }));
+                        }
+                      }}
+                      disabled={isLocked}
+                      className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-all ${
+                        isVisible
+                          ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/20'
+                          : 'bg-slate-950/60 border-slate-800/80 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-800/40'
+                      } ${isLocked ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1.5">
+                        <div className={`p-1 rounded-md ${
+                          isVisible ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {isVisible ? <CheckCircle2 className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </div>
+                        {isLocked ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> FIXED
+                          </span>
+                        ) : (
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            isVisible
+                              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                              : 'bg-slate-800 text-slate-500 border border-slate-700'
+                          }`}>
+                            {isVisible ? 'SHOWN' : 'HIDDEN'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-full">
+                        <div className={`text-xs font-bold ${isVisible ? 'text-white' : 'text-slate-400'}`}>
+                          {col.label}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate mt-0.5 hidden sm:block">
+                          {col.description}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* finias POS Styled Tab-based Ledger Details Card */}
         <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
           {/* Inner Header with Section description */}
@@ -1167,73 +1430,151 @@ export const ReportsView: React.FC = () => {
             </button>
           </div>
 
-          {/* Table Ledger View */}
+          {/* Table Ledger View with Horizontal Scroll & Column Visibility */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[1100px]">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
                 <tr>
-                  <th className="py-4.5 px-6">Date</th>
-                  <th className="py-4.5 px-4">Invoice / Reference No</th>
-                  <th className="py-4.5 px-4">
-                    {taxTab === 'output' ? 'Customer' : taxTab === 'input' ? 'Supplier' : 'Expense Category / Entity'}
-                  </th>
-                  <th className="py-4.5 px-4">Tax Number / GSTIN</th>
-                  <th className="py-4.5 px-4 text-center">Tax Rate</th>
-                  <th className="py-4.5 px-4 text-right">CGST</th>
-                  <th className="py-4.5 px-4 text-right">SGST</th>
-                  <th className="py-4.5 px-4 text-right">Taxable Turnover</th>
-                  <th className="py-4.5 px-6 text-right">Tax Value</th>
-                  <th className="py-4.5 px-6 text-center">Status</th>
+                  {taxVisibleColumns.date && <th className="py-4.5 px-6">Date</th>}
+                  {taxVisibleColumns.invoiceNo && <th className="py-4.5 px-4">Invoice No.</th>}
+                  {taxVisibleColumns.entity && (
+                    <th className="py-4.5 px-4">
+                      {taxTab === 'output' ? 'Customer' : taxTab === 'input' ? 'Supplier' : 'Expense Category / Entity'}
+                    </th>
+                  )}
+                  {taxVisibleColumns.taxNumber && <th className="py-4.5 px-4">Tax number</th>}
+                  {taxVisibleColumns.totalAmount && <th className="py-4.5 px-4 text-right">Total amount</th>}
+                  {taxVisibleColumns.paymentMethod && <th className="py-4.5 px-4">Payment Method</th>}
+                  {taxVisibleColumns.discount && <th className="py-4.5 px-4">Discount</th>}
+                  {taxVisibleColumns.sgst && <th className="py-4.5 px-4 text-right">SGST</th>}
+                  {taxVisibleColumns.cgst && <th className="py-4.5 px-4 text-right">CGST</th>}
+                  {taxVisibleColumns.gst && <th className="py-4.5 px-6 text-right">GST</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-slate-200">
                 {filteredEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-12 text-center text-slate-500 font-semibold">
+                    <td colSpan={Object.values(taxVisibleColumns).filter(Boolean).length || 1} className="py-12 text-center text-slate-500 font-semibold">
                       {taxSearch ? 'No matching tax records found.' : 'No tax records registered under this category for the selected dates.'}
                     </td>
                   </tr>
                 ) : (
-                  filteredEntries.map((entry, idx) => (
-                    <tr key={entry.id || idx} className="hover:bg-slate-850/50 transition">
-                      <td className="py-4 px-6 font-mono text-slate-300 whitespace-nowrap">{entry.date}</td>
-                      <td className="py-4 px-4 font-mono font-bold text-slate-200">{entry.refNo}</td>
-                      <td className="py-4 px-4 font-semibold text-white">{entry.entity}</td>
-                      <td className="py-4 px-4 font-mono text-slate-400">{entry.taxNumber || 'N/A'}</td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-slate-300">
-                        {entry.taxRate}%
-                      </td>
-                      <td className="py-4 px-4 text-right font-mono">
-                        <div className="font-semibold text-slate-300">
-                          {formatCurrency(entry.taxAmount / 2, settings)}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-semibold">CGST ({(entry.taxRate / 2)}%)</div>
-                      </td>
-                      <td className="py-4 px-4 text-right font-mono">
-                        <div className="font-semibold text-slate-300">
-                          {formatCurrency(entry.taxAmount / 2, settings)}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-semibold">SGST ({(entry.taxRate / 2)}%)</div>
-                      </td>
-                      <td className="py-4 px-4 text-right font-mono text-slate-400">
-                        {formatCurrency(entry.taxableAmount, settings)}
-                      </td>
-                      <td className={`py-4 px-6 text-right font-mono font-bold ${
-                        taxTab === 'output' ? 'text-indigo-400' : taxTab === 'input' ? 'text-blue-400' : 'text-amber-400'
-                      }`}>
-                        {formatCurrency(entry.taxAmount, settings)}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                          taxTab === 'output'
-                            ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
-                            : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                        }`}>
-                          {entry.status}
-                        </span>
-                      </td>
+                  <>
+                    {filteredEntries.map((entry, idx) => (
+                      <tr key={entry.id || idx} className="hover:bg-slate-850/50 transition">
+                        {taxVisibleColumns.date && <td className="py-4 px-6 font-mono text-slate-300 whitespace-nowrap">{entry.date}</td>}
+                        {taxVisibleColumns.invoiceNo && <td className="py-4 px-4 font-mono font-bold text-slate-200">{entry.refNo}</td>}
+                        {taxVisibleColumns.entity && <td className="py-4 px-4 font-semibold text-white">{entry.entity}</td>}
+                        {taxVisibleColumns.taxNumber && <td className="py-4 px-4 font-mono text-slate-400">{entry.taxNumber || 'N/A'}</td>}
+                        {taxVisibleColumns.totalAmount && (
+                          <td className="py-4 px-4 text-right font-mono font-bold text-slate-200">
+                            {formatCurrency(entry.totalAmount, settings)}
+                          </td>
+                        )}
+                        {taxVisibleColumns.paymentMethod && (
+                          <td className="py-4 px-4 font-semibold text-slate-300 capitalize">
+                            {entry.paymentMethod || 'Cash'}
+                          </td>
+                        )}
+                        {taxVisibleColumns.discount && (
+                          <td className="py-4 px-4 font-mono text-slate-400">
+                            {entry.discountAmount > 0 ? formatCurrency(entry.discountAmount, settings) : '0.00%'}
+                          </td>
+                        )}
+                        {taxVisibleColumns.sgst && (
+                          <td className="py-4 px-4 text-right font-mono">
+                            <div className="font-semibold text-slate-300">
+                              {formatCurrency(entry.taxAmount / 2, settings)}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-semibold">SGST ({(entry.taxRate / 2)}%)</div>
+                          </td>
+                        )}
+                        {taxVisibleColumns.cgst && (
+                          <td className="py-4 px-4 text-right font-mono">
+                            <div className="font-semibold text-slate-300">
+                              {formatCurrency(entry.taxAmount / 2, settings)}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-semibold">CGST ({(entry.taxRate / 2)}%)</div>
+                          </td>
+                        )}
+                        {taxVisibleColumns.gst && (
+                          <td className={`py-4 px-6 text-right font-mono font-bold ${
+                            taxTab === 'output' ? 'text-indigo-400' : taxTab === 'input' ? 'text-blue-400' : 'text-amber-400'
+                          }`}>
+                            {formatCurrency(entry.taxAmount, settings)}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    {/* Total Footer Row */}
+                    <tr className="bg-slate-950 font-bold text-white border-t-2 border-slate-700">
+                      {(() => {
+                        const visCols = taxVisibleColumns;
+                        const cells = [];
+                        let leadSpan = 0;
+                        if (visCols.date) leadSpan++;
+                        if (visCols.invoiceNo) leadSpan++;
+                        if (visCols.entity) leadSpan++;
+                        if (visCols.taxNumber) leadSpan++;
+
+                        if (leadSpan > 0) {
+                          cells.push(
+                            <td key="total-label" colSpan={leadSpan} className="py-4.5 px-6 text-right uppercase tracking-wider text-xs">
+                              Total:
+                            </td>
+                          );
+                        }
+                        if (visCols.totalAmount) {
+                          cells.push(
+                            <td key="total-amount" className="py-4.5 px-4 text-right font-mono text-xs text-indigo-400">
+                              {formatCurrency(filteredEntries.reduce((sum, e) => sum + (e.totalAmount || 0), 0), settings)}
+                            </td>
+                          );
+                        }
+                        if (visCols.paymentMethod) {
+                          cells.push(
+                            <td key="total-pm" className="py-4.5 px-4 text-xs text-slate-300">
+                              {(() => {
+                                const counts: Record<string, number> = {};
+                                filteredEntries.forEach(e => {
+                                  const method = e.paymentMethod || 'Cash';
+                                  counts[method] = (counts[method] || 0) + 1;
+                                });
+                                return Object.entries(counts).map(([m, count]) => `${m} - ${count}`).join(', ');
+                              })() || 'Cash'}
+                            </td>
+                          );
+                        }
+                        if (visCols.discount) {
+                          cells.push(
+                            <td key="total-disc" className="py-4.5 px-4 font-mono text-xs text-slate-400">-</td>
+                          );
+                        }
+                        if (visCols.sgst) {
+                          cells.push(
+                            <td key="total-sgst" className="py-4.5 px-4 text-right font-mono text-xs text-slate-300">
+                              {formatCurrency(filteredEntries.reduce((sum, e) => sum + ((e.taxAmount || 0) / 2), 0), settings)}
+                            </td>
+                          );
+                        }
+                        if (visCols.cgst) {
+                          cells.push(
+                            <td key="total-cgst" className="py-4.5 px-4 text-right font-mono text-xs text-slate-300">
+                              {formatCurrency(filteredEntries.reduce((sum, e) => sum + ((e.taxAmount || 0) / 2), 0), settings)}
+                            </td>
+                          );
+                        }
+                        if (visCols.gst) {
+                          cells.push(
+                            <td key="total-gst" className="py-4.5 px-6 text-right font-mono text-xs text-indigo-400">
+                              {formatCurrency(filteredEntries.reduce((sum, e) => sum + (e.taxAmount || 0), 0), settings)}
+                            </td>
+                          );
+                        }
+                        return cells;
+                      })()}
                     </tr>
-                  ))
+                  </>
                 )}
               </tbody>
             </table>

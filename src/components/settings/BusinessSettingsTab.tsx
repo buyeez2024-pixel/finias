@@ -1759,6 +1759,23 @@ export const BusinessSettingsTab: React.FC = () => {
                       className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      Amount Rounding Method
+                    </label>
+                    <select
+                      value={formData.amountRoundingMethod || 'round_to_nearest_integer'}
+                      onChange={(e) => handleFieldChange('amountRoundingMethod', e.target.value as AmountRoundingMethod)}
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="round_to_nearest_integer">Round to nearest integer (e.g. $10.40 → $10, $10.60 → $11)</option>
+                      <option value="round_0_05">Round to nearest 0.05 (e.g. 5 cents nickel rounding)</option>
+                      <option value="round_0_10">Round to nearest 0.10 (e.g. 10 cents dime rounding)</option>
+                      <option value="round_0_50">Round to nearest 0.50 (half-dollar rounding)</option>
+                      <option value="none">No Rounding (Exact 2 decimals)</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="border-t border-slate-800 pt-4 space-y-3">

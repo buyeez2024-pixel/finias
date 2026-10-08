@@ -1465,6 +1465,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       variations: productType === 'variable' ? effectiveVariations : undefined,
       comboItems: productType === 'combo' ? comboItems : undefined,
       lots: finalLots,
+      openingStock: (productType === 'combo' || isEditMode) ? (productToEdit?.openingStock ?? resolvedStockForLot) : resolvedStockForLot,
       manualLotNumber: (productType === 'combo' || isEditMode) ? undefined : (lotNumber.trim() || undefined),
       initialLotStock: (productType === 'combo' || isEditMode) ? undefined : resolvedStockForLot,
       source: isEditMode ? (productToEdit?.source || 'manual') : 'manual',

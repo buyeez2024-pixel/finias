@@ -28,6 +28,11 @@ import {
   X,
   CreditCard,
   Percent,
+  Columns,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const CustomerSupplierReportView: React.FC = () => {
@@ -42,6 +47,48 @@ export const CustomerSupplierReportView: React.FC = () => {
   } = useErp();
 
   const isLight = settings?.themeMode === 'light';
+
+  // Column Visibility State
+  const [showColumnVisibility, setShowColumnVisibility] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    contact: true,
+    contactId: true,
+    type: true,
+    group: true,
+    totalPurchase: true,
+    purchaseReturn: true,
+    totalSale: true,
+    sellReturn: true,
+    openingBal: true,
+    advanceBal: true,
+    dueAmount: true,
+    action: true,
+  });
+
+  const CONTACT_COLUMN_DEFINITIONS = [
+    { key: 'contact', label: 'Contact', description: 'Customer or supplier name & phone', locked: true },
+    { key: 'contactId', label: 'Contact ID', description: 'Unique identification code', locked: false },
+    { key: 'type', label: 'Type', description: 'Customer or supplier classification', locked: false },
+    { key: 'group', label: 'Group', description: 'Assigned customer/supplier group', locked: false },
+    { key: 'totalPurchase', label: 'Total Purchase', description: 'Total purchases made', locked: false },
+    { key: 'purchaseReturn', label: 'Purchase Return', description: 'Returned purchase amount', locked: false },
+    { key: 'totalSale', label: 'Total Sale', description: 'Total sales made', locked: false },
+    { key: 'sellReturn', label: 'Sell Return', description: 'Returned sales amount', locked: false },
+    { key: 'openingBal', label: 'Opening Bal', description: 'Initial account balance', locked: false },
+    { key: 'advanceBal', label: 'Advance Bal', description: 'Advance deposit balance', locked: false },
+    { key: 'dueAmount', label: 'Due Amount', description: 'Outstanding pending balance', locked: false },
+    { key: 'action', label: 'Action', description: 'Quick ledger and report actions', locked: false },
+  ];
+
+  const handleColumnPreset = (type: 'all' | 'standard' | 'compact' | 'reset') => {
+    if (type === 'all' || type === 'reset') {
+      setVisibleColumns({ contact: true, contactId: true, type: true, group: true, totalPurchase: true, purchaseReturn: true, totalSale: true, sellReturn: true, openingBal: true, advanceBal: true, dueAmount: true, action: true });
+    } else if (type === 'standard') {
+      setVisibleColumns({ contact: true, contactId: false, type: true, group: true, totalPurchase: true, purchaseReturn: false, totalSale: true, sellReturn: false, openingBal: false, advanceBal: false, dueAmount: true, action: true });
+    } else if (type === 'compact') {
+      setVisibleColumns({ contact: true, contactId: false, type: true, group: false, totalPurchase: false, purchaseReturn: false, totalSale: true, sellReturn: false, openingBal: false, advanceBal: false, dueAmount: true, action: true });
+    }
+  };
 
   // Date Filters
   const [startDate, setStartDate] = useState(() => {
@@ -144,7 +191,7 @@ export const CustomerSupplierReportView: React.FC = () => {
   const reportData = useMemo(() => {
     const filteredTxns = transactions.filter((t) => {
       const transDateStr = normalizeDateToYMD(t.date);
-      return transDateStr >= startDate && transDateStr <= endDate;
+      return (!startDate || transDateStr >= startDate) && (!endDate || transDateStr <= endDate);
     });
 
     const contactList: any[] = [];
@@ -152,10 +199,10 @@ export const CustomerSupplierReportView: React.FC = () => {
     // Process Customers
     customers.forEach((cust) => {
       const custSales = filteredTxns.filter(
-        (t) => (t.type === 'sale' || t.type === 'pos') && t.status === 'final' && t.customerId === cust.id
+        (t) => (t.type === 'sale' || t.type === 'pos') && t.status !== 'draft' && t.status !== 'quotation' && t.customerId === cust.id
       );
       const custReturns = filteredTxns.filter(
-        (t) => t.type === 'sale_return' && t.customerId === cust.id
+        (t) => (t.type === 'sale_return' || t.type === 'sell_return') && t.customerId === cust.id
       );
 
       const totalSale = custSales.reduce((sum, t) => sum + (t.totalAmount || t.subtotal || 0), 0);
@@ -797,29 +844,163 @@ export const CustomerSupplierReportView: React.FC = () => {
           </div>
         </div>
 
+        {/* Column Visibility Section (Reference Screenshot Style) */}
+        <div className={`border-b ${isLight ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-slate-950/80'}`}>
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 ${showColumnVisibility ? (isLight ? 'border-b border-slate-200' : 'border-b border-slate-800') : ''}`}>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/20">
+                <Columns className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    <span>Column Visibility</span>
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    {Object.values(visibleColumns).filter(Boolean).length} of {CONTACT_COLUMN_DEFINITIONS.length} Visible
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 hidden sm:inline-flex">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <span>Admin Privileges</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                  Select which columns to display in the Customer & Supplier Report table.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+              {showColumnVisibility && (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('all')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('standard')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('compact')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
+                  >
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('reset')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                    title="Reset to default columns"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setShowColumnVisibility(!showColumnVisibility)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                  showColumnVisibility 
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                    : isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }`}
+              >
+                {showColumnVisibility ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Hide Fields</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Show Fields</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {showColumnVisibility && (
+            <div className={`border-t p-4 ${isLight ? 'border-slate-200 bg-white/50' : 'border-slate-800/50 bg-slate-900/50'}`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                {CONTACT_COLUMN_DEFINITIONS.map((col) => {
+                  const isVisible = visibleColumns[col.key as keyof typeof visibleColumns];
+                  const isLocked = col.locked;
+
+                  return (
+                    <button
+                      key={col.key}
+                      type="button"
+                      onClick={() => {
+                        if (!isLocked) {
+                          setVisibleColumns(prev => ({ ...prev, [col.key]: !isVisible }));
+                        }
+                      }}
+                      disabled={isLocked}
+                      className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-all ${
+                        isVisible
+                          ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/20'
+                          : 'bg-slate-950/60 border-slate-800/80 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-800/40'
+                      } ${isLocked ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1.5">
+                        <div className={`p-1 rounded-md ${
+                          isVisible ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {isVisible ? <CheckCircle2 className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </div>
+                        {isLocked ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5">
+                            Locked
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-semibold text-slate-500">
+                            {isVisible ? 'Visible' : 'Hidden'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-white truncate w-full">{col.label}</span>
+                      <span className="text-[10px] text-slate-400 truncate w-full mt-0.5">{col.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin overscroll-x-contain">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
               <tr>
-                <th className="py-3.5 px-4">Contact</th>
-                <th className="py-3.5 px-3">Contact ID</th>
-                <th className="py-3.5 px-3">Type</th>
-                <th className="py-3.5 px-3">Group</th>
-                <th className="py-3.5 px-3 text-right">Total Purchase</th>
-                <th className="py-3.5 px-3 text-right">Purchase Return</th>
-                <th className="py-3.5 px-3 text-right">Total Sale</th>
-                <th className="py-3.5 px-3 text-right">Sell Return</th>
-                <th className="py-3.5 px-3 text-right">Opening Bal</th>
-                <th className="py-3.5 px-3 text-right">Advance Bal</th>
-                <th className="py-3.5 px-4 text-right">Due Amount</th>
-                <th className="py-3.5 px-4 text-center">Action</th>
+                {visibleColumns.contact && <th className="py-3.5 px-4">Contact</th>}
+                {visibleColumns.contactId && <th className="py-3.5 px-3">Contact ID</th>}
+                {visibleColumns.type && <th className="py-3.5 px-3">Type</th>}
+                {visibleColumns.group && <th className="py-3.5 px-3">Group</th>}
+                {visibleColumns.totalPurchase && <th className="py-3.5 px-3 text-right">Total Purchase</th>}
+                {visibleColumns.purchaseReturn && <th className="py-3.5 px-3 text-right">Purchase Return</th>}
+                {visibleColumns.totalSale && <th className="py-3.5 px-3 text-right">Total Sale</th>}
+                {visibleColumns.sellReturn && <th className="py-3.5 px-3 text-right">Sell Return</th>}
+                {visibleColumns.openingBal && <th className="py-3.5 px-3 text-right">Opening Bal</th>}
+                {visibleColumns.advanceBal && <th className="py-3.5 px-3 text-right">Advance Bal</th>}
+                {visibleColumns.dueAmount && <th className="py-3.5 px-4 text-right">Due Amount</th>}
+                {visibleColumns.action && <th className="py-3.5 px-4 text-center">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-sans text-slate-300">
               {filteredContacts.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-slate-500">
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="py-12 text-center text-slate-500">
                     <Users className="w-10 h-10 mx-auto mb-2 text-slate-600 opacity-50" />
                     <p className="text-sm font-medium">No customer or supplier contacts match the filter criteria</p>
                     <p className="text-xs text-slate-600 mt-1">Try broadening your date range or adjusting contact filters</p>
@@ -837,173 +1018,197 @@ export const CustomerSupplierReportView: React.FC = () => {
                       className="hover:bg-slate-850/50 transition group"
                     >
                       {/* Contact Info */}
-                      <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => setSelectedContact(contact)}
-                          className="text-left group-hover:text-indigo-300 transition"
-                        >
-                          <span className="font-bold text-white block text-xs hover:underline">
-                            {contact.name}
-                          </span>
-                          {contact.businessName && (
-                            <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-sans">
-                              <Building className="w-3 h-3 text-slate-500" />
-                              {contact.businessName}
-                            </span>
-                          )}
-                          {contact.phone && (
-                            <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
-                              <Phone className="w-2.5 h-2.5 text-slate-600" />
-                              {contact.phone}
-                            </span>
-                          )}
-                        </button>
-                      </td>
-
-                      {/* Contact ID */}
-                      <td className="py-3.5 px-3 font-mono text-slate-400 font-bold text-[11px]">
-                        {contact.id}
-                      </td>
-
-                      {/* Type Badge */}
-                      <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border ${
-                            isCustomer
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                          }`}
-                        >
-                          {contact.type}
-                        </span>
-                      </td>
-
-                      {/* Group */}
-                      <td className="py-3.5 px-3 text-slate-400 text-xs">
-                        {contact.customerGroup ? (
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] font-medium">
-                            {contact.customerGroup}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">-</span>
-                        )}
-                      </td>
-
-                      {/* Total Purchase */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-300">
-                        {contact.totalPurchase > 0 ? (
-                          <span className="font-semibold text-purple-300">
-                            {formatCurrency(contact.totalPurchase, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Purchase Return */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-400">
-                        {contact.totalPurchaseReturn > 0 ? (
-                          <span className="text-rose-400/90">
-                            {formatCurrency(contact.totalPurchaseReturn, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Total Sale */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-300">
-                        {contact.totalSale > 0 ? (
-                          <span className="font-semibold text-emerald-300">
-                            {formatCurrency(contact.totalSale, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Sell Return */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-400">
-                        {contact.totalSellReturn > 0 ? (
-                          <span className="text-rose-400/90">
-                            {formatCurrency(contact.totalSellReturn, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Opening Balance */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-400">
-                        {contact.openingBalance > 0 ? (
-                          <span>
-                            {formatCurrency(contact.openingBalance, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Advance Balance */}
-                      <td className="py-3.5 px-3 text-right font-mono text-slate-400">
-                        {contact.advanceBalance > 0 ? (
-                          <span className="text-indigo-400 font-semibold">
-                            {formatCurrency(contact.advanceBalance, settings)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">{formatCurrency(0, settings)}</span>
-                        )}
-                      </td>
-
-                      {/* Due Amount */}
-                      <td className="py-3.5 px-4 text-right font-mono font-bold">
-                        {contact.dueAmount > 0.01 ? (
-                          <span className={isCustomer ? 'text-amber-400' : 'text-rose-400'}>
-                            {formatCurrency(contact.dueAmount, settings)}
-                            <span className="text-[9px] font-sans font-medium block opacity-75">
-                              {isCustomer ? '(Receivable)' : '(Payable)'}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-emerald-400/80 font-normal">
-                            {formatCurrency(0, settings)} <span className="text-[9px] font-sans block text-slate-500">(Settled)</span>
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      {visibleColumns.contact && (
+                        <td className="py-3.5 px-4">
                           <button
                             onClick={() => setSelectedContact(contact)}
-                            className={`p-1.5 rounded-lg border transition ${
-                              isLight
-                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
-                                : 'p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-indigo-600 border-transparent'
-                            }`}
-                            title="Quick View Details"
+                            className="text-left group-hover:text-indigo-300 transition"
                           >
-                            <FileText className="w-3.5 h-3.5" />
+                            <span className="font-bold text-white block text-xs hover:underline">
+                              {contact.name}
+                            </span>
+                            {contact.businessName && (
+                              <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 font-sans">
+                                <Building className="w-3 h-3 text-slate-500" />
+                                {contact.businessName}
+                              </span>
+                            )}
+                            {contact.phone && (
+                              <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                                <Phone className="w-2.5 h-2.5 text-slate-600" />
+                                {contact.phone}
+                              </span>
+                            )}
                           </button>
-                          <button
-                            onClick={() => {
-                              if (isCustomer) {
-                                openCustomerLedger(contact.id);
-                              } else {
-                                openSupplierLedger(contact.id);
-                              }
-                            }}
-                            className={`p-1.5 rounded-lg border transition ${
-                              isLight
-                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
-                                : 'p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-emerald-600 border-transparent'
+                        </td>
+                      )}
+
+                      {/* Contact ID */}
+                      {visibleColumns.contactId && (
+                        <td className="py-3.5 px-3 font-mono text-slate-400 font-bold text-[11px]">
+                          {contact.id}
+                        </td>
+                      )}
+
+                      {/* Type Badge */}
+                      {visibleColumns.type && (
+                        <td className="py-3.5 px-3">
+                          <span
+                            className={`inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border ${
+                              isCustomer
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
                             }`}
-                            title="Open Full Contact Ledger"
                           >
-                            <BookOpen className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                            {contact.type}
+                          </span>
+                        </td>
+                      )}
+
+                      {/* Group */}
+                      {visibleColumns.group && (
+                        <td className="py-3.5 px-3 text-slate-400 text-xs">
+                          {contact.customerGroup ? (
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] font-medium">
+                              {contact.customerGroup}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">-</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Total Purchase */}
+                      {visibleColumns.totalPurchase && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-300">
+                          {contact.totalPurchase > 0 ? (
+                            <span className="font-semibold text-purple-300">
+                              {formatCurrency(contact.totalPurchase, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Purchase Return */}
+                      {visibleColumns.purchaseReturn && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-400">
+                          {contact.totalPurchaseReturn > 0 ? (
+                            <span className="text-rose-400/90">
+                              {formatCurrency(contact.totalPurchaseReturn, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Total Sale */}
+                      {visibleColumns.totalSale && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-300">
+                          {contact.totalSale > 0 ? (
+                            <span className="font-semibold text-emerald-300">
+                              {formatCurrency(contact.totalSale, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Sell Return */}
+                      {visibleColumns.sellReturn && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-400">
+                          {contact.totalSellReturn > 0 ? (
+                            <span className="text-rose-400/90">
+                              {formatCurrency(contact.totalSellReturn, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Opening Balance */}
+                      {visibleColumns.openingBal && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-400">
+                          {contact.openingBalance > 0 ? (
+                            <span>
+                              {formatCurrency(contact.openingBalance, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Advance Balance */}
+                      {visibleColumns.advanceBal && (
+                        <td className="py-3.5 px-3 text-right font-mono text-slate-400">
+                          {contact.advanceBalance > 0 ? (
+                            <span className="text-indigo-400 font-semibold">
+                              {formatCurrency(contact.advanceBalance, settings)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">{formatCurrency(0, settings)}</span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Due Amount */}
+                      {visibleColumns.dueAmount && (
+                        <td className="py-3.5 px-4 text-right font-mono font-bold">
+                          {contact.dueAmount > 0.01 ? (
+                            <span className={isCustomer ? 'text-amber-400' : 'text-rose-400'}>
+                              {formatCurrency(contact.dueAmount, settings)}
+                              <span className="text-[9px] font-sans font-medium block opacity-75">
+                                {isCustomer ? '(Receivable)' : '(Payable)'}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400/80 font-normal">
+                              {formatCurrency(0, settings)} <span className="text-[9px] font-sans block text-slate-500">(Settled)</span>
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Action */}
+                      {visibleColumns.action && (
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => setSelectedContact(contact)}
+                              className={`p-1.5 rounded-lg border transition ${
+                                isLight
+                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
+                                  : 'p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-indigo-600 border-transparent'
+                              }`}
+                              title="Quick View Details"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (isCustomer) {
+                                  openCustomerLedger(contact.id);
+                                } else {
+                                  openSupplierLedger(contact.id);
+                                }
+                              }}
+                              className={`p-1.5 rounded-lg border transition ${
+                                isLight
+                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
+                                  : 'p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-emerald-600 border-transparent'
+                              }`}
+                              title="Open Full Contact Ledger"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

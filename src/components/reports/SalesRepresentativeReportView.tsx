@@ -18,11 +18,53 @@ import {
   Wallet,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Columns,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  RotateCcw,
+  ShieldCheck
 } from 'lucide-react';
 
 export const SalesRepresentativeReportView: React.FC = () => {
   const { transactions, users, salesCommissionAgents, locations, expenses, settings, currentLocation } = useErp();
+
+  const isLight = settings?.themeMode === 'light';
+
+  // Column Visibility State
+  const [showColumnVisibility, setShowColumnVisibility] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
+    invoiceNo: true,
+    customerName: true,
+    salesRepresentative: true,
+    paymentStatus: true,
+    totalAmount: true,
+    totalPaid: true,
+    dueBalance: true,
+  });
+
+  const SALES_REP_COLUMN_DEFINITIONS = [
+    { key: 'date', label: 'Date', description: 'Transaction record timestamp', locked: true },
+    { key: 'invoiceNo', label: 'Invoice No', description: 'Sales bill serial number', locked: false },
+    { key: 'customerName', label: 'Customer Name', description: 'Buyer entity name', locked: false },
+    { key: 'salesRepresentative', label: 'Sales Representative', description: 'Assigned agent / employee', locked: false },
+    { key: 'paymentStatus', label: 'Payment Status', description: 'Paid, due or partial status', locked: false },
+    { key: 'totalAmount', label: 'Total Amount', description: 'Gross order value', locked: false },
+    { key: 'totalPaid', label: 'Total Paid', description: 'Amount collected so far', locked: false },
+    { key: 'dueBalance', label: 'Due Balance', description: 'Remaining balance receivable', locked: false },
+  ];
+
+  const handleColumnPreset = (type: 'all' | 'standard' | 'compact' | 'reset') => {
+    if (type === 'all' || type === 'reset') {
+      setVisibleColumns({ date: true, invoiceNo: true, customerName: true, salesRepresentative: true, paymentStatus: true, totalAmount: true, totalPaid: true, dueBalance: true });
+    } else if (type === 'standard') {
+      setVisibleColumns({ date: true, invoiceNo: true, customerName: true, salesRepresentative: true, paymentStatus: true, totalAmount: true, totalPaid: false, dueBalance: true });
+    } else if (type === 'compact') {
+      setVisibleColumns({ date: true, invoiceNo: true, customerName: true, salesRepresentative: false, paymentStatus: false, totalAmount: true, totalPaid: false, dueBalance: true });
+    }
+  };
 
   // Date Filters
   const [startDate, setStartDate] = useState(() => {
@@ -463,24 +505,158 @@ export const SalesRepresentativeReportView: React.FC = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden w-full max-w-full min-w-0">
         {activeTab === 'sales' && (
           <>
+            {/* Column Visibility Section (Reference Screenshot Style) */}
+            <div className={`border-b ${isLight ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-slate-950/80'}`}>
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 ${showColumnVisibility ? (isLight ? 'border-b border-slate-200' : 'border-b border-slate-800') : ''}`}>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/20">
+                    <Columns className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        <span>Column Visibility</span>
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                        {Object.values(visibleColumns).filter(Boolean).length} of {SALES_REP_COLUMN_DEFINITIONS.length} Visible
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 hidden sm:inline-flex">
+                        <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                        <span>Admin Privileges</span>
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                      Select which columns to display in the Sales Representative Report table.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+                  {showColumnVisibility && (
+                    <div className="flex items-center gap-1.5 mr-2">
+                      <button
+                        type="button"
+                        onClick={() => handleColumnPreset('all')}
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleColumnPreset('standard')}
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                      >
+                        Standard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleColumnPreset('compact')}
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
+                      >
+                        Compact
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleColumnPreset('reset')}
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                        title="Reset to default columns"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowColumnVisibility(!showColumnVisibility)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                      showColumnVisibility 
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                        : isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    }`}
+                  >
+                    {showColumnVisibility ? (
+                      <>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        <span>Hide Fields</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                        <span>Show Fields</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {showColumnVisibility && (
+                <div className={`border-t p-4 ${isLight ? 'border-slate-200 bg-white/50' : 'border-slate-800/50 bg-slate-900/50'}`}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                    {SALES_REP_COLUMN_DEFINITIONS.map((col) => {
+                      const isVisible = visibleColumns[col.key as keyof typeof visibleColumns];
+                      const isLocked = col.locked;
+
+                      return (
+                        <button
+                          key={col.key}
+                          type="button"
+                          onClick={() => {
+                            if (!isLocked) {
+                              setVisibleColumns(prev => ({ ...prev, [col.key]: !isVisible }));
+                            }
+                          }}
+                          disabled={isLocked}
+                          className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-all ${
+                            isVisible
+                              ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/20'
+                              : 'bg-slate-950/60 border-slate-800/80 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-800/40'
+                          } ${isLocked ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                        >
+                          <div className="flex items-center justify-between w-full mb-1.5">
+                            <div className={`p-1 rounded-md ${
+                              isVisible ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                            }`}>
+                              {isVisible ? <CheckCircle2 className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            </div>
+                            {isLocked ? (
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5">
+                                Locked
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-semibold text-slate-500">
+                                {isVisible ? 'Visible' : 'Hidden'}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-bold text-white truncate w-full">{col.label}</span>
+                          <span className="text-[10px] text-slate-400 truncate w-full mt-0.5">{col.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="overflow-x-auto scrollbar-thin overscroll-x-contain w-full max-w-full min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             <table className="w-full min-w-[850px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Date</th>
-                  <th className="py-3.5 px-4">Invoice No</th>
-                  <th className="py-3.5 px-4">Customer Name</th>
-                  <th className="py-3.5 px-4">Sales Representative</th>
-                  <th className="py-3.5 px-4 text-center">Payment Status</th>
-                  <th className="py-3.5 px-4 text-right">Total Amount</th>
-                  <th className="py-3.5 px-4 text-right">Total Paid</th>
-                  <th className="py-3.5 px-4 text-right">Due Balance</th>
+                  {visibleColumns.date && <th className="py-3.5 px-4">Date</th>}
+                  {visibleColumns.invoiceNo && <th className="py-3.5 px-4">Invoice No</th>}
+                  {visibleColumns.customerName && <th className="py-3.5 px-4">Customer Name</th>}
+                  {visibleColumns.salesRepresentative && <th className="py-3.5 px-4">Sales Representative</th>}
+                  {visibleColumns.paymentStatus && <th className="py-3.5 px-4 text-center">Payment Status</th>}
+                  {visibleColumns.totalAmount && <th className="py-3.5 px-4 text-right">Total Amount</th>}
+                  {visibleColumns.totalPaid && <th className="py-3.5 px-4 text-right">Total Paid</th>}
+                  {visibleColumns.dueBalance && <th className="py-3.5 px-4 text-right">Due Balance</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-slate-200">
                 {paginatedSales.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-500 italic">
+                    <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="py-12 text-center text-slate-500 italic">
                       No sales found matching the selected filters.
                     </td>
                   </tr>
@@ -489,24 +665,28 @@ export const SalesRepresentativeReportView: React.FC = () => {
                     const due = Math.max(0, tx.totalAmount - tx.paidAmount);
                     return (
                       <tr key={tx.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-3.5 px-4 text-slate-300 font-mono">{tx.date}</td>
-                        <td className="py-3.5 px-4 font-bold text-indigo-400 font-mono">{tx.invoiceNo}</td>
-                        <td className="py-3.5 px-4 font-semibold">{tx.customerName || 'Walk-In'}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="font-medium text-slate-300">{tx.commissionAgentName || 'Unassigned'}</span>
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            tx.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
-                            tx.paymentStatus === 'partial' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
-                            'bg-rose-950 text-rose-400 border border-rose-800'
-                          }`}>
-                            {tx.paymentStatus}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-mono font-bold">{formatCurrency(tx.totalAmount, settings)}</td>
-                        <td className="py-3.5 px-4 text-right font-mono text-emerald-400">{formatCurrency(tx.paidAmount, settings)}</td>
-                        <td className="py-3.5 px-4 text-right font-mono text-rose-400">{formatCurrency(due, settings)}</td>
+                        {visibleColumns.date && <td className="py-3.5 px-4 text-slate-300 font-mono">{tx.date}</td>}
+                        {visibleColumns.invoiceNo && <td className="py-3.5 px-4 font-bold text-indigo-400 font-mono">{tx.invoiceNo}</td>}
+                        {visibleColumns.customerName && <td className="py-3.5 px-4 font-semibold">{tx.customerName || 'Walk-In'}</td>}
+                        {visibleColumns.salesRepresentative && (
+                          <td className="py-3.5 px-4">
+                            <span className="font-medium text-slate-300">{tx.commissionAgentName || 'Unassigned'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.paymentStatus && (
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              tx.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+                              tx.paymentStatus === 'partial' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
+                              'bg-rose-950 text-rose-400 border border-rose-800'
+                            }`}>
+                              {tx.paymentStatus}
+                            </span>
+                          </td>
+                        )}
+                        {visibleColumns.totalAmount && <td className="py-3.5 px-4 text-right font-mono font-bold">{formatCurrency(tx.totalAmount, settings)}</td>}
+                        {visibleColumns.totalPaid && <td className="py-3.5 px-4 text-right font-mono text-emerald-400">{formatCurrency(tx.paidAmount, settings)}</td>}
+                        {visibleColumns.dueBalance && <td className="py-3.5 px-4 text-right font-mono text-rose-400">{formatCurrency(due, settings)}</td>}
                       </tr>
                     );
                   })

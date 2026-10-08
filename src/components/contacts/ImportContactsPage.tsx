@@ -525,18 +525,22 @@ export const ImportContactsPage: React.FC = () => {
     const customersToImport: any[] = [];
     const suppliersToImport: any[] = [];
 
-    newRowsToImport.forEach((r) => {
+    newRowsToImport.forEach((r, index) => {
       const isCustomer = r.contactType === 'customer' || r.contactType === 'both';
       const isSupplier = r.contactType === 'supplier' || r.contactType === 'both';
 
       const cleanPhone = (r.phone || '').trim().replace(/^\+\d+\s*/, '');
       const formattedPhone = cleanPhone && cleanPhone !== 'N/A' ? `${r.countryCode || '+1'} ${cleanPhone}` : (r.phone || 'N/A');
+      const sharedId = `contact_imp_${Date.now()}_${index}`;
+      const resolvedContactType = r.contactType || (isCustomer && isSupplier ? 'both' : (isCustomer ? 'customer' : 'supplier'));
 
       if (isCustomer) {
         const matchedGrp = customerGroups.find(
           (g) => g.name.toLowerCase() === (r.customerGroup || '').toLowerCase()
         );
         customersToImport.push({
+          id: sharedId,
+          contactType: resolvedContactType,
           name: r.name,
           businessName: r.businessName,
           customerGroup: r.customerGroup || 'Retail Customer',
@@ -555,11 +559,13 @@ export const ImportContactsPage: React.FC = () => {
           creditLimit: r.creditLimit || 0,
           payTerm: r.payTerm,
           notes: r.notes,
-        });
+        } as any);
       }
 
       if (isSupplier) {
         suppliersToImport.push({
+          id: sharedId,
+          contactType: resolvedContactType,
           name: r.name,
           businessName: r.businessName || r.name,
           email: r.email || 'N/A',
@@ -575,7 +581,7 @@ export const ImportContactsPage: React.FC = () => {
           openingBalance: r.openingBalance || 0,
           payTerm: r.payTerm,
           notes: r.notes,
-        });
+        } as any);
       }
     });
 

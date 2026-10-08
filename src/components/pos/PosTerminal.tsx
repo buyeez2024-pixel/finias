@@ -424,6 +424,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       const tax = settings?.enableTax !== false ? (taxable * (settings?.defaultTaxRate || 0)) / 100 : 0;
       const rawTotal = taxable + tax + shippingCost;
       const finalTotal = applyAmountRounding(rawTotal, settings?.amountRoundingMethod);
+      const roundOff = Math.round((finalTotal - rawTotal) * 100) / 100;
 
       createSale({
         customerId: activeCustomer.id,
@@ -432,6 +433,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
         taxAmount: tax,
         discountAmount: disc,
         shippingCharges: shippingCost,
+        roundOff: roundOff,
         totalAmount: finalTotal,
         paidAmount: finalTotal,
         paymentMethod: 'cash',
@@ -573,6 +575,8 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
   // Quotation handler
   const handleSaveQuotation = () => {
     if (cart.length === 0) return;
+    const rawTotal = taxableAmount + taxAmount + shippingCost;
+    const roundOff = Math.round((grandTotal - rawTotal) * 100) / 100;
     createSale({
       customerId: activeCustomer.id,
       items: cart,
@@ -580,6 +584,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
       taxAmount,
       discountAmount,
       shippingCharges: shippingCost,
+      roundOff,
       totalAmount: grandTotal,
       paidAmount: 0,
       paymentMethod: 'credit',

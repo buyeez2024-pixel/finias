@@ -35,6 +35,8 @@ import {
   FileText,
   RotateCcw,
   Check,
+  Columns,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const StockAdjustmentReportView: React.FC = () => {
@@ -85,7 +87,7 @@ export const StockAdjustmentReportView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Column Visibility
-  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
+  const [showColumnVisibility, setShowColumnVisibility] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState({
     action: true,
     date: true,
@@ -98,6 +100,29 @@ export const StockAdjustmentReportView: React.FC = () => {
     reason: true,
     addedBy: true,
   });
+
+  const STOCK_ADJUSTMENT_COLUMN_DEFINITIONS = [
+    { key: 'action', label: 'Action', description: 'View details & receipts', locked: false },
+    { key: 'date', label: 'Date', description: 'Adjustment timestamp', locked: true },
+    { key: 'referenceNo', label: 'Reference No', description: 'Adjustment voucher ID', locked: false },
+    { key: 'location', label: 'Location', description: 'Warehouse / Store branch', locked: false },
+    { key: 'adjustmentType', label: 'Adjustment Type', description: 'Normal or Abnormal type', locked: false },
+    { key: 'totalAmount', label: 'Total Amount', description: 'Gross value adjusted', locked: false },
+    { key: 'totalAmountRecovered', label: 'Amount Recovered', description: 'Insurance / Stock salvage', locked: false },
+    { key: 'netLoss', label: 'Net Loss', description: 'Final net loss value', locked: false },
+    { key: 'reason', label: 'Reason', description: 'Audit notes & justification', locked: false },
+    { key: 'addedBy', label: 'Added By', description: 'Authorizing user account', locked: false },
+  ];
+
+  const handleColumnPreset = (type: 'all' | 'standard' | 'compact' | 'reset') => {
+    if (type === 'all' || type === 'reset') {
+      setVisibleColumns({ action: true, date: true, referenceNo: true, location: true, adjustmentType: true, totalAmount: true, totalAmountRecovered: true, netLoss: true, reason: true, addedBy: true });
+    } else if (type === 'standard') {
+      setVisibleColumns({ action: true, date: true, referenceNo: true, location: true, adjustmentType: true, totalAmount: true, totalAmountRecovered: false, netLoss: true, reason: true, addedBy: false });
+    } else if (type === 'compact') {
+      setVisibleColumns({ action: true, date: true, referenceNo: true, location: false, adjustmentType: true, totalAmount: true, totalAmountRecovered: false, netLoss: true, reason: false, addedBy: false });
+    }
+  };
 
   // Handle Date Preset Selection
   const handleDatePresetChange = (preset: string) => {
@@ -458,35 +483,6 @@ export const StockAdjustmentReportView: React.FC = () => {
             <Printer className="w-4 h-4 text-sky-400" />
             <span>Print</span>
           </button>
-
-          <div className="relative">
-            <button
-              onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition border border-slate-700"
-            >
-              <SlidersHorizontal className="w-4 h-4 text-purple-400" />
-              <span>Columns</span>
-            </button>
-
-            {showColumnDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-30 space-y-2 text-xs">
-                <div className="font-bold text-white border-b border-slate-800 pb-1.5">Toggle Visible Columns</div>
-                {Object.keys(visibleColumns).map((col) => (
-                  <label key={col} className="flex items-center gap-2 text-slate-300 hover:text-white cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns[col as keyof typeof visibleColumns]}
-                      onChange={(e) =>
-                        setVisibleColumns((prev) => ({ ...prev, [col]: e.target.checked }))
-                      }
-                      className="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0"
-                    />
-                    <span className="capitalize">{col.replace(/([A-Z])/g, ' $1')}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -755,7 +751,141 @@ export const StockAdjustmentReportView: React.FC = () => {
       {/* Tab 1: All Stock Adjustments Table */}
       {activeTab === 'adjustments' && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Column Visibility Section (Reference Screenshot Style) */}
+          <div className={`border-b ${isLight ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-slate-950/80'}`}>
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 ${showColumnVisibility ? (isLight ? 'border-b border-slate-200' : 'border-b border-slate-800') : ''}`}>
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/20">
+                  <Columns className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      <span>Column Visibility</span>
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                      {Object.values(visibleColumns).filter(Boolean).length} of {STOCK_ADJUSTMENT_COLUMN_DEFINITIONS.length} Visible
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 hidden sm:inline-flex">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                      <span>Admin Privileges</span>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                    Select which columns to display in the Stock Adjustment Report table.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+                {showColumnVisibility && (
+                  <div className="flex items-center gap-1.5 mr-2">
+                    <button
+                      type="button"
+                      onClick={() => handleColumnPreset('all')}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleColumnPreset('standard')}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                    >
+                      Standard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleColumnPreset('compact')}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
+                    >
+                      Compact
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleColumnPreset('reset')}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                      title="Reset to default columns"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => setShowColumnVisibility(!showColumnVisibility)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                    showColumnVisibility 
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                      : isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  }`}
+                >
+                  {showColumnVisibility ? (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      <span>Hide Fields</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span>Show Fields</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {showColumnVisibility && (
+              <div className={`border-t p-4 ${isLight ? 'border-slate-200 bg-white/50' : 'border-slate-800/50 bg-slate-900/50'}`}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                  {STOCK_ADJUSTMENT_COLUMN_DEFINITIONS.map((col) => {
+                    const isVisible = visibleColumns[col.key as keyof typeof visibleColumns];
+                    const isLocked = col.locked;
+
+                    return (
+                      <button
+                        key={col.key}
+                        type="button"
+                        onClick={() => {
+                          if (!isLocked) {
+                            setVisibleColumns(prev => ({ ...prev, [col.key]: !isVisible }));
+                          }
+                        }}
+                        disabled={isLocked}
+                        className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-all ${
+                          isVisible
+                            ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/20'
+                            : 'bg-slate-950/60 border-slate-800/80 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-800/40'
+                        } ${isLocked ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1.5">
+                          <div className={`p-1 rounded-md ${
+                            isVisible ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                          }`}>
+                            {isVisible ? <CheckCircle2 className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          </div>
+                          {isLocked ? (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5">
+                              Locked
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-semibold text-slate-500">
+                              {isVisible ? 'Visible' : 'Hidden'}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-white truncate w-full">{col.label}</span>
+                        <span className="text-[10px] text-slate-400 truncate w-full mt-0.5">{col.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="overflow-x-auto scrollbar-thin overscroll-x-contain">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-950/80 text-slate-300 font-semibold border-b border-slate-800">

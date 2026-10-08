@@ -95,6 +95,26 @@ const SALES_COLUMN_DEFINITIONS: SalesColumnOption[] = [
   { key: 'action', label: 'Action Buttons', category: 'Metadata & Action', description: 'Print, view, pay, or refund sale action buttons', locked: true },
 ];
 
+export const getEffectivePaymentStatus = (sale: Transaction): 'paid' | 'partial' | 'due' => {
+  const entriesPaid = sale.paymentEntries && sale.paymentEntries.length > 0
+    ? sale.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+    : 0;
+  const paid = Math.max(Number(sale.paidAmount) || 0, entriesPaid);
+  const total = Number(sale.totalAmount) || 0;
+
+  if (total <= 0) return 'paid';
+  if (paid >= total - 0.01) return 'paid';
+  if (paid > 0.01) return 'partial';
+  return 'due';
+};
+
+export const getEffectivePaidAmount = (sale: Transaction): number => {
+  const entriesPaid = sale.paymentEntries && sale.paymentEntries.length > 0
+    ? sale.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+    : 0;
+  return Math.max(Number(sale.paidAmount) || 0, entriesPaid);
+};
+
 export const SalesView: React.FC<SalesViewProps> = ({
   onOpenReceipt,
   onOpenNewSale,
@@ -226,7 +246,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
       const matchSearch =
         s.invoiceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (customer?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchPayment = paymentFilter === 'all' || s.paymentStatus === paymentFilter;
+      const effPaymentStatus = getEffectivePaymentStatus(s);
+      const matchPayment = paymentFilter === 'all' || effPaymentStatus === paymentFilter;
       const matchStatus = statusFilter === 'all' || s.status === statusFilter;
       return matchSearch && matchPayment && matchStatus;
     });
@@ -236,7 +257,9 @@ export const SalesView: React.FC<SalesViewProps> = ({
     return filteredSales.map((s) => {
       const customer = customers.find((c) => c.id === s.customerId);
       const location = locations?.find((l) => l.id === s.locationId);
-      const due = Math.max(0, s.totalAmount - s.paidAmount);
+      const effPaid = getEffectivePaidAmount(s);
+      const due = Math.max(0, Number(s.totalAmount || 0) - effPaid);
+      const effStatus = getEffectivePaymentStatus(s);
       let paymentMethodStr = 'N/A';
       if (s.paymentEntries && s.paymentEntries.length > 0) {
         const methods = s.paymentEntries.map(p => p.method);
@@ -246,7 +269,9 @@ export const SalesView: React.FC<SalesViewProps> = ({
         ...s,
         customerName: customer?.name || 'Walk-In Customer',
         locationName: location?.name || 'Main Location',
+        paidAmount: effPaid,
         dueAmount: due,
+        paymentStatus: effStatus,
         paymentMethodStr,
       };
     });
@@ -655,7 +680,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 paginatedSales.map((sale) => {
                   const customer = customers.find((c) => c.id === sale.customerId);
                   const location = locations?.find((l) => l.id === sale.locationId);
-                  const due = Math.max(0, sale.totalAmount - sale.paidAmount);
+                  const effectivePaid = getEffectivePaidAmount(sale);
+                  const effectiveTotal = Number(sale.totalAmount || 0);
+                  const due = Math.max(0, effectiveTotal - effectivePaid);
+                  const effectivePaymentStatus = getEffectivePaymentStatus(sale);
                   const isItemOffline = sale.isOffline || sale.syncStatus === 'pending';
                   
                   // Get primary payment method if available
@@ -700,15 +728,15 @@ export const SalesView: React.FC<SalesViewProps> = ({
                               <button
                                 onClick={() => setSelectedPaymentSale(sale)}
                                 className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition hover:opacity-80 cursor-pointer ${
-                                  sale.paymentStatus === 'paid'
+                                  effectivePaymentStatus === 'paid'
                                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                    : sale.paymentStatus === 'partial'
+                                    : effectivePaymentStatus === 'partial'
                                     ? 'bg-amber-950 text-amber-300 border border-amber-800'
                                     : 'bg-rose-950 text-rose-300 border border-rose-800'
                                 }`}
                                 title="Click to view payments"
                               >
-                                {sale.paymentStatus}
+                                {effectivePaymentStatus}
                               </button>
                             </td>
                           )}
@@ -743,11 +771,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                           )}
                           {visibleColumns.totalPaid && (
                             <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
-                              {formatCurrency(sale.paidAmount, settings)}
+                              {formatCurrency(effectivePaid, settings)}
                             </td>
                           )}
                           {visibleColumns.sellDue && (
-                            <td className="py-3 px-3 text-right font-mono font-bold text-rose-400">
+                            <td className={`py-3 px-3 text-right font-mono font-bold ${due > 0.005 ? 'text-rose-400' : 'text-slate-400'}`}>
                               {formatCurrency(due, settings)}
                             </td>
                           )}
@@ -802,7 +830,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        {(sale.paymentStatus === 'partial' || sale.paymentStatus === 'due' || sale.paymentStatus === 'unpaid') && (
+                        {(effectivePaymentStatus === 'partial' || effectivePaymentStatus === 'due') && (
                           <button
                             onClick={() => setSelectedPaymentSale(sale)}
                             className="p-1.5 bg-slate-800 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded-lg transition-colors"
@@ -913,7 +941,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       {/* View Payments Modal */}
       <ViewPaymentsModal
         isOpen={!!selectedPaymentSale}
-        sale={selectedPaymentSale}
+        sale={transactions.find((t) => t.id === selectedPaymentSale?.id) || selectedPaymentSale}
         onClose={() => setSelectedPaymentSale(null)}
         onOpenReceipt={onOpenReceipt}
       />
@@ -921,7 +949,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       {/* View Sale Details Modal */}
       <ViewSaleDetailsModal
         isOpen={!!selectedDetailsSale}
-        sale={selectedDetailsSale}
+        sale={transactions.find((t) => t.id === selectedDetailsSale?.id) || selectedDetailsSale}
         onClose={() => setSelectedDetailsSale(null)}
         onOpenReceipt={onOpenReceipt}
       />

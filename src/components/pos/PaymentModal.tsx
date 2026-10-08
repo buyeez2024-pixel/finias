@@ -17,7 +17,7 @@ import {
   Database,
   Sparkles,
 } from 'lucide-react';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, applyAmountRounding } from '../../utils/formatters';
 import { validateSaleData } from '../../utils/validation';
 import { FormFieldError } from '../common/FormFieldError';
 
@@ -116,9 +116,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     return (subtotal * (settings?.defaultTaxRate || 0)) / 100;
   }, [subtotal, settings?.defaultTaxRate]);
 
-  const payableTotal = useMemo(() => {
+  const rawPayableTotal = useMemo(() => {
     return subtotal + taxAmount;
   }, [subtotal, taxAmount]);
+
+  const payableTotal = useMemo(() => {
+    return applyAmountRounding(rawPayableTotal, settings?.amountRoundingMethod);
+  }, [rawPayableTotal, settings?.amountRoundingMethod]);
+
+  const roundOffAmount = useMemo(() => {
+    return Math.round((payableTotal - rawPayableTotal) * 100) / 100;
+  }, [payableTotal, rawPayableTotal]);
 
   // Set default tender amount when modal opens
   React.useEffect(() => {
@@ -242,6 +250,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         taxAmount,
         discountAmount: 0,
         shippingCharges: 0,
+        roundOff: roundOffAmount,
         totalAmount: payableTotal,
         paidAmount: paymentMethod === 'credit' ? 0 : paid,
         paymentMethod,

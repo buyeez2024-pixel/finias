@@ -10,10 +10,11 @@ export const applyAmountRounding = (
 ): number => {
   const num = typeof amount === 'number' ? amount : parseFloat(String(amount || 0));
   if (isNaN(num)) return 0;
-  if (!method || method === 'none') {
+  const activeMethod = method || 'round_to_nearest_integer';
+  if (activeMethod === 'none') {
     return Math.round(num * 100) / 100;
   }
-  switch (method) {
+  switch (activeMethod) {
     case 'round_to_nearest_integer':
       return Math.round(num);
     case 'round_0_05':

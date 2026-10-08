@@ -706,7 +706,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
           </div>
 
           {/* Scrollable Sheet Canvas */}
-          <div className="flex-1 overflow-y-auto p-4 bg-slate-900/60 rounded-xl my-2 border border-slate-800/80 flex items-start justify-center min-h-[300px]">
+          <div className="flex-1 overflow-auto p-4 bg-slate-900/60 rounded-xl my-2 border border-slate-800/80 flex items-start justify-center min-h-[300px]">
             <div
               id="printable-barcode-sheet"
               style={{

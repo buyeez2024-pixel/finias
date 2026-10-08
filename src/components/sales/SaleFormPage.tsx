@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useErp } from '../../context/ErpContext';
+import { useErp, normalizeRole } from '../../context/ErpContext';
 import { TransactionItem, TransactionStatus, PaymentMethod, Product, Customer } from '../../types/erp';
 import { isTransactionEditable, formatCurrency, applyAmountRounding, validateEmail } from '../../utils/formatters';
 import { validatePhoneNumber } from '../../utils/phoneValidation';
@@ -45,6 +45,241 @@ interface SaleFormPageProps {
   initialStatus?: TransactionStatus;
 }
 
+interface UnitPriceInputProps {
+  unitPrice: number;
+  minPrice: number;
+  currencySymbol: string;
+  isViewMode?: boolean;
+  canOverrideMinPrice?: boolean;
+  onChange: (newPrice: number) => void;
+  onCommit: (newPrice: number) => void;
+  showFlashNotification: (msg: string, type: 'error' | 'success' | 'info') => void;
+}
+
+const UnitPriceInput: React.FC<UnitPriceInputProps> = ({
+  unitPrice,
+  minPrice,
+  currencySymbol,
+  isViewMode,
+  canOverrideMinPrice = false,
+  onChange,
+  onCommit,
+  showFlashNotification,
+}) => {
+  const [localText, setLocalText] = useState<string>(
+    unitPrice !== undefined && unitPrice !== null ? unitPrice.toString() : '0'
+  );
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalText(unitPrice !== undefined && unitPrice !== null ? unitPrice.toString() : '0');
+    }
+  }, [unitPrice, isFocused]);
+
+  if (isViewMode) {
+    return (
+      <span className="font-mono font-bold text-white">
+        {currencySymbol}{unitPrice.toFixed(2)}
+      </span>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setLocalText(raw);
+    const num = parseFloat(raw);
+    if (!isNaN(num) && num >= 0) {
+      onChange(num);
+    } else if (raw === '') {
+      onChange(0);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const parsed = parseFloat(localText);
+    const validParsed = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+
+    const rounded = Math.round(validParsed * 100) / 100;
+    setLocalText(rounded.toString());
+    onCommit(rounded);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <input
+      type="number"
+      step="0.01"
+      min="0"
+      value={localText}
+      onFocus={() => setIsFocused(true)}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className="w-24 bg-slate-950 text-right font-mono font-bold text-white text-xs py-1 px-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
+      placeholder="0.00"
+    />
+  );
+};
+
+interface LineDiscountInputProps {
+  discountPercent: number;
+  discountAmount: number;
+  unitPrice: number;
+  quantity: number;
+  minGuaranteedPercent: number;
+  currencySymbol: string;
+  isViewMode?: boolean;
+  onChange: (pct: number) => void;
+  onCommit: (pct: number) => void;
+  showFlashNotification: (msg: string, type: 'error' | 'success' | 'info') => void;
+}
+
+const LineDiscountInput: React.FC<LineDiscountInputProps> = ({
+  discountPercent,
+  discountAmount,
+  unitPrice,
+  quantity,
+  minGuaranteedPercent,
+  currencySymbol,
+  isViewMode,
+  onChange,
+  onCommit,
+  showFlashNotification,
+}) => {
+  const [localText, setLocalText] = useState<string>(
+    discountPercent !== undefined && discountPercent !== null ? discountPercent.toString() : '0'
+  );
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalText(discountPercent !== undefined && discountPercent !== null ? discountPercent.toString() : '0');
+    }
+  }, [discountPercent, isFocused]);
+
+  if (isViewMode) {
+    return (
+      <div className="text-right font-mono">
+        <span className="text-slate-300 font-bold">{discountPercent || 0}%</span>
+        {discountAmount > 0 && (
+          <span className="block text-[10px] text-rose-400 font-semibold">
+            (-{currencySymbol}{discountAmount.toFixed(2)})
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setLocalText(raw);
+    const num = parseFloat(raw);
+    if (!isNaN(num) && num >= 0) {
+      onChange(Math.min(100, num));
+    } else if (raw === '') {
+      onChange(0);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const parsed = parseFloat(localText);
+    const validParsed = isNaN(parsed) || parsed < 0 ? 0 : Math.min(100, parsed);
+
+    // Check if below guaranteed customer group discount percentage (with float tolerance)
+    if (minGuaranteedPercent > 0 && validParsed < (minGuaranteedPercent - 0.009)) {
+      showFlashNotification(
+        `Discount cannot be set below the guaranteed customer group discount of ${minGuaranteedPercent}%`,
+        'error'
+      );
+      setLocalText(minGuaranteedPercent.toString());
+      onCommit(minGuaranteedPercent);
+      return;
+    }
+
+    const rounded = Math.round(validParsed * 100) / 100;
+    setLocalText(rounded.toString());
+    onCommit(rounded);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  // Preview amount in currency
+  const previewAmount = isFocused
+    ? Math.round(((unitPrice * (parseFloat(localText) || 0)) / 100) * quantity * 100) / 100
+    : (discountAmount > 0 
+        ? discountAmount 
+        : Math.round(((unitPrice * (discountPercent || 0)) / 100) * quantity * 100) / 100);
+
+  return (
+    <div className="flex flex-col items-end">
+      <div className="relative inline-flex items-center">
+        <input
+          type="number"
+          step="any"
+          min="0"
+          max="100"
+          value={localText}
+          onFocus={() => setIsFocused(true)}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className="w-20 bg-slate-950 text-right font-mono text-white text-xs py-1 pr-6 pl-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
+          placeholder="0"
+        />
+        <span className="absolute right-2 text-slate-400 font-mono text-xs pointer-events-none font-bold">%</span>
+      </div>
+      <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[9px]">
+        {previewAmount > 0 && (
+          <span className="text-amber-400 font-bold" title="Calculated discount amount in rupees">
+            -{currencySymbol}{previewAmount.toFixed(2)}
+          </span>
+        )}
+        {minGuaranteedPercent > 0 && (
+          <span
+            className="text-emerald-400 font-bold whitespace-nowrap"
+            title={`Guaranteed customer group discount floor: ${minGuaranteedPercent}%`}
+          >
+            (Min: {minGuaranteedPercent}%)
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const getProductSellingPrice = (prod: Product, variation?: any, lot?: any): number => {
+  if (variation) {
+    if (variation.sellingPrice !== undefined && variation.sellingPrice !== null && Number(variation.sellingPrice) > 0) {
+      return Number(variation.sellingPrice);
+    }
+    if (variation.sellingPriceIncTax !== undefined && variation.sellingPriceIncTax !== null && Number(variation.sellingPriceIncTax) > 0) {
+      return Number(variation.sellingPriceIncTax);
+    }
+  }
+  if (prod.sellingPrice !== undefined && prod.sellingPrice !== null && Number(prod.sellingPrice) > 0) {
+    return Number(prod.sellingPrice);
+  }
+  if (prod.sellingPriceIncTax !== undefined && prod.sellingPriceIncTax !== null && Number(prod.sellingPriceIncTax) > 0) {
+    return Number(prod.sellingPriceIncTax);
+  }
+  if (lot && lot.sellingPrice !== undefined && lot.sellingPrice !== null && Number(lot.sellingPrice) > 0) {
+    return Number(lot.sellingPrice);
+  }
+  return Number(prod.sellingPrice) || Number(prod.sellingPriceIncTax) || Number(lot?.sellingPrice) || Number(variation?.sellingPrice) || 0;
+};
+
 export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, initialStatus }) => {
   const {
     customers,
@@ -69,7 +304,13 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     currentUser,
     salesCommissionAgents,
     paymentMethods,
+    rolePermissions,
   } = useErp();
+
+  const userRole = normalizeRole(currentUser?.role);
+  const isAdminUser = ['supreme_admin', 'super_admin', 'admin', 'owner', 'manager'].includes(userRole);
+  const userPerms = rolePermissions?.[currentUser?.role] || rolePermissions?.[userRole];
+  const canOverrideMinPrice = isAdminUser || userPerms?.canEditPrices === true;
 
   const isEditMode = !!editingSale;
   const isViewMode = !!viewingSale;
@@ -243,6 +484,25 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return customers.find(c => c.id === customerId) || customers[0];
   }, [customers, customerId]);
 
+  const currentCustomerGroup = useMemo(() => {
+    if (!currentCustomer || !customerGroups) return null;
+    return customerGroups.find(
+      (g) =>
+        (currentCustomer.customerGroupId && g.id === currentCustomer.customerGroupId) ||
+        (currentCustomer.customerGroup && g.name.toLowerCase() === currentCustomer.customerGroup.toLowerCase())
+    );
+  }, [currentCustomer, customerGroups]);
+
+  const liveCustomerGroupDiscountText = useMemo(() => {
+    if (!currentCustomerGroup) return '';
+    const pct = Number(currentCustomerGroup.calculationPercentage || currentCustomerGroup.percentage || 0);
+    if (pct === 0) return '';
+    if (pct < 0) {
+      return `${currentCustomerGroup.name} (${Math.abs(pct)}% Group Discount Applied to base prices)`;
+    }
+    return `${currentCustomerGroup.name} (${pct}% Group Markup Applied to base prices)`;
+  }, [currentCustomerGroup]);
+
   // Filtered Products / Variations for Search Dropdown (handles Single products, Variable parents, and individual Variation SKUs)
   const filteredProducts = useMemo(() => {
     if (!productSearch || !productSearch.trim()) return [];
@@ -310,14 +570,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
               category: p.category || 'General',
               unit: p.unit || 'Pc',
               stock: vStock,
-              price: Number(v.sellingPrice) || Number(p.sellingPrice) || 0,
+              price: getProductSellingPrice(p, v),
             });
           });
         }
 
         // If parent product itself matched the query
         if (parentMatch) {
-          const minPrice = Math.min(...p.variations.map((v: any) => Number(v.sellingPrice) || Number(p.sellingPrice) || 0));
+          const minPrice = Math.min(...p.variations.map((v: any) => getProductSellingPrice(p, v)));
           results.push({
             id: `${p.id}-parent`,
             product: p,
@@ -328,7 +588,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
             category: p.category || 'General',
             unit: p.unit || 'Pc',
             stock: totalVarStock,
-            price: isFinite(minPrice) ? minPrice : (Number(p.sellingPrice) || 0),
+            price: isFinite(minPrice) ? minPrice : getProductSellingPrice(p),
             variationCount: p.variations.length,
           });
 
@@ -347,7 +607,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                 category: p.category || 'General',
                 unit: p.unit || 'Pc',
                 stock: vStock,
-                price: Number(v.sellingPrice) || Number(p.sellingPrice) || 0,
+                price: getProductSellingPrice(p, v),
               });
             });
           }
@@ -365,7 +625,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
           category: p.category || 'General',
           unit: p.unit || 'Pc',
           stock: locStock,
-          price: Number(p.sellingPrice) || 0,
+          price: getProductSellingPrice(p),
         });
       }
 
@@ -375,8 +635,8 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return results;
   }, [productSearch, products, locationId]);
 
-  const isTaxEnabled = settings.enableTax && settings.taxSystem !== 'disabled';
-  const showInlineTax = settings.enableTax && settings.taxSystem !== 'disabled' && (settings.enableInlineTax ?? true);
+  const isTaxEnabled = true; // Always enable tax calculations in sales form to allow GST 18% etc.
+  const showInlineTax = true; // Always show line-level Tax/GST selector to allow direct taxes on products
 
   // Build GST options for inline line item dropdown (Select GST, None (0%), Active Default GST, etc.)
   const gstOptions = useMemo(() => {
@@ -468,14 +728,18 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       handleQtyChange(existingIdx, items[existingIdx].quantity + 1);
     } else {
       const selectedCust = customers.find((c) => c.id === customerId);
-      const rawBasePrice = selectedVariation
-        ? Number(selectedVariation.sellingPrice)
-        : (selectedLot ? Number(selectedLot.sellingPrice) : (Number(prod.sellingPrice) || 0));
-      const unitPrice = getCustomerGroupPrice(rawBasePrice, selectedCust);
+      const rawBasePrice = getProductSellingPrice(prod, selectedVariation, selectedLot);
+
+      // Calculate customer group discount percentage
+      const groupDiscountPct = getCustomerGroupDiscountPercentage();
+      const unitPrice = rawBasePrice; // Keep standard original price
+      const discountAmt = Math.round(((rawBasePrice * groupDiscountPct) / 100) * 100) / 100; // Flat discount amount
+
       // Default tax selection is "None" (0%) as requested
       const taxRate = 0;
+      const subtotalBeforeTax = Math.max(0, unitPrice - discountAmt);
       const taxAmt = 0;
-      const lineTotal = unitPrice;
+      const lineTotal = subtotalBeforeTax;
 
       const varLabel = selectedVariation ? (selectedVariation.value || selectedVariation.name?.replace(/^.*:\s*/, '')) : undefined;
       const finalProdName = selectedVariation ? `${prod.name} (${varLabel})` : (prod.name || 'Unnamed Product');
@@ -494,7 +758,8 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         costPrice: finalCostPrice,
         taxRate: taxRate,
         taxAmount: taxAmt,
-        discount: 0,
+        discountPercent: groupDiscountPct,
+        discount: discountAmt,
         total: lineTotal,
         hsnCode: prod.hsnCode || '',
         taxGroupId: prod.taxGroupId,
@@ -510,10 +775,33 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     setShowSearchResults(false);
   };
 
-  // Recalculate item unit prices when customer changes in Sale Form
+  const getCustomerGroupDiscountPercentage = () => {
+    const selectedCust = customers.find((c) => c.id === customerId);
+    if (!selectedCust || !customerGroups) return 0;
+    const group = customerGroups.find(
+      (g) =>
+        (selectedCust.customerGroupId && g.id === selectedCust.customerGroupId) ||
+        (selectedCust.customerGroup && g.name?.toLowerCase() === selectedCust.customerGroup.toLowerCase())
+    );
+    if (!group) return 0;
+    const raw = group.calculationPercentage !== undefined ? group.calculationPercentage : group.percentage;
+    return Math.abs(Number(raw) || 0);
+  };
+
+  const getItemGuaranteedMinDiscountPercentage = (_item?: TransactionItem) => {
+    return getCustomerGroupDiscountPercentage();
+  };
+
+  const getItemGuaranteedMinDiscount = (item: TransactionItem) => {
+    const groupDiscountPct = getCustomerGroupDiscountPercentage();
+    if (groupDiscountPct <= 0) return 0;
+    return Math.round(((item.unitPrice * groupDiscountPct) / 100) * item.quantity * 100) / 100;
+  };
+
+  // Recalculate item unit prices and group discount when customer changes in Sale Form
   useEffect(() => {
     if (items.length === 0 || isEditMode || isViewMode) return;
-    const selectedCust = customers.find((c) => c.id === customerId);
+    const groupDiscountPct = getCustomerGroupDiscountPercentage();
     setItems((prevItems) =>
       prevItems.map((item) => {
         const prod = products.find((p) => p.id === item.productId);
@@ -522,66 +810,108 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         const matchingVar = item.variationId && prod.variations
           ? prod.variations.find((v: any) => v.id === item.variationId || v.sku === item.sku)
           : null;
-        const basePrice = matchingVar
-          ? Number(matchingVar.sellingPrice)
-          : (lot ? Number(lot.sellingPrice) : (Number(prod.sellingPrice) || 0));
-        const targetPrice = getCustomerGroupPrice(basePrice, selectedCust);
-        if (targetPrice === item.unitPrice) return item;
+        const basePrice = (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice > 0)
+          ? item.unitPrice
+          : getProductSellingPrice(prod, matchingVar, lot);
+
+        const effectivePct = Math.max(groupDiscountPct, item.discountPercent ?? 0);
+        const totalDiscount = Math.round(((item.quantity * basePrice * effectivePct) / 100) * 100) / 100;
+
+        const subtotalBeforeTax = Math.max(0, (item.quantity * basePrice) - totalDiscount);
+        const taxAmt = (subtotalBeforeTax * (item.taxRate || 0)) / 100;
+        const lineTotal = subtotalBeforeTax + taxAmt;
         return {
           ...item,
-          unitPrice: targetPrice,
-          total: Math.max(0, (item.quantity * targetPrice) - (item.discount || 0)),
+          unitPrice: basePrice,
+          discountPercent: effectivePct,
+          discount: totalDiscount,
+          taxAmount: taxAmt,
+          total: Math.max(0, lineTotal),
         };
       })
     );
-  }, [customerId, customerGroups, customers, products]);
+  }, [customerId, customerGroups]);
 
   const handleQtyChange = (index: number, newQty: number) => {
     setItems(prev => prev.map((item, idx) => {
       if (idx !== index) return item;
       const validQty = Math.max(1, newQty);
-      const lineSubtotal = (validQty * item.unitPrice) - (item.discount || 0);
+
+      const minGuaranteedPct = getItemGuaranteedMinDiscountPercentage(item);
+      const currentPct = item.discountPercent !== undefined
+        ? item.discountPercent
+        : (item.unitPrice > 0 && item.quantity > 0 ? ((item.discount || 0) / (item.quantity * item.unitPrice)) * 100 : 0);
+      const finalDiscPct = Math.max(minGuaranteedPct, currentPct);
+      const scaledDisc = Math.round(((validQty * item.unitPrice * finalDiscPct) / 100) * 100) / 100;
+
+      const subtotalBeforeTax = Math.max(0, (validQty * item.unitPrice) - scaledDisc);
+      const taxAmt = (subtotalBeforeTax * (item.taxRate || 0)) / 100;
+      const lineTotal = subtotalBeforeTax + taxAmt;
       return {
         ...item,
         quantity: validQty,
-        total: Math.max(0, lineSubtotal)
+        discountPercent: finalDiscPct,
+        discount: scaledDisc,
+        taxAmount: taxAmt,
+        total: Math.max(0, lineTotal)
       };
     }));
   };
 
-  const handlePriceChange = (index: number, newPrice: number) => {
+  const handlePriceChange = (index: number, newPrice: number, isFinal: boolean = true) => {
     setItems(prev => prev.map((item, idx) => {
       if (idx !== index) return item;
       const prod = products.find(p => p.id === item.productId);
-      const minFloorPrice = prod ? (prod.minSellingPrice ?? prod.sellingPrice) : 0;
-      const isMinPriceEnabled = settings.salesPriceIsMinPrice ?? true;
-
       let validPrice = Math.max(0, newPrice);
-      if (isMinPriceEnabled && minFloorPrice > 0 && validPrice < minFloorPrice) {
-        showFlashNotification(
-          `Sales price cannot be set below minimum price of ${settings.currencySymbol || '$'}${minFloorPrice.toFixed(2)}`,
-          'error'
-        );
-        validPrice = minFloorPrice;
-      }
-      const lineSubtotal = (item.quantity * validPrice) - (item.discount || 0);
+
+      const minGuaranteedPct = getItemGuaranteedMinDiscountPercentage(item);
+      const currentPct = item.discountPercent !== undefined
+        ? item.discountPercent
+        : (item.unitPrice > 0 && item.quantity > 0 ? ((item.discount || 0) / (item.quantity * item.unitPrice)) * 100 : 0);
+      const finalDiscPct = Math.max(minGuaranteedPct, currentPct);
+      const scaledDisc = Math.round(((item.quantity * validPrice * finalDiscPct) / 100) * 100) / 100;
+
+      const subtotalBeforeTax = Math.max(0, (item.quantity * validPrice) - scaledDisc);
+      const taxAmt = (subtotalBeforeTax * (item.taxRate || 0)) / 100;
+      const lineTotal = subtotalBeforeTax + taxAmt;
       return {
         ...item,
         unitPrice: validPrice,
-        total: Math.max(0, lineSubtotal)
+        discountPercent: finalDiscPct,
+        discount: scaledDisc,
+        taxAmount: taxAmt,
+        total: Math.max(0, lineTotal)
       };
     }));
   };
 
-  const handleLineDiscountChange = (index: number, discountAmt: number) => {
+  const handleLineDiscountChange = (index: number, newPct: number, isFinal: boolean = true) => {
     setItems(prev => prev.map((item, idx) => {
       if (idx !== index) return item;
-      const validDisc = Math.max(0, discountAmt);
-      const lineSubtotal = (item.quantity * item.unitPrice) - validDisc;
+
+      // Customer group guaranteed discount percentage limit
+      const minGuaranteedPct = getItemGuaranteedMinDiscountPercentage(item);
+      let validPct = Math.max(0, Math.min(100, newPct));
+
+      if (isFinal && minGuaranteedPct > 0 && validPct < (minGuaranteedPct - 0.009)) {
+        showFlashNotification(
+          `Discount cannot be set below the guaranteed customer group discount of ${minGuaranteedPct}%`,
+          'error'
+        );
+        validPct = minGuaranteedPct;
+      }
+
+      const totalLinePrice = item.quantity * item.unitPrice;
+      const discountAmt = Math.round(((totalLinePrice * validPct) / 100) * 100) / 100;
+      const subtotalBeforeTax = Math.max(0, totalLinePrice - discountAmt);
+      const taxAmt = (subtotalBeforeTax * (item.taxRate || 0)) / 100;
+      const lineTotal = subtotalBeforeTax + taxAmt;
       return {
         ...item,
-        discount: validDisc,
-        total: Math.max(0, lineSubtotal)
+        discountPercent: validPct,
+        discount: discountAmt,
+        taxAmount: taxAmt,
+        total: Math.max(0, lineTotal)
       };
     }));
   };
@@ -591,11 +921,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       prev.map((item, idx) => {
         if (idx !== index) return item;
         const validRate = Math.max(0, rate);
-        const taxAmt = (item.unitPrice * validRate) / 100;
+        const subtotalBeforeTax = (item.quantity * item.unitPrice) - (item.discount || 0);
+        const taxAmt = (subtotalBeforeTax * validRate) / 100;
+        const lineTotal = subtotalBeforeTax + taxAmt;
         return {
           ...item,
           taxRate: validRate,
           taxAmount: taxAmt,
+          total: Math.max(0, lineTotal),
         };
       })
     );
@@ -626,16 +959,39 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return (taxableAmount * rate) / 100;
   }, [taxableAmount, orderTaxRate, isTaxEnabled]);
 
+  const itemsTaxAmount = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const lineTax = Number(item.taxAmount) || 0;
+      if (lineTax > 0) return acc + lineTax;
+      if (item.taxRate && item.taxRate > 0) {
+        const subtotalBeforeTax = (item.quantity * item.unitPrice) - (item.discount || 0);
+        return acc + (subtotalBeforeTax * item.taxRate) / 100;
+      }
+      return acc;
+    }, 0);
+  }, [items]);
+
+  const totalSaleTaxAmount = useMemo(() => {
+    return Math.round((itemsTaxAmount + orderTaxAmount) * 100) / 100;
+  }, [itemsTaxAmount, orderTaxAmount]);
+
   const shippingCostAmount = parseFloat(shippingCharges) || 0;
 
   const additionalExpensesAmount = useMemo(() => {
     return additionalExpenses.reduce((acc, exp) => acc + (parseFloat(exp.amount) || 0), 0);
   }, [additionalExpenses]);
 
+  const rawTotal = useMemo(() => {
+    return Math.max(0, taxableAmount + orderTaxAmount + shippingCostAmount + additionalExpensesAmount);
+  }, [taxableAmount, orderTaxAmount, shippingCostAmount, additionalExpensesAmount]);
+
   const grandTotal = useMemo(() => {
-    const rawTotal = Math.max(0, taxableAmount + orderTaxAmount + shippingCostAmount + additionalExpensesAmount);
     return applyAmountRounding(rawTotal, settings.amountRoundingMethod);
-  }, [taxableAmount, orderTaxAmount, shippingCostAmount, additionalExpensesAmount, settings.amountRoundingMethod]);
+  }, [rawTotal, settings.amountRoundingMethod]);
+
+  const roundOffAmount = useMemo(() => {
+    return Math.round((grandTotal - rawTotal) * 100) / 100;
+  }, [grandTotal, rawTotal]);
 
   // Keep paid amount in sync with grand total if not manually edited or if viewing
   useEffect(() => {
@@ -782,17 +1138,51 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       }
     }
 
+    // Validation: Ensure all items meet guaranteed minimum customer group discount
+    for (const item of items) {
+      const minGuaranteedPct = getItemGuaranteedMinDiscountPercentage(item);
+      const effectivePct = item.discountPercent !== undefined
+        ? item.discountPercent
+        : (item.unitPrice > 0 && item.quantity > 0 ? ((item.discount || 0) / (item.unitPrice * item.quantity)) * 100 : 0);
+      if (minGuaranteedPct > 0 && effectivePct < (minGuaranteedPct - 0.009)) {
+        showFlashNotification(
+          `Discount on "${item.productName}" cannot be set below the guaranteed customer group discount of ${minGuaranteedPct}%`,
+          'error'
+        );
+        return;
+      }
+    }
+
     const isDraftOrQuotation = targetStatus === 'draft' || targetStatus === 'quotation';
     const finalPaidAmount = isDraftOrQuotation ? 0 : Math.min(grandTotal, effectivePaidAmount);
+    const calculatedPaymentStatus: 'paid' | 'partial' | 'due' = isDraftOrQuotation
+      ? 'due'
+      : (grandTotal <= 0 || finalPaidAmount >= grandTotal - 0.01)
+      ? 'paid'
+      : finalPaidAmount > 0.01
+      ? 'partial'
+      : 'due';
 
     const payload = {
       invoiceNo: invoiceNo || generateInvoiceNo(),
       locationId,
       customerId,
       date: transactionDate,
-      items,
+      items: items.map((it) => {
+        const rate = Number(it.taxRate) || 0;
+        const lineTax = it.taxAmount !== undefined && it.taxAmount !== null
+          ? Number(it.taxAmount)
+          : rate > 0
+          ? ((((it.quantity * it.unitPrice) - (it.discount || 0)) * rate) / 100)
+          : 0;
+        return {
+          ...it,
+          taxRate: rate,
+          taxAmount: Math.round(lineTax * 100) / 100,
+        };
+      }),
       subtotal: subtotalItems,
-      taxAmount: orderTaxAmount,
+      taxAmount: totalSaleTaxAmount,
       orderTaxRate: parseFloat(orderTaxRate) || 0,
       discountAmount: discountAmountCalculated,
       discountType,
@@ -802,7 +1192,9 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       shippingStatus,
       deliveredTo,
       totalAmount: grandTotal,
+      roundOff: roundOffAmount,
       paidAmount: finalPaidAmount,
+      paymentStatus: calculatedPaymentStatus,
       paymentMethod: isDraftOrQuotation ? 'credit' : paymentMethod,
       paymentEntries: isDraftOrQuotation ? [] : [
         {
@@ -980,11 +1372,19 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
             />
             {/* Customer due & credit snapshot */}
             {currentCustomer && (
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1 px-1">
-                <span>Credit: {formatCurrency(currentCustomer.creditLimit || 5000, settings)}</span>
-                <span className={currentCustomer.totalDue > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
-                  Due: {formatCurrency((currentCustomer.totalDue || 0), settings)}
-                </span>
+              <div className="space-y-1.5 mt-1">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                  <span>Credit: {formatCurrency(currentCustomer.creditLimit || 5000, settings)}</span>
+                  <span className={currentCustomer.totalDue > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+                    Due: {formatCurrency((currentCustomer.totalDue || 0), settings)}
+                  </span>
+                </div>
+                {liveCustomerGroupDiscountText && (
+                  <div className="p-2 bg-emerald-950/50 text-emerald-300 border border-emerald-800/80 text-[11px] font-bold rounded-lg flex items-center gap-1.5 animate-pulse">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>{liveCustomerGroupDiscountText}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1364,8 +1764,8 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                 <th className="py-3 px-3 min-w-[200px]">Product & SKU</th>
                 <th className="py-3 px-3 text-center min-w-[120px]">Quantity</th>
                 <th className="py-3 px-3 text-right min-w-[120px]">Unit Price ({settings.currencySymbol})</th>
-                <th className="py-3 px-3 text-right min-w-[110px]">Discount</th>
-                {showInlineTax && <th className="py-3 px-3 text-center min-w-[140px]">Tax Rate / GST</th>}
+                <th className="py-3 px-3 text-right min-w-[130px]">Discount (%)</th>
+                {showInlineTax && <th className="py-3 px-3 text-center min-w-[140px]">Tax/GST</th>}
                 <th className="py-3 px-3 text-right min-w-[120px]">Subtotal</th>
                 {!isViewMode && <th className="py-3 px-3 text-center w-12">Action</th>}
               </tr>
@@ -1394,7 +1794,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                       <td className="py-3 px-3 text-slate-500 font-mono">{idx + 1}</td>
                       <td className="py-3 px-3">
                         <div className="font-bold text-white">{item.productName}</div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                           <span className="font-mono text-slate-500">SKU: {item.sku}</span>
                           {item.variationName && (
                             <span className="bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.2 rounded text-[10px] font-bold">
@@ -1415,6 +1815,12 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                           >
                             Avail: {availableLocStock} {item.unit}
                           </span>
+                          {currentCustomerGroup && Number(currentCustomerGroup.calculationPercentage || currentCustomerGroup.percentage) !== 0 && (
+                            <span className="bg-emerald-950 text-emerald-300 border border-emerald-800/80 px-1.5 py-0.2 rounded text-[10px] font-bold inline-flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                              Group Price Applied
+                            </span>
+                          )}
                         </div>
                         {isExceedingStock && (
                           <div className="text-[10px] text-rose-400 flex items-center gap-1 mt-1 font-semibold">
@@ -1455,34 +1861,36 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {isViewMode ? (
-                          <span className="font-mono font-bold text-white">
-                            {formatCurrency(item.unitPrice, settings)}
-                          </span>
-                        ) : (
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) => handlePriceChange(idx, parseFloat(e.target.value) || 0)}
-                            className="w-24 bg-slate-950 text-right font-mono font-bold text-white text-xs py-1 px-2 rounded-lg border border-slate-700 focus:outline-none"
-                          />
-                        )}
+                        <UnitPriceInput
+                          unitPrice={item.unitPrice}
+                          minPrice={0}
+                          currencySymbol={settings.currencySymbol || '₹'}
+                          isViewMode={isViewMode}
+                          canOverrideMinPrice={canOverrideMinPrice}
+                          onChange={(val) => handlePriceChange(idx, val, false)}
+                          onCommit={(val) => handlePriceChange(idx, val, true)}
+                          showFlashNotification={showFlashNotification}
+                        />
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {isViewMode ? (
-                          <span className="font-mono text-slate-300">
-                            {formatCurrency((item.discount || 0), settings)}
-                          </span>
-                        ) : (
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.discount || 0}
-                            onChange={(e) => handleLineDiscountChange(idx, parseFloat(e.target.value) || 0)}
-                            className="w-20 bg-slate-950 text-right font-mono text-white text-xs py-1 px-2 rounded-lg border border-slate-700 focus:outline-none"
-                          />
-                        )}
+                        <LineDiscountInput
+                          discountPercent={
+                            item.discountPercent !== undefined
+                              ? item.discountPercent
+                              : (item.unitPrice > 0 && item.quantity > 0
+                                  ? Math.round(((item.discount || 0) / (item.unitPrice * item.quantity)) * 100 * 100) / 100
+                                  : 0)
+                          }
+                          discountAmount={item.discount || 0}
+                          unitPrice={item.unitPrice}
+                          quantity={item.quantity}
+                          minGuaranteedPercent={getItemGuaranteedMinDiscountPercentage(item)}
+                          currencySymbol={settings.currencySymbol || '₹'}
+                          isViewMode={isViewMode}
+                          onChange={(val) => handleLineDiscountChange(idx, val, false)}
+                          onCommit={(val) => handleLineDiscountChange(idx, val, true)}
+                          showFlashNotification={showFlashNotification}
+                        />
                       </td>
                       {showInlineTax && (
                         <td className="py-3 px-3 text-center">
@@ -1497,7 +1905,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                               onChange={(e) => handleTaxRateChange(idx, parseFloat(e.target.value) || 0)}
                               className="w-36 bg-slate-950 text-slate-200 font-mono text-xs py-1.5 px-2 rounded-lg border border-slate-700 outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                             >
-                              <option value="">Select GST</option>
+                              <option value="">Select Tax/GST</option>
                               <option value="0">None (0%)</option>
                               {gstOptions.map((opt) => (
                                 <option key={`${opt.label}-${opt.value}`} value={opt.value}>
@@ -1571,16 +1979,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Order Tax (%) {!isTaxEnabled && <span className="text-[10px] text-amber-400 font-normal">(Tax Engine Disabled)</span>}
+              Order Tax (%)
             </label>
             <div className="flex gap-2">
               <select
-                value={isTaxEnabled ? orderTaxRate : '0'}
-                disabled={isViewMode || !isTaxEnabled}
+                value={orderTaxRate}
+                disabled={isViewMode}
                 onChange={(e) => setOrderTaxRate(e.target.value)}
-                className={`w-full bg-slate-950 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none ${
-                  !isTaxEnabled ? 'text-slate-600 cursor-not-allowed opacity-60' : 'text-white'
-                }`}
+                className="w-full bg-slate-950 text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:outline-none text-white font-semibold cursor-pointer"
               >
                 <option value="0">None (0%)</option>
                 {taxRates.map(t => (
@@ -1588,6 +1994,10 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                     {t.name} ({t.rate}%)
                   </option>
                 ))}
+                {/* Fallback to ensure GST 18% is always available and showing as requested */}
+                {!taxRates.some(t => t.rate === 18) && (
+                  <option value="18">GST 18% (18%)</option>
+                )}
               </select>
             </div>
           </div>
@@ -2024,6 +2434,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
             <div>
               <span className="text-slate-400">Shipping: </span>
               <span className="text-slate-200 font-bold">+{formatCurrency(shippingCostAmount, settings)}</span>
+            </div>
+          )}
+          {roundOffAmount !== 0 && (
+            <div>
+              <span className="text-slate-400">Round Off: </span>
+              <span className={roundOffAmount > 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                {roundOffAmount > 0 ? `+${formatCurrency(roundOffAmount, settings)}` : `-${formatCurrency(Math.abs(roundOffAmount), settings)}`}
+              </span>
             </div>
           )}
           <div className="pl-2 border-l border-slate-700">

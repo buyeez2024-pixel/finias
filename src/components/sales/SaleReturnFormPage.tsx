@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { SaleReturnCustomerDropdown } from './SaleReturnCustomerDropdown';
 import { QuickAddCustomerModal } from './QuickAddCustomerModal';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, applyAmountRounding } from '../../utils/formatters';
 
 export const SaleReturnFormPage: React.FC = () => {
   const {
@@ -234,11 +234,13 @@ export const SaleReturnFormPage: React.FC = () => {
   // Summary Calculations
   const subtotalItems = items.reduce((acc, item) => acc + item.total, 0);
   const saleTaxAmount = (subtotalItems * parseFloat(saleTaxPercent || '0')) / 100;
-  const grandTotal =
+  const rawTotal =
     subtotalItems +
     saleTaxAmount +
     parseFloat(shippingCost || '0') -
     parseFloat(saleDiscountAmount || '0');
+  const grandTotal = applyAmountRounding(rawTotal, settings?.amountRoundingMethod);
+  const roundOffAmount = Math.round((grandTotal - rawTotal) * 100) / 100;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +262,7 @@ export const SaleReturnFormPage: React.FC = () => {
       taxAmount: saleTaxAmount,
       discountAmount: parseFloat(saleDiscountAmount || '0'),
       shippingCharges: parseFloat(shippingCost || '0'),
+      roundOff: roundOffAmount,
       totalAmount: grandTotal,
       paidAmount: paymentMethod === 'credit' ? 0 : grandTotal,
       paymentMethod,

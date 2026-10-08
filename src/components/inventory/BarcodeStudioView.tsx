@@ -767,7 +767,7 @@ export const BarcodeStudioView: React.FC = () => {
 
         {/* Right Column: Live High-Resolution Printable Sheet (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col min-h-[600px]">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col min-h-[400px] sm:min-h-[600px]">
             {/* Live Sheet Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2.5">
@@ -805,7 +805,7 @@ export const BarcodeStudioView: React.FC = () => {
             </div>
 
             {/* Scrollable Printable Canvas */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950/80 rounded-2xl my-3 border border-slate-800/80 flex items-start justify-center min-h-[480px]">
+            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-950/80 rounded-2xl my-3 border border-slate-800/80 flex items-start justify-center min-h-[300px] sm:min-h-[480px]">
               <div
                 id="printable-barcode-sheet"
                 style={{

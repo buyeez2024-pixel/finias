@@ -13,7 +13,14 @@ import {
   CreditCard,
   Banknote,
   Landmark,
-  Wallet
+  Wallet,
+  Columns,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Eye,
+  RotateCcw,
+  ShieldCheck
 } from 'lucide-react';
 import { PaymentMethod } from '../../types/erp';
 
@@ -21,6 +28,36 @@ export const PurchasePaymentReportView: React.FC = () => {
   const { transactions, suppliers, locations, settings, paymentMethods } = useErp();
 
   const isLight = settings?.themeMode === 'light';
+
+  // Column Visibility State
+  const [showColumnVisibility, setShowColumnVisibility] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
+    referenceNo: true,
+    purchaseNo: true,
+    supplier: true,
+    paymentMethod: true,
+    amount: true,
+  });
+
+  const PURCHASE_PAYMENT_COLUMN_DEFINITIONS = [
+    { key: 'date', label: 'Date', description: 'Transaction record timestamp', locked: true },
+    { key: 'referenceNo', label: 'Reference No', description: 'Voucher serial reference', locked: false },
+    { key: 'purchaseNo', label: 'Purchase No', description: 'PO Invoice serial number', locked: false },
+    { key: 'supplier', label: 'Supplier', description: 'Supplier entity name & company', locked: false },
+    { key: 'paymentMethod', label: 'Payment Method', description: 'Cash, bank, UPI mode', locked: false },
+    { key: 'amount', label: 'Amount', description: 'Payment transaction amount', locked: false },
+  ];
+
+  const handleColumnPreset = (type: 'all' | 'standard' | 'compact' | 'reset') => {
+    if (type === 'all' || type === 'reset') {
+      setVisibleColumns({ date: true, referenceNo: true, purchaseNo: true, supplier: true, paymentMethod: true, amount: true });
+    } else if (type === 'standard') {
+      setVisibleColumns({ date: true, referenceNo: true, purchaseNo: true, supplier: true, paymentMethod: true, amount: true });
+    } else if (type === 'compact') {
+      setVisibleColumns({ date: true, referenceNo: false, purchaseNo: true, supplier: true, paymentMethod: false, amount: true });
+    }
+  };
 
   // Date Filters
   const [startDate, setStartDate] = useState(() => {
@@ -371,30 +408,178 @@ export const PurchasePaymentReportView: React.FC = () => {
       <div className={`rounded-2xl border overflow-hidden transition-colors ${
         isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900 border-slate-800'
       }`}>
-        <div className="overflow-x-auto">
+        {/* Column Visibility Section (Reference Screenshot Style) */}
+        <div className={`border-b ${isLight ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-slate-950/80'}`}>
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 ${showColumnVisibility ? (isLight ? 'border-b border-slate-200' : 'border-b border-slate-800') : ''}`}>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/20">
+                <Columns className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    <span>Column Visibility</span>
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    {Object.values(visibleColumns).filter(Boolean).length} of {PURCHASE_PAYMENT_COLUMN_DEFINITIONS.length} Visible
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 hidden sm:inline-flex">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <span>Admin Privileges</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
+                  Select which columns to display in the Purchase Payment Report table.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+              {showColumnVisibility && (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('all')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('standard')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('compact')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
+                  >
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleColumnPreset('reset')}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+                    title="Reset to default columns"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setShowColumnVisibility(!showColumnVisibility)}
+                className={
+                  isLight
+                    ? 'relative transition active:scale-95 active:opacity-80 cursor-pointer px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
+                    : showColumnVisibility
+                    ? 'px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                    : 'px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }
+              >
+                {showColumnVisibility ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    <span>Hide Fields</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Show Fields</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {showColumnVisibility && (
+            <div className={`border-t p-4 ${isLight ? 'border-slate-200 bg-white/50' : 'border-slate-800/50 bg-slate-900/50'}`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                {PURCHASE_PAYMENT_COLUMN_DEFINITIONS.map((col) => {
+                  const isVisible = visibleColumns[col.key as keyof typeof visibleColumns];
+                  const isLocked = col.locked;
+
+                  return (
+                    <button
+                      key={col.key}
+                      type="button"
+                      onClick={() => {
+                        if (!isLocked) {
+                          setVisibleColumns(prev => ({ ...prev, [col.key]: !isVisible }));
+                        }
+                      }}
+                      disabled={isLocked}
+                      className={`flex flex-col items-start justify-between p-2.5 rounded-xl border text-left transition-all ${
+                        isVisible
+                          ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm ring-1 ring-indigo-500/20'
+                          : 'bg-slate-950/60 border-slate-800/80 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-800/40'
+                      } ${isLocked ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1.5">
+                        <div className={`p-1 rounded-md ${
+                          isVisible ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {isVisible ? <CheckCircle2 className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </div>
+                        {isLocked ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5">
+                            Locked
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-semibold text-slate-500">
+                            {isVisible ? 'Visible' : 'Hidden'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-white truncate w-full">{col.label}</span>
+                      <span className="text-[10px] text-slate-400 truncate w-full mt-0.5">{col.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="overflow-x-auto scrollbar-thin overscroll-x-contain">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className={`border-b ${
                 isLight ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-slate-800 bg-slate-900/50 text-slate-400'
               }`}>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
-                  Reference No
-                </th>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
-                  Purchase No
-                </th>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
-                  Supplier
-                </th>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
-                  Payment Method
-                </th>
-                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right">
-                  Amount
-                </th>
+                {visibleColumns.date && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                    Date
+                  </th>
+                )}
+                {visibleColumns.referenceNo && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                    Reference No
+                  </th>
+                )}
+                {visibleColumns.purchaseNo && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                    Purchase No
+                  </th>
+                )}
+                {visibleColumns.supplier && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                    Supplier
+                  </th>
+                )}
+                {visibleColumns.paymentMethod && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider">
+                    Payment Method
+                  </th>
+                )}
+                {visibleColumns.amount && (
+                  <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right">
+                    Amount
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
@@ -404,50 +589,62 @@ export const PurchasePaymentReportView: React.FC = () => {
                   
                   return (
                     <tr key={entry.id || index} className={`transition-colors ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/50'}`}>
-                      <td className={`py-4 px-6 text-sm ${isLight ? 'text-slate-700 font-medium' : 'text-slate-300'}`}>
-                        {new Date(entry.date).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`text-sm font-medium ${isLight ? 'text-emerald-600 font-bold' : 'text-emerald-400'}`}>
-                          {entry.referenceNo || '-'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`text-sm font-medium ${isLight ? 'text-indigo-600 font-bold' : 'text-indigo-400'}`}>
-                          {entry.purchaseNo}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div>
-                          <div className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
-                            {supplier?.name || 'Unknown Supplier'}
-                          </div>
-                          {supplier?.company && (
-                            <div className="text-xs text-slate-500">
-                              {supplier.company}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          {getMethodIcon(entry.method as PaymentMethod)}
-                          <span className={`text-sm ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                            {getMethodLabel(entry.method as PaymentMethod)}
+                      {visibleColumns.date && (
+                        <td className={`py-4 px-6 text-sm ${isLight ? 'text-slate-700 font-medium' : 'text-slate-300'}`}>
+                          {new Date(entry.date).toLocaleDateString()}
+                        </td>
+                      )}
+                      {visibleColumns.referenceNo && (
+                        <td className="py-4 px-6">
+                          <span className={`text-sm font-medium ${isLight ? 'text-emerald-600 font-bold' : 'text-emerald-400'}`}>
+                            {entry.referenceNo || '-'}
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                          {formatCurrency(entry.amount, settings)}
-                        </span>
-                      </td>
+                        </td>
+                      )}
+                      {visibleColumns.purchaseNo && (
+                        <td className="py-4 px-6">
+                          <span className={`text-sm font-medium ${isLight ? 'text-indigo-600 font-bold' : 'text-indigo-400'}`}>
+                            {entry.purchaseNo}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.supplier && (
+                        <td className="py-4 px-6">
+                          <div>
+                            <div className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                              {supplier?.name || 'Unknown Supplier'}
+                            </div>
+                            {supplier?.company && (
+                              <div className="text-xs text-slate-500">
+                                {supplier.company}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.paymentMethod && (
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            {getMethodIcon(entry.method as PaymentMethod)}
+                            <span className={`text-sm ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                              {getMethodLabel(entry.method as PaymentMethod)}
+                            </span>
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.amount && (
+                        <td className="py-4 px-6 text-right">
+                          <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            {formatCurrency(entry.amount, settings)}
+                          </span>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center">
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length || 1} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <DollarSign className={`w-12 h-12 mb-3 ${isLight ? 'text-slate-300' : 'text-slate-700'}`} />
                       <p className={`font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>No purchase payments found</p>

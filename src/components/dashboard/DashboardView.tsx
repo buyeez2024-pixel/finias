@@ -4,6 +4,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { ProjectedSalesChart } from './ProjectedSalesChart';
 import { WeeklySalesVolumeChart } from './WeeklySalesVolumeChart';
 import { DashboardFooterBar } from './DashboardFooterBar';
+import { LowStockWidget } from './LowStockWidget';
 import {
   DollarSign,
   TrendingUp,
@@ -103,45 +104,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
-      {/* 1. Low Stock Inventory Alert Banner */}
-      {lowStockProducts.length > 0 && (
-        <div className={`p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-3 transition-colors ${
-          isDark ? 'bg-amber-950/40 border border-amber-800/60' : 'bg-amber-50 border border-amber-200'
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
-              <AlertTriangle className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <h4 className={`text-sm font-bold ${isDark ? 'text-amber-200' : 'text-amber-900'}`}>
-                Low Stock Alert ({lowStockProducts.length} items below reorder threshold)
-              </h4>
-              <p className={`text-xs mt-0.5 ${isDark ? 'text-amber-300/80' : 'text-amber-700'}`}>
-                {lowStockProducts.map((p) => `${p.name} (${p.currentStock} left)`).join(' • ')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('inventory')}
-              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition cursor-pointer"
-            >
-              View Inventory Matrix
-            </button>
-            <button
-              onClick={onOpenQuickPurchase}
-              className={`px-3 py-1.5 font-bold text-xs rounded-lg transition border cursor-pointer ${
-                isDark
-                  ? 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-700/50'
-                  : 'bg-white hover:bg-amber-100 text-amber-900 hover:text-amber-950 border-amber-300 shadow-2xs'
-              }`}
-            >
-              + Create Reorder PO
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 1. Low Stock & Reorder Hub Command Widget */}
+      <LowStockWidget onOpenQuickPurchase={onOpenQuickPurchase} />
 
       {/* 2. Executive Financial KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -434,17 +398,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       {formatCurrency(txn.totalAmount, settings)}
                     </td>
                     <td className="py-3 px-3">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          txn.paymentStatus === 'paid'
-                            ? isDark ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : txn.paymentStatus === 'partial'
-                            ? isDark ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : isDark ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-rose-50 text-rose-800 border border-rose-200'
-                        }`}
-                      >
-                        {txn.paymentStatus}
-                      </span>
+                      {(() => {
+                        const entriesPaid = txn.paymentEntries && txn.paymentEntries.length > 0
+                          ? txn.paymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+                          : 0;
+                        const effectivePaid = Math.max(Number(txn.paidAmount) || 0, entriesPaid);
+                        const effectiveTotal = Number(txn.totalAmount) || 0;
+                        const effStatus = (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01)
+                          ? 'paid'
+                          : effectivePaid > 0.01
+                          ? 'partial'
+                          : 'due';
+
+                        return (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              effStatus === 'paid'
+                                ? isDark ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                : effStatus === 'partial'
+                                ? isDark ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                : isDark ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                            }`}
+                          >
+                            {effStatus}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );

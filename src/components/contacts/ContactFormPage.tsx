@@ -80,11 +80,45 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const [contactType, setContactType] = useState<'customer' | 'supplier' | 'both' | ''>(() => {
     if (editingCustomer && editingSupplier) return 'both';
     if (editingCustomer) {
-      if (suppliers.some(s => s.id === editingCustomer.id)) return 'both';
+      if ((editingCustomer as any).contactType === 'both') return 'both';
+      const cPhone = editingCustomer.phone;
+      const cEmail = editingCustomer.email;
+      const cName = editingCustomer.name?.trim().toLowerCase();
+      const cBName = (editingCustomer as any).businessName?.trim().toLowerCase();
+      const cTax = editingCustomer.taxNumber?.trim().toLowerCase();
+      const hasSupplierMatch = suppliers.some(s => 
+        s.id === editingCustomer.id || 
+        (s.contactId && s.contactId === (editingCustomer as any).contactId) ||
+        (cPhone && cPhone !== 'N/A' && s.phone && isDuplicatePhone(s.phone, cPhone)) ||
+        (cEmail && cEmail !== 'N/A' && s.email && s.email.trim().toLowerCase() === cEmail.trim().toLowerCase()) ||
+        (cName && s.name && s.name.trim().toLowerCase() === cName) ||
+        (cBName && s.businessName && s.businessName.trim().toLowerCase() === cBName) ||
+        (cBName && s.name && s.name.trim().toLowerCase() === cBName) ||
+        (cName && s.businessName && s.businessName.trim().toLowerCase() === cName) ||
+        (cTax && s.taxNumber && s.taxNumber.trim().toLowerCase() === cTax)
+      );
+      if (hasSupplierMatch) return 'both';
       return 'customer';
     }
     if (editingSupplier) {
-      if (customers.some(c => c.id === editingSupplier.id)) return 'both';
+      if ((editingSupplier as any).contactType === 'both') return 'both';
+      const sPhone = editingSupplier.phone;
+      const sEmail = editingSupplier.email;
+      const sName = editingSupplier.name?.trim().toLowerCase();
+      const sBName = (editingSupplier as any).businessName?.trim().toLowerCase();
+      const sTax = editingSupplier.taxNumber?.trim().toLowerCase();
+      const hasCustomerMatch = customers.some(c => 
+        c.id === editingSupplier.id || 
+        (c.contactId && c.contactId === (editingSupplier as any).contactId) ||
+        (sPhone && sPhone !== 'N/A' && c.phone && isDuplicatePhone(c.phone, sPhone)) ||
+        (sEmail && sEmail !== 'N/A' && c.email && c.email.trim().toLowerCase() === sEmail.trim().toLowerCase()) ||
+        (sName && c.name && c.name.trim().toLowerCase() === sName) ||
+        (sBName && c.businessName && c.businessName.trim().toLowerCase() === sBName) ||
+        (sBName && c.name && c.name.trim().toLowerCase() === sBName) ||
+        (sName && c.businessName && c.businessName.trim().toLowerCase() === sName) ||
+        (sTax && c.taxNumber && c.taxNumber.trim().toLowerCase() === sTax)
+      );
+      if (hasCustomerMatch) return 'both';
       return 'supplier';
     }
     if (initialType) return initialType;
@@ -95,6 +129,60 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     if (!val || val.trim().toUpperCase() === 'N/A') return '';
     return val;
   };
+
+  const matchingSupplier = useMemo(() => {
+    if (!editingContact) return null;
+    return suppliers.find(s => {
+      const sameId = s.id === editingContact.id || 
+                     s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === editingContact.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '');
+      const sameContactId = s.contactId && (editingContact as any).contactId && 
+                            s.contactId.trim().replace('SUP-', '').replace('CUST-', '') === (editingContact as any).contactId.trim().replace('SUP-', '').replace('CUST-', '');
+      const samePhone = editingContact.phone && editingContact.phone !== 'N/A' && s.phone && isDuplicatePhone(s.phone, editingContact.phone);
+      const sameEmail = editingContact.email && editingContact.email !== 'N/A' && s.email && s.email.trim().toLowerCase() === editingContact.email.trim().toLowerCase();
+      const sameName = editingContact.name && s.name && s.name.trim().toLowerCase() === editingContact.name.trim().toLowerCase();
+      const sameTax = editingContact.taxNumber && s.taxNumber && s.taxNumber.trim().toLowerCase() === editingContact.taxNumber.trim().toLowerCase();
+
+      const editBName = (editingContact as any).businessName?.trim().toLowerCase();
+      const editName = editingContact.name?.trim().toLowerCase();
+      const suppBName = s.businessName?.trim().toLowerCase();
+      const suppName = s.name?.trim().toLowerCase();
+
+      const sameBusinessName = !!(editBName && suppBName && editBName === suppBName);
+      const sameNameOrBiz = !!(
+        (editBName && suppName && editBName === suppName) ||
+        (editName && suppBName && editName === suppBName)
+      );
+
+      return sameId || sameContactId || samePhone || sameEmail || sameName || sameTax || sameBusinessName || sameNameOrBiz;
+    }) || null;
+  }, [editingContact, suppliers]);
+
+  const matchingCustomer = useMemo(() => {
+    if (!editingContact) return null;
+    return customers.find(c => {
+      const sameId = c.id === editingContact.id || 
+                     c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === editingContact.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '');
+      const sameContactId = c.contactId && (editingContact as any).contactId && 
+                            c.contactId.trim().replace('SUP-', '').replace('CUST-', '') === (editingContact as any).contactId.trim().replace('SUP-', '').replace('CUST-', '');
+      const samePhone = editingContact.phone && editingContact.phone !== 'N/A' && c.phone && isDuplicatePhone(c.phone, editingContact.phone);
+      const sameEmail = editingContact.email && editingContact.email !== 'N/A' && c.email && c.email.trim().toLowerCase() === editingContact.email.trim().toLowerCase();
+      const sameName = editingContact.name && c.name && c.name.trim().toLowerCase() === editingContact.name.trim().toLowerCase();
+      const sameTax = editingContact.taxNumber && c.taxNumber && c.taxNumber.trim().toLowerCase() === editingContact.taxNumber.trim().toLowerCase();
+
+      const editBName = (editingContact as any).businessName?.trim().toLowerCase();
+      const editName = editingContact.name?.trim().toLowerCase();
+      const custBName = c.businessName?.trim().toLowerCase();
+      const custName = c.name?.trim().toLowerCase();
+
+      const sameBusinessName = !!(editBName && custBName && editBName === custBName);
+      const sameNameOrBiz = !!(
+        (editBName && custName && editBName === custName) ||
+        (editName && custBName && editName === custBName)
+      );
+
+      return sameId || sameContactId || samePhone || sameEmail || sameName || sameTax || sameBusinessName || sameNameOrBiz;
+    }) || null;
+  }, [editingContact, customers]);
 
   // Form State
   const [name, setName] = useState(editingContact?.name || '');
@@ -164,6 +252,60 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const lastContactIdRef = useRef<string | null>(editingContact?.id || null);
+
+  const isSameCompanyOrContact = (
+    record: { id: string; contactId?: string; name?: string; businessName?: string; phone?: string; taxNumber?: string; email?: string },
+    checkTaxVal?: string
+  ): boolean => {
+    const currentId = editingContact?.id;
+    const matchedSuppId = matchingSupplier?.id;
+    const matchedCustId = matchingCustomer?.id;
+
+    // 1. Same exact ID or counterpart ID
+    if (currentId && record.id === currentId) return true;
+    if (matchedCustId && record.id === matchedCustId) return true;
+    if (matchedSuppId && record.id === matchedSuppId) return true;
+    if (currentId && record.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === currentId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '')) return true;
+
+    // 2. Same custom ID (ignoring CUST- vs SUP- prefix)
+    if (contactCustomId.trim() && record.contactId) {
+      const cleanCustom = contactCustomId.trim().replace('SUP-', '').replace('CUST-', '');
+      const recCustom = record.contactId.trim().replace('SUP-', '').replace('CUST-', '');
+      if (cleanCustom && cleanCustom === recCustom) return true;
+    }
+
+    const currentBiz = businessName.trim().toLowerCase();
+    const currentN = name.trim().toLowerCase();
+    const recBiz = record.businessName?.trim().toLowerCase();
+    const recN = record.name?.trim().toLowerCase();
+
+    // 3. Matching company / business name or contact name (belongs to same company)
+    if (currentBiz && recBiz && currentBiz === recBiz) return true;
+    if (currentBiz && recN && currentBiz === recN) return true;
+    if (currentN && recBiz && currentN === recBiz) return true;
+    if (currentN && recN && currentN === recN) return true;
+
+    // 4. Matching phone
+    if (phone.trim() && record.phone && record.phone !== 'N/A' && isDuplicatePhone(record.phone, phone)) return true;
+
+    // 5. Matching email
+    if (email.trim() && email.trim().toUpperCase() !== 'N/A' && record.email && record.email.trim().toUpperCase() !== 'N/A' && email.trim().toLowerCase() === record.email.trim().toLowerCase()) return true;
+
+    // 6. When editing an existing contact and contactType is 'both' (or counterpart shares tax number)
+    if (isEditMode) {
+      const cleanCheck = (checkTaxVal !== undefined ? checkTaxVal : taxNumber).trim().toLowerCase();
+      const editTax = (editingContact?.taxNumber || '').trim().toLowerCase();
+      const suppTax = (matchingSupplier?.taxNumber || '').trim().toLowerCase();
+      const custTax = (matchingCustomer?.taxNumber || '').trim().toLowerCase();
+      if (cleanCheck && (cleanCheck === editTax || cleanCheck === suppTax || cleanCheck === custTax)) {
+        if (record.id === editingContact?.id || record.id === matchingSupplier?.id || record.id === matchingCustomer?.id) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
 
   const handleZipCodeLookup = async (zip: string) => {
     const cleanZip = zip.trim();
@@ -369,10 +511,14 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     }
 
     // Duplicate Phone check
-    const currentId = editingContact?.id;
     if (phone.trim()) {
-      const phoneExists = customers.some(c => c.id !== currentId && c.phone && isDuplicatePhone(c.phone, phone)) ||
-                          suppliers.some(s => s.id !== currentId && s.phone && isDuplicatePhone(s.phone, phone));
+      const phoneExists = contactType === 'supplier'
+        ? suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
+        : (contactType === 'both'
+            ? customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone)) ||
+              suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
+            : customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone))
+          );
       if (phoneExists) {
         setFieldErrors(prev => ({ ...prev, mobile: 'Mobile number is already registered under another contact' }));
         showFlashNotification('Mobile number is already registered under another contact', 'error');
@@ -388,8 +534,13 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         return;
       }
       const emailClean = email.trim().toLowerCase();
-      const emailExists = customers.some(c => c.id !== currentId && c.email?.trim().toLowerCase() === emailClean) ||
-                          suppliers.some(s => s.id !== currentId && s.email?.trim().toLowerCase() === emailClean);
+      const emailExists = contactType === 'supplier'
+        ? suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
+        : (contactType === 'both'
+            ? customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean) ||
+              suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
+            : customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean)
+          );
       if (emailExists) {
         setFieldErrors(prev => ({ ...prev, email: 'Email is already registered under another contact' }));
         showFlashNotification('Email is already registered under another contact', 'error');
@@ -397,16 +548,19 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       }
     }
 
-    // GST / TAX Number unique check across all companies (customers & suppliers)
+    // GST / TAX Number unique check
     if (taxNumber && taxNumber.trim()) {
       const cleanTax = taxNumber.trim().toLowerCase();
-      const dupCustomer = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax);
-      const dupSupplier = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax);
-      if (dupCustomer || dupSupplier) {
-        const conflictingCompany = dupCustomer
-          ? (dupCustomer.businessName || dupCustomer.name)
-          : (dupSupplier!.businessName || dupSupplier!.name);
-        const errMsg = `GST / TAX Number "${taxNumber.trim()}" is already registered to "${conflictingCompany}". No two companies can share the same GST / TAX Number.`;
+      const dupCustomer = contactType === 'supplier'
+        ? undefined
+        : customers.find(c => !isSameCompanyOrContact(c, taxNumber) && c.taxNumber && c.taxNumber.trim().toLowerCase() === cleanTax);
+      const dupSupplier = contactType === 'customer'
+        ? undefined
+        : suppliers.find(s => !isSameCompanyOrContact(s, taxNumber) && s.taxNumber && s.taxNumber.trim().toLowerCase() === cleanTax);
+      const dupRecord = dupCustomer || dupSupplier;
+      if (dupRecord) {
+        const conflictingCompany = dupRecord.businessName || dupRecord.name;
+        const errMsg = `GST / TAX Number "${taxNumber.trim()}" is already registered to "${conflictingCompany}". Each company must have a unique GST / TAX Number.`;
         setFieldErrors(prev => ({ ...prev, taxNumber: errMsg }));
         showFlashNotification(errMsg, 'error');
         return;
@@ -467,6 +621,9 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
       let savedObj: any = null;
 
+      const matchedCustId = matchingCustomer?.id;
+      const matchedSuppId = matchingSupplier?.id;
+
       if (isEditMode) {
         if (contactType === 'customer' || contactType === 'both') {
           const customerData = {
@@ -475,20 +632,43 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
           };
-          if (customers.some(c => c.id === contactId)) {
-            updateCustomer(contactId, customerData);
-            savedObj = { ...customerData, id: contactId };
+          const existingCust = (matchedCustId ? customers.find(c => c.id === matchedCustId) : null) ||
+            customers.find(c =>
+              c.id === contactId ||
+              c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === contactId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') ||
+              (contactCustomId.trim() && c.contactId && c.contactId.trim().replace('SUP-', '').replace('CUST-', '') === contactCustomId.trim().replace('SUP-', '').replace('CUST-', '')) ||
+              (taxNumber.trim() && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxNumber.trim().toLowerCase()) ||
+              (businessName.trim() && ((c.businessName && c.businessName.trim().toLowerCase() === businessName.trim().toLowerCase()) || (c.name && c.name.trim().toLowerCase() === businessName.trim().toLowerCase()))) ||
+              (name.trim() && ((c.name && c.name.trim().toLowerCase() === name.trim().toLowerCase()) || (c.businessName && c.businessName.trim().toLowerCase() === name.trim().toLowerCase()))) ||
+              (phone.trim() && c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, phone))
+            );
+          const targetCustId = existingCust?.id || (customers.some(c => c.id === contactId) ? contactId : undefined);
+          if (targetCustId) {
+            updateCustomer(targetCustId, customerData);
+            savedObj = { ...customerData, id: targetCustId };
           } else {
             savedObj = addCustomer({ ...customerData, id: contactId });
           }
         }
         
         if (contactType === 'supplier' || contactType === 'both') {
-          if (suppliers.some(s => s.id === contactId)) {
-            updateSupplier(contactId, baseData as any);
-            savedObj = { ...baseData, id: contactId };
+          const existingSupp = (matchedSuppId ? suppliers.find(s => s.id === matchedSuppId) : null) ||
+            suppliers.find(s =>
+              s.id === contactId ||
+              s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === contactId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') ||
+              (contactCustomId.trim() && s.contactId && s.contactId.trim().replace('SUP-', '').replace('CUST-', '') === contactCustomId.trim().replace('SUP-', '').replace('CUST-', '')) ||
+              (taxNumber.trim() && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxNumber.trim().toLowerCase()) ||
+              (businessName.trim() && ((s.businessName && s.businessName.trim().toLowerCase() === businessName.trim().toLowerCase()) || (s.name && s.name.trim().toLowerCase() === businessName.trim().toLowerCase()))) ||
+              (name.trim() && ((s.name && s.name.trim().toLowerCase() === name.trim().toLowerCase()) || (s.businessName && s.businessName.trim().toLowerCase() === name.trim().toLowerCase()))) ||
+              (phone.trim() && s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, phone))
+            );
+          const targetSuppId = existingSupp?.id || (suppliers.some(s => s.id === contactId) ? contactId : undefined);
+          if (targetSuppId) {
+            updateSupplier(targetSuppId, baseData as any);
+            if (!savedObj) savedObj = { ...baseData, id: targetSuppId };
           } else {
-            savedObj = addSupplier({ ...(baseData as any), id: contactId });
+            const newSupp = addSupplier({ ...(baseData as any), id: contactId });
+            if (!savedObj) savedObj = newSupp;
           }
         }
         
@@ -809,11 +989,23 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 required={true}
               />
               <FormFieldError error={fieldErrors.mobile} />
-              {phone.trim() && (customers.some(c => c.id !== editingContact?.id && c.phone && isDuplicatePhone(c.phone, phone)) || suppliers.some(s => s.id !== editingContact?.id && s.phone && isDuplicatePhone(s.phone, phone))) && (
-                <p className="text-[11px] text-rose-500 font-semibold mt-1">
-                  Mobile number is already registered under another contact
-                </p>
-              )}
+              {phone.trim() && (() => {
+                const phoneDup = contactType === 'supplier'
+                  ? suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
+                  : (contactType === 'both'
+                      ? customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone)) ||
+                        suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
+                      : customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone))
+                    );
+                if (phoneDup) {
+                  return (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      Mobile number is already registered under another contact
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Alternate Phone */}
@@ -862,11 +1054,24 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 }`}
               />
               <FormFieldError error={fieldErrors.email} />
-              {email.trim() && email.trim() !== 'N/A' && (customers.some(c => c.id !== editingContact?.id && c.email?.trim().toLowerCase() === email.trim().toLowerCase()) || suppliers.some(s => s.id !== editingContact?.id && s.email?.trim().toLowerCase() === email.trim().toLowerCase())) && (
-                <p className="text-[11px] text-rose-500 font-semibold mt-1">
-                  Email is already registered under another contact
-                </p>
-              )}
+              {email.trim() && email.trim() !== 'N/A' && (() => {
+                const emailClean = email.trim().toLowerCase();
+                const emailDup = contactType === 'supplier'
+                  ? suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
+                  : (contactType === 'both'
+                      ? customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean) ||
+                        suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
+                      : customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean)
+                    );
+                if (emailDup) {
+                  return (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      Email is already registered under another contact
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>
@@ -910,16 +1115,21 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 required={contactType === 'supplier' || contactType === 'both'}
                 value={taxNumber}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  const val = e.target.value.toUpperCase();
                   setTaxNumber(val);
                   if (fieldErrors.taxNumber) setFieldErrors(prev => ({ ...prev, taxNumber: '' }));
                   if (val.trim()) {
                     const clean = val.trim().toLowerCase();
-                    const currentId = editingContact?.id;
-                    const dupCust = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
-                    const dupSupp = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
-                    if (dupCust || dupSupp) {
-                      const conflict = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+                    const dupCust = contactType === 'supplier'
+                      ? undefined
+                      : customers.find(c => !isSameCompanyOrContact(c, val) && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
+                    const dupSupp = contactType === 'customer'
+                      ? undefined
+                      : suppliers.find(s => !isSameCompanyOrContact(s, val) && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
+                    
+                    const dupRecord = dupCust || dupSupp;
+                    if (dupRecord) {
+                      const conflict = dupRecord.businessName || dupRecord.name;
                       setFieldErrors(prev => ({
                         ...prev,
                         taxNumber: `GST / TAX Number "${val.trim()}" is already registered to "${conflict}". Numbers must be unique.`
@@ -930,11 +1140,16 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 onBlur={() => {
                   if (taxNumber.trim()) {
                     const clean = taxNumber.trim().toLowerCase();
-                    const currentId = editingContact?.id;
-                    const dupCust = customers.find(c => c.id !== currentId && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
-                    const dupSupp = suppliers.find(s => s.id !== currentId && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
-                    if (dupCust || dupSupp) {
-                      const conflict = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+                    const dupCust = contactType === 'supplier'
+                      ? undefined
+                      : customers.find(c => !isSameCompanyOrContact(c, taxNumber) && c.taxNumber && c.taxNumber.trim().toLowerCase() === clean);
+                    const dupSupp = contactType === 'customer'
+                      ? undefined
+                      : suppliers.find(s => !isSameCompanyOrContact(s, taxNumber) && s.taxNumber && s.taxNumber.trim().toLowerCase() === clean);
+                    
+                    const dupRecord = dupCust || dupSupp;
+                    if (dupRecord) {
+                      const conflict = dupRecord.businessName || dupRecord.name;
                       setFieldErrors(prev => ({
                         ...prev,
                         taxNumber: `GST / TAX Number is already registered to "${conflict}". Each company must have a unique GST / TAX Number.`

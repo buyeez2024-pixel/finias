@@ -56,6 +56,98 @@ export const initialProducts = [
         locationStocks: { loc_main: 10 },
       }
     ]
+  },
+  {
+    id: 'prod_bat_lifepo4',
+    name: 'Lithium Battery 48V 100Ah',
+    sku: 'BAT-48V-100',
+    barcode: '8901234567891',
+    type: 'single',
+    unit: 'Pc',
+    category: 'Batteries',
+    brand: 'Standard',
+    costPrice: 850,
+    costPriceIncTax: 850,
+    sellingPrice: 1200,
+    sellingPriceIncTax: 1200,
+    taxRate: 0,
+    alertQuantity: 8,
+    currentStock: 2,
+    stock: 2,
+    locationStocks: {
+      loc_main: 2,
+    },
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=300&q=80',
+    description: 'Deep-cycle LiFePO4 energy storage battery with built-in smart BMS',
+  },
+  {
+    id: 'prod_sol_panel',
+    name: 'Mono Solar Panel 450W',
+    sku: 'PNL-450W-MONO',
+    barcode: '8901234567892',
+    type: 'single',
+    unit: 'Pc',
+    category: 'Solar Panels',
+    brand: 'Standard',
+    costPrice: 120,
+    costPriceIncTax: 120,
+    sellingPrice: 180,
+    sellingPriceIncTax: 180,
+    taxRate: 0,
+    alertQuantity: 15,
+    currentStock: 0,
+    stock: 0,
+    locationStocks: {
+      loc_main: 0,
+    },
+    image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=300&q=80',
+    description: 'High-efficiency half-cut monocrystalline photovoltaic module',
+  },
+  {
+    id: 'prod_mppt_controller',
+    name: 'MPPT Charge Controller 60A',
+    sku: 'MPPT-60A-PRO',
+    barcode: '8901234567893',
+    type: 'single',
+    unit: 'Pc',
+    category: 'Electronics',
+    brand: 'Standard',
+    costPrice: 95,
+    costPriceIncTax: 95,
+    sellingPrice: 150,
+    sellingPriceIncTax: 150,
+    taxRate: 0,
+    alertQuantity: 6,
+    currentStock: 3,
+    stock: 3,
+    locationStocks: {
+      loc_main: 3,
+    },
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80',
+    description: 'Intelligent solar maximum power point tracker with LCD screen',
+  },
+  {
+    id: 'prod_mc4_connectors',
+    name: 'MC4 Solar Connectors 10-Pair',
+    sku: 'MC4-10PAIR',
+    barcode: '8901234567894',
+    type: 'single',
+    unit: 'Set',
+    category: 'Accessories',
+    brand: 'Standard',
+    costPrice: 12,
+    costPriceIncTax: 12,
+    sellingPrice: 25,
+    sellingPriceIncTax: 25,
+    taxRate: 0,
+    alertQuantity: 10,
+    currentStock: 45,
+    stock: 45,
+    locationStocks: {
+      loc_main: 45,
+    },
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&q=80',
+    description: 'Weatherproof IP67 male and female solar cable connectors',
   }
 ];
 export const initialCustomers = [
@@ -345,6 +437,9 @@ export const initialSettings = {
   isFreshInstallation: false,
   installationType: 'demo',
   defaultTaxRate: 0,
+  enableTax: true,
+  taxSystem: 'gst_india',
+  enableInlineTax: true,
   enablePosShiftLock: false,
   blockedDomains: [],
   enableSecurityGuard: true,
@@ -379,6 +474,7 @@ export const initialSettings = {
   currencySymbol: '₹',
   currencyPlacement: 'prefix',
   currencyDecimalPlaces: 2,
+  amountRoundingMethod: 'round_to_nearest_integer',
   invoiceLayoutConfig: {
     invoiceTitle: 'TAX INVOICE',
     showLogo: true,
@@ -912,7 +1008,14 @@ export const initialRolePermissions = {
 };
 export const initialStockAdjustments = [];
 export const initialStockTransfers = [];
-export const initialTaxGroups = [];
-export const initialTaxRates = [];
+export const initialTaxGroups = [
+  { id: 'tax_group_gst_18', name: 'GST 18%', rate: 18, rateIds: ['tax_rate_gst_18'] },
+];
+export const initialTaxRates = [
+  { id: 'tax_rate_gst_18', name: 'GST 18%', rate: 18 },
+  { id: 'tax_rate_gst_5', name: 'GST 5%', rate: 5 },
+  { id: 'tax_rate_gst_12', name: 'GST 12%', rate: 12 },
+  { id: 'tax_rate_gst_28', name: 'GST 28%', rate: 28 },
+];
 export const initialTransactions = [];
 export const initialSalesCommissionAgents = [];

@@ -78,6 +78,12 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
 
   const totalPaid = paymentEntries.reduce((sum, e) => sum + e.amount, 0);
   const dueAmount = Math.max(0, sale.totalAmount - totalPaid);
+  const effectivePaymentStatus: 'paid' | 'partial' | 'due' =
+    sale.totalAmount <= 0 || totalPaid >= sale.totalAmount - 0.01
+      ? 'paid'
+      : totalPaid > 0.01
+      ? 'partial'
+      : 'due';
 
   const handleOpenAddModal = () => {
     setEditingEntryId(null);
@@ -278,11 +284,11 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
               <div className="text-slate-300 flex items-center md:justify-end gap-1.5 mt-1">
                 <span>Payment Status:</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  sale.paymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
-                  sale.paymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
+                  effectivePaymentStatus === 'paid' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
+                  effectivePaymentStatus === 'partial' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
                   'bg-rose-950 text-rose-300 border border-rose-800'
                 }`}>
-                  {sale.paymentStatus}
+                  {effectivePaymentStatus}
                 </span>
               </div>
             </div>

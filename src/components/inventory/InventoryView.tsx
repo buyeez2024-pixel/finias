@@ -1327,7 +1327,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                               <button
                                 onClick={() => setViewingProduct(p)}
                                 className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 text-white transition-all cursor-pointer active:scale-95"
-                                title="View product details"
+                                title="view Product"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>

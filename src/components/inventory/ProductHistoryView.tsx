@@ -167,6 +167,9 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
     return '';
   });
 
+  const [productSearchText, setProductSearchText] = useState('');
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+
   // Filter States
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -177,6 +180,17 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
   const [activeNoteModal, setActiveNoteModal] = useState<StockMovementRecord | null>(null);
   const [copiedNote, setCopiedNote] = useState<boolean>(false);
   const [expandedNoteIds, setExpandedNoteIds] = useState<Record<string, boolean>>({});
+
+  const filteredSearchProducts = useMemo(() => {
+    const clean = productSearchText.trim().toLowerCase();
+    if (!clean) return products;
+    return products.filter((p) => 
+      p.name?.toLowerCase().includes(clean) ||
+      p.sku?.toLowerCase().includes(clean) ||
+      p.brand?.toLowerCase().includes(clean) ||
+      p.category?.toLowerCase().includes(clean)
+    );
+  }, [products, productSearchText]);
 
   const currentProduct = useMemo(() => {
     if (!selectedProductId) return null;
@@ -192,11 +206,63 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
     const unit = currentProduct.unit || 'Pcs';
 
     // 1. Opening Stock from Product Lots or Initial Setup
+    // First identify all non-draft purchase transactions for this product so we do not duplicate purchase lots
+    const productPurchaseTxns = transactions.filter(
+      (t) => t.type === 'purchase' && t.status !== 'draft' && t.items?.some((i: any) => i.productId === pId)
+    );
+
     if (currentProduct.lots && currentProduct.lots.length > 0) {
       currentProduct.lots.forEach((lot, idx) => {
-        const lotCreatedDate = lot.createdAt ? lot.createdAt.slice(0, 10) : '2026-01-01';
-        const initialQty = lot.initialStock || lot.currentStock || 0;
+        // A lot belongs to a purchase order if marked with source 'purchase', id starts with 'lot_pur_', or has purchaseId
+        const isPurchaseLot =
+          lot.source === 'purchase' ||
+          (typeof lot.id === 'string' && lot.id.startsWith('lot_pur_')) ||
+          Boolean(lot.purchaseId);
+
+        // Calculate total purchased units for this specific lot from inward purchase transactions
+        const purchasedQtyInThisLot = productPurchaseTxns.reduce((sum: number, t: any) => {
+          const item = t.items?.find(
+            (i: any) =>
+              i.productId === pId &&
+              (i.lotId === lot.id ||
+                (lot.id && i.lotId === lot.id) ||
+                (lot.lotNumber && (i.lotNumber?.toLowerCase() === lot.lotNumber.toLowerCase() || t.lotNumber?.toLowerCase() === lot.lotNumber.toLowerCase())))
+          );
+          return sum + (item ? Number(item.quantity || 0) : 0);
+        }, 0);
+
+        // Check if this lot is linked to a purchase transaction and wasn't explicitly flagged as opening stock
+        const isLinkedToPurchase =
+          purchasedQtyInThisLot > 0 &&
+          lot.source !== 'opening_stock' &&
+          !(typeof lot.id === 'string' && (lot.id.startsWith('lot_op_') || lot.id.startsWith('lot_init_')));
+
+        // If the lot was created exclusively by a purchase order, skip it from Opening Stock.
+        // Section 2 will record the Purchase Inward transaction directly, preventing double-counting.
+        if (isPurchaseLot || isLinkedToPurchase) {
+          return;
+        }
+
+        // For opening stock lots: calculate opening quantity (subtracting any subsequent purchase inwards allocated to this lot)
+        const recordedInitial = Number(lot.initialStock);
+        const recordedCurrent = Number(lot.currentStock) || 0;
+
+        let initialQty = 0;
+        if (!isNaN(recordedInitial) && recordedInitial > 0) {
+          initialQty = purchasedQtyInThisLot > 0 && recordedInitial > purchasedQtyInThisLot
+            ? recordedInitial - purchasedQtyInThisLot
+            : (purchasedQtyInThisLot >= recordedInitial ? 0 : recordedInitial);
+        } else {
+          initialQty = Math.max(0, recordedCurrent - purchasedQtyInThisLot);
+        }
+
         if (initialQty > 0) {
+          const lotCreatedDate = lot.createdAt
+            ? lot.createdAt.slice(0, 10)
+            : (lot.createdDate
+              ? lot.createdDate.slice(0, 10)
+              : (currentProduct.createdAt ? currentProduct.createdAt.slice(0, 10) : '2026-01-01'));
+
           list.push({
             id: `opening_lot_${lot.id || idx}`,
             date: lotCreatedDate,
@@ -219,6 +285,37 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
           });
         }
       });
+    }
+
+    // Fallback: If no opening stock movements exist yet, check direct opening stock on product
+    const hasOpeningMovement = list.some((m) => m.type === 'opening');
+    if (!hasOpeningMovement) {
+      const directOpening = Number(
+        currentProduct.openingStock ??
+        currentProduct.initialLotStock ??
+        (currentProduct.variations?.reduce((s: number, v: any) => s + Number(v.openingStock || 0), 0) || 0)
+      );
+      if (directOpening > 0) {
+        list.push({
+          id: `opening_prod_${pId}`,
+          date: currentProduct.createdAt ? currentProduct.createdAt.slice(0, 10) : '2026-01-01',
+          type: 'opening',
+          typeLabel: 'Opening Stock',
+          refNo: `OP-${pId.slice(0, 6).toUpperCase()}`,
+          location: 'Initial Warehouse',
+          contactName: 'Inventory Initialization',
+          qtyIn: directOpening,
+          qtyOut: 0,
+          qtyChange: directOpening,
+          unitCost: currentProduct.costPrice || 0,
+          unitPrice: currentProduct.sellingPrice || 0,
+          totalValue: directOpening * (currentProduct.costPrice || 0),
+          runningBalance: 0,
+          notes: 'Product opening stock allocation',
+          userName: 'System Admin',
+          status: 'Completed',
+        });
+      }
     }
 
     // 2. Transactions: Purchases, Sales, Returns
@@ -396,7 +493,14 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
     });
 
     // Sort chronologically ascending to accurately calculate Running Stock Balance
-    list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    list.sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      if (a.type === 'opening' && b.type !== 'opening') return -1;
+      if (b.type === 'opening' && a.type !== 'opening') return 1;
+      return 0;
+    });
 
     let running = 0;
     const computed = list.map((record) => {
@@ -881,7 +985,7 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
       )}
 
       {/* 2-Column Controls: Column Visibility (Column 1) and Product Selection (Column 2) */}
-      <div className={`rounded-2xl border overflow-hidden shadow-sm transition-colors duration-300 mb-4 animate-in fade-in slide-in-from-top-2 duration-150 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+      <div className={`rounded-2xl border overflow-visible shadow-sm transition-colors duration-300 mb-4 animate-in fade-in slide-in-from-top-2 duration-150 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
         <div className={`grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-b ${
           isLight ? 'bg-slate-50/70 border-slate-200 divide-slate-200' : 'bg-slate-950/80 border-slate-800 divide-slate-800'
         }`}>
@@ -1052,16 +1156,15 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
               </p>
             </div>
 
-            {/* Product Selection Field with Visible Label & Dropdown */}
-            <div className="space-y-1.5">
+            {/* Product Selection Field with Advanced Search Input & Dropdown */}
+            <div className="space-y-1.5 relative">
               <label
-                htmlFor="product-history-select-dropdown"
                 className={`block text-xs font-bold flex items-center justify-between ${
                   isLight ? 'text-slate-700' : 'text-slate-200'
                 }`}
               >
                 <span className="flex items-center gap-1.5">
-                  <span>Select Product</span>
+                  <span>Advance Search Product</span>
                   <span className="text-rose-500 font-normal">*</span>
                 </span>
                 <span className={`text-[10px] font-normal ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -1070,26 +1173,127 @@ export const ProductHistoryView: React.FC<ProductHistoryViewProps> = ({
               </label>
 
               <div className="relative">
-                <select
-                  id="product-history-select-dropdown"
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className={`w-full text-xs font-semibold pl-3.5 pr-8 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer appearance-none transition ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 shadow-xs hover:border-slate-400'
-                      : 'bg-slate-950 border-slate-700 text-white shadow-xs hover:border-slate-600'
-                  }`}
-                >
-                  <option value="">Select Product...</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.sku} — {p.name} ({p.currentStock} {p.unit || 'Pcs'})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown className="w-3.5 h-3.5" />
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-slate-400 pointer-events-none">
+                    <Search className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search by Name, SKU, Category, Brand..."
+                    value={isProductDropdownOpen ? productSearchText : (currentProduct ? `${currentProduct.sku} — ${currentProduct.name}` : '')}
+                    onFocus={() => {
+                      setIsProductDropdownOpen(true);
+                      if (currentProduct && !productSearchText) {
+                        setProductSearchText(currentProduct.name);
+                      }
+                    }}
+                    onChange={(e) => {
+                      setProductSearchText(e.target.value);
+                      setIsProductDropdownOpen(true);
+                    }}
+                    className={`w-full text-xs font-semibold pl-9 pr-14 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 shadow-xs hover:border-slate-400'
+                        : 'bg-slate-950 border-slate-700 text-white shadow-xs hover:border-slate-600'
+                    }`}
+                  />
+                  <div className="absolute right-2 flex items-center gap-1">
+                    {(selectedProductId || productSearchText) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedProductId('');
+                          setProductSearchText('');
+                          setIsProductDropdownOpen(false);
+                        }}
+                        className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                          isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-600' : 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+                        }`}
+                        title="Clear selection"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
+                      className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                        isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-600' : 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {isProductDropdownOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Dropdown Popover List */}
+                {isProductDropdownOpen && (
+                  <>
+                    {/* Fixed click away overlay */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsProductDropdownOpen(false)}
+                    />
+                    <div className={`absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border shadow-xl z-50 transition-all duration-150 animate-fadeIn ${
+                      isLight
+                        ? 'bg-white border-slate-200 text-slate-800 shadow-2xl'
+                        : 'bg-slate-950 border-slate-800 text-slate-100 shadow-2xl'
+                    }`}>
+                      {filteredSearchProducts.length === 0 ? (
+                        <div className="p-4 text-center text-slate-400 text-xs italic">
+                          No matching products found
+                        </div>
+                      ) : (
+                        <div className="p-1 divide-y divide-slate-100 dark:divide-slate-800/40">
+                          {filteredSearchProducts.map((p) => {
+                            const isSelected = p.id === selectedProductId;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedProductId(p.id);
+                                  setProductSearchText('');
+                                  setIsProductDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between rounded-lg transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white font-bold'
+                                    : isLight
+                                    ? 'hover:bg-slate-50 text-slate-700'
+                                    : 'hover:bg-slate-900 text-slate-300'
+                                }`}
+                              >
+                                <div className="flex flex-col min-w-0 flex-1 pr-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`font-mono font-bold ${isSelected ? 'text-indigo-100' : 'text-indigo-400'}`}>
+                                      {p.sku}
+                                    </span>
+                                    {p.brand && (
+                                      <span className={isLight
+                                        ? 'px-1.5 py-0.5 rounded border text-[11px] font-bold bg-indigo-50 border-indigo-200 text-indigo-900'
+                                        : 'text-[9px] px-1 py-0.2 rounded border bg-slate-800 border-slate-700 text-slate-400'
+                                      }>
+                                        {p.brand}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="truncate font-semibold mt-0.5">{p.name}</span>
+                                </div>
+                                <div className="text-right shrink-0 flex items-center gap-2">
+                                  <span className={`text-[10px] font-bold ${isSelected ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                    Stock: {p.currentStock} {p.unit || 'Pcs'}
+                                  </span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

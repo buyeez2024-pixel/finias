@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { TransactionItem, TransactionStatus, PaymentMethod, Product } from '../../types/erp';
-import { isTransactionEditable, formatCurrency } from '../../utils/formatters';
+import { isTransactionEditable, formatCurrency, applyAmountRounding } from '../../utils/formatters';
 import { validatePurchaseData } from '../../utils/validation';
 import { Truck, Plus, Trash2, ArrowLeft, CheckCircle2, Boxes, Clock, User, Landmark, CreditCard, Search, Calculator, Percent, Info, X, FileText, Banknote, Building, FileCheck, Sparkles } from 'lucide-react';
 import { ProductFormPage } from '../inventory/ProductFormPage';
@@ -136,22 +136,68 @@ export const PurchaseFormPage: React.FC = () => {
   const [showFullProductModal, setShowFullProductModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
 
+  // Helper to map and sanitize any purchase item (ensuring Selling Price & Margin are always initialized)
+  const mapPurchaseItem = (item: any): TransactionItem => {
+    const matchedProd = products?.find(
+      (p) => (item.productId && p.id === item.productId) || (item.sku && p.sku && p.sku === item.sku) || (item.productName && p.name === item.productName)
+    );
+    const costExclTax = item.costPrice !== undefined && item.costPrice !== null && !isNaN(Number(item.costPrice))
+      ? Number(item.costPrice)
+      : (item.unitPrice ? Number(item.unitPrice) : 0);
+    const taxRate = item.taxRate !== undefined && item.taxRate !== null && !isNaN(Number(item.taxRate))
+      ? Number(item.taxRate)
+      : 0;
+    const inclTax = item.unitPrice && Number(item.unitPrice) > 0
+      ? Number(item.unitPrice)
+      : Number((costExclTax * (1 + taxRate / 100)).toFixed(2));
+
+    // Determine Margin %
+    let marginPercent: number;
+    if (item.marginPercent !== undefined && item.marginPercent !== null && !isNaN(Number(item.marginPercent))) {
+      marginPercent = Number(item.marginPercent);
+    } else if (item.sellingPrice && Number(item.sellingPrice) > 0 && inclTax > 0) {
+      marginPercent = Number((((Number(item.sellingPrice) - inclTax) / inclTax) * 100).toFixed(2));
+    } else if (matchedProd?.profitMargin !== undefined && matchedProd.profitMargin !== null && !isNaN(Number(matchedProd.profitMargin))) {
+      marginPercent = Number(matchedProd.profitMargin);
+    } else if (matchedProd?.costPrice && matchedProd.costPrice > 0 && matchedProd.sellingPrice && matchedProd.sellingPrice > 0) {
+      marginPercent = Number((((Number(matchedProd.sellingPrice) - Number(matchedProd.costPrice)) / Number(matchedProd.costPrice)) * 100).toFixed(2));
+    } else {
+      marginPercent = settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25;
+    }
+
+    // Determine Selling Price
+    let sellingPrice: number;
+    if (item.sellingPrice !== undefined && item.sellingPrice !== null && !isNaN(Number(item.sellingPrice)) && Number(item.sellingPrice) > 0) {
+      sellingPrice = Number(item.sellingPrice);
+    } else if (matchedProd?.sellingPrice && Number(matchedProd.sellingPrice) > 0) {
+      sellingPrice = Number(matchedProd.sellingPrice);
+    } else {
+      sellingPrice = Number((inclTax * (1 + marginPercent / 100)).toFixed(2));
+    }
+
+    return {
+      ...item,
+      costPrice: costExclTax,
+      taxRate,
+      unitPrice: inclTax,
+      total: item.total || (Number(item.quantity || 1) * inclTax),
+      marginPercent,
+      sellingPrice,
+    };
+  };
+
   // Items State
   const [items, setItems] = useState<TransactionItem[]>(() => {
     if (!purchaseToUse?.items || !Array.isArray(purchaseToUse.items)) return [];
-    return purchaseToUse.items.map((item: any) => {
-      const inclTax = item.unitPrice || (item.costPrice * (1 + (item.taxRate || 0) / 100));
-      const marginPercent = item.marginPercent !== undefined && !isNaN(item.marginPercent)
-        ? item.marginPercent
-        : inclTax > 0 && item.sellingPrice
-          ? Number((((item.sellingPrice - inclTax) / inclTax) * 100).toFixed(2))
-          : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
-      return {
-        ...item,
-        marginPercent,
-      };
-    });
+    return purchaseToUse.items.map(mapPurchaseItem);
   });
+
+  // Re-sync items when editing/viewing purchase changes
+  React.useEffect(() => {
+    if (purchaseToUse?.items && Array.isArray(purchaseToUse.items)) {
+      setItems(purchaseToUse.items.map(mapPurchaseItem));
+    }
+  }, [purchaseToUse?.id]);
 
   // Filtered Products for Search
   const filteredProducts = useMemo(() => {
@@ -171,8 +217,8 @@ export const PurchaseFormPage: React.FC = () => {
       .slice(0, 10);
   }, [productSearch, products]);
 
-  const isTaxEnabled = settings.enableTax && settings.taxSystem !== 'disabled';
-  const showInlineTax = settings.enableTax && settings.taxSystem !== 'disabled' && (settings.enableInlineTax ?? true);
+  const isTaxEnabled = settings.taxSystem !== 'disabled';
+  const showInlineTax = settings.taxSystem !== 'disabled' && (settings.enableInlineTax ?? true);
 
   // Build GST options for inline line item dropdown (Select GST, None (0%), Active Default GST, etc.)
   const gstOptions = useMemo(() => {
@@ -203,6 +249,17 @@ export const PurchaseFormPage: React.FC = () => {
         }
       });
     }
+
+    // Common standard GST rates for India / general VAT
+    const standardGstRates = [5, 12, 18, 28];
+    standardGstRates.forEach((rate) => {
+      if (!list.some((o) => o.value === rate)) {
+        list.push({
+          label: `GST ${rate}%`,
+          value: rate,
+        });
+      }
+    });
 
     // Fallback Active Default GST
     if (settings.defaultTaxRate && settings.defaultTaxRate > 0 && !list.some((o) => o.value === settings.defaultTaxRate)) {
@@ -248,6 +305,7 @@ export const PurchaseFormPage: React.FC = () => {
         quantity: 1,
         costPrice: baseCost, // Base Cost (Excl. Tax)
         taxRate: initialTaxRate,
+        taxAmount: (baseCost * initialTaxRate) / 100,
         unitPrice: inclTax, // Cost (Incl. Tax)
         discount: 0,
         total: inclTax,
@@ -265,9 +323,12 @@ export const PurchaseFormPage: React.FC = () => {
       prev.map((item, idx) => {
         if (idx !== index) return item;
         const newQty = Math.max(0, isNaN(qty) ? 0 : qty);
+        const rate = item.taxRate || 0;
+        const lineTax = ((item.costPrice || 0) * rate / 100) * newQty;
         return {
           ...item,
           quantity: newQty,
+          taxAmount: Math.round(lineTax * 100) / 100,
           total: newQty * item.unitPrice,
         };
       })
@@ -280,6 +341,7 @@ export const PurchaseFormPage: React.FC = () => {
         if (idx !== index) return item;
         const rate = item.taxRate || 0;
         const inclTax = newCostExclTax * (1 + rate / 100);
+        const lineTax = (newCostExclTax * rate / 100) * (item.quantity || 1);
         const itemMargin = item.marginPercent !== undefined && !isNaN(item.marginPercent)
           ? item.marginPercent
           : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
@@ -288,6 +350,7 @@ export const PurchaseFormPage: React.FC = () => {
         return {
           ...item,
           costPrice: newCostExclTax,
+          taxAmount: Math.round(lineTax * 100) / 100,
           unitPrice: inclTax,
           total: item.quantity * inclTax,
           marginPercent: itemMargin,
@@ -303,6 +366,7 @@ export const PurchaseFormPage: React.FC = () => {
         if (idx !== index) return item;
         const rate = Math.max(0, newTaxRate);
         const inclTax = item.costPrice * (1 + rate / 100);
+        const lineTax = (item.costPrice * rate / 100) * (item.quantity || 1);
         const itemMargin = item.marginPercent !== undefined && !isNaN(item.marginPercent)
           ? item.marginPercent
           : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
@@ -311,6 +375,7 @@ export const PurchaseFormPage: React.FC = () => {
         return {
           ...item,
           taxRate: rate,
+          taxAmount: Math.round(lineTax * 100) / 100,
           unitPrice: inclTax,
           total: item.quantity * inclTax,
           marginPercent: itemMargin,
@@ -359,13 +424,23 @@ export const PurchaseFormPage: React.FC = () => {
 
   // Summary Calculations
   const subtotalItems = items.reduce((acc, item) => acc + item.total, 0);
-  const purchaseTaxAmount = isTaxEnabled ? (subtotalItems * parseFloat(purchaseTaxPercent || '0')) / 100 : 0;
+  const itemsTaxAmount = items.reduce((acc, item) => {
+    const rate = Number(item.taxRate) || 0;
+    const baseCost = Number(item.costPrice) || 0;
+    const qty = Number(item.quantity) || 0;
+    const itemTax = item.taxAmount !== undefined && item.taxAmount !== null
+      ? Number(item.taxAmount)
+      : (baseCost * rate / 100) * qty;
+    return acc + itemTax;
+  }, 0);
+  const orderTaxAmount = isTaxEnabled ? (subtotalItems * parseFloat(purchaseTaxPercent || '0')) / 100 : 0;
+  const totalPurchaseTax = Math.round((itemsTaxAmount + orderTaxAmount) * 100) / 100;
   
   const additionalExpensesAmount = useMemo(() => {
     return additionalExpenses.reduce((acc, exp) => acc + (parseFloat(exp.amount) || 0), 0);
   }, [additionalExpenses]);
 
-  const grandTotal = subtotalItems + purchaseTaxAmount + parseFloat(shippingCost || '0') - parseFloat(purchaseDiscountAmount || '0') + additionalExpensesAmount;
+  const grandTotal = applyAmountRounding(subtotalItems + orderTaxAmount + parseFloat(shippingCost || '0') - parseFloat(purchaseDiscountAmount || '0') + additionalExpensesAmount, settings.amountRoundingMethod);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,9 +472,20 @@ export const PurchaseFormPage: React.FC = () => {
       supplierId,
       locationId,
       date: purchaseDate,
-      items,
+      items: items.map((it) => {
+        const rate = Number(it.taxRate) || 0;
+        const lineTax = it.taxAmount !== undefined && it.taxAmount !== null
+          ? Number(it.taxAmount)
+          : ((Number(it.costPrice) || 0) * rate / 100) * (Number(it.quantity) || 0);
+        return {
+          ...it,
+          taxRate: rate,
+          taxAmount: Math.round(lineTax * 100) / 100,
+        };
+      }),
       subtotal: subtotalItems,
-      taxAmount: purchaseTaxAmount,
+      taxAmount: totalPurchaseTax,
+      orderTaxRate: parseFloat(purchaseTaxPercent || '0'),
       discountAmount: parseFloat(purchaseDiscountAmount || '0'),
       discountType,
       shippingCharges: parseFloat(shippingCost || '0'),
@@ -749,25 +835,53 @@ export const PurchaseFormPage: React.FC = () => {
                       </td>
                       {showInlineTax && (
                         <td className="py-3 px-4 text-center">
-                          {isViewMode ? (
-                            <span className="font-mono text-xs text-slate-300">
-                              {item.taxRate && item.taxRate > 0 ? `${item.taxRate}%` : 'None (0%)'}
-                            </span>
-                          ) : (
-                            <select
-                              id={`purchase-item-tax-${idx}`}
-                              value={item.taxRate !== undefined && item.taxRate !== null ? item.taxRate : 0}
-                              onChange={(e) => handleTaxChange(idx, parseFloat(e.target.value) || 0)}
-                              className="w-32 bg-slate-950 text-slate-200 font-mono text-xs py-1.5 px-2 rounded-lg border border-slate-700 outline-none focus:border-indigo-500 font-medium cursor-pointer"
-                            >
-                              <option value="0">None (0%)</option>
-                              {gstOptions.map((opt) => (
-                                <option key={`${opt.label}-${opt.value}`} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          )}
+                          {(() => {
+                            const baseCost = Number(item.costPrice || 0);
+                            const taxRate = Number(item.taxRate || 0);
+                            const taxPerUnit = (baseCost * taxRate) / 100;
+                            const totalLineTax = taxPerUnit * (Number(item.quantity) || 0);
+
+                            return isViewMode ? (
+                              <div className="flex flex-col items-center">
+                                <span className="font-mono text-xs text-slate-300 font-semibold">
+                                  {taxRate > 0 ? `${taxRate}%` : 'None (0%)'}
+                                </span>
+                                {taxRate > 0 ? (
+                                  <div className="text-[10px] text-amber-400 font-mono font-medium mt-0.5">
+                                    +{formatCurrency(totalLineTax, settings)}
+                                    <span className="text-slate-500 ml-1">({formatCurrency(taxPerUnit, settings)}/u)</span>
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">₹0.00</div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <select
+                                  id={`purchase-item-tax-${idx}`}
+                                  value={item.taxRate !== undefined && item.taxRate !== null ? item.taxRate : 0}
+                                  onChange={(e) => handleTaxChange(idx, parseFloat(e.target.value) || 0)}
+                                  className="w-32 bg-slate-950 text-slate-200 font-mono text-xs py-1.5 px-2 rounded-lg border border-slate-700 outline-none focus:border-indigo-500 font-medium cursor-pointer"
+                                >
+                                  <option value="0">None (0%)</option>
+                                  {gstOptions.map((opt) => (
+                                    <option key={`${opt.label}-${opt.value}`} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="text-[10px] font-mono flex items-center justify-center">
+                                  {taxRate > 0 ? (
+                                    <span className="text-amber-400 font-semibold" title={`Applied Tax: ${formatCurrency(totalLineTax, settings)} total (${formatCurrency(taxPerUnit, settings)} per unit)`}>
+                                      +{formatCurrency(totalLineTax, settings)} <span className="text-slate-500 font-normal">({formatCurrency(taxPerUnit, settings)}/u)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-500 font-normal">No tax (0%)</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                       )}
                       <td className="py-3 px-4">
@@ -801,9 +915,10 @@ export const PurchaseFormPage: React.FC = () => {
                             disabled={isViewMode}
                             type="number"
                             step="0.01"
-                            value={item.sellingPrice}
+                            value={item.sellingPrice !== undefined && item.sellingPrice !== null && !isNaN(item.sellingPrice) ? item.sellingPrice : ''}
                             onChange={(e) => handleSellingPriceChange(idx, parseFloat(e.target.value) || 0)}
                             className="w-28 bg-slate-950 pl-6 pr-2 py-1.5 rounded-lg border border-slate-700 text-indigo-300 font-mono font-bold text-xs outline-none focus:border-indigo-500"
+                            placeholder="0.00"
                           />
                         </div>
                       </td>

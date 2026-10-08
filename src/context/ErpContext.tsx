@@ -401,6 +401,7 @@ interface ErpContextType {
     shippingAddress?: string;
     shippingStatus?: 'ordered' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
     deliveredTo?: string;
+    roundOff?: number;
     totalAmount: number;
     paidAmount: number;
     paymentMethod?: any;
@@ -1337,8 +1338,46 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const list: Transaction[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialTransactions);
     return list.map((t) => {
       const isPos = t.isPos === true || t.saleChannel === 'pos' || (t.invoiceNo && t.invoiceNo.toUpperCase().startsWith('POS'));
+      const entriesPaid = t.paymentEntries && t.paymentEntries.length > 0
+        ? t.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+        : 0;
+      const effectivePaid = Math.max(Number(t.paidAmount) || 0, entriesPaid);
+      const effectiveTotal = Number(t.totalAmount) || 0;
+      let reconciledPaymentStatus = t.paymentStatus;
+      if (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01) {
+        reconciledPaymentStatus = 'paid';
+      } else if (effectivePaid > 0.01) {
+        reconciledPaymentStatus = 'partial';
+      } else {
+        reconciledPaymentStatus = 'due';
+      }
+
+      // Reconcile items taxAmount if missing
+      const reconciledItems = (t.items || []).map((it) => {
+        const rate = Number(it.taxRate) || 0;
+        const lineTax = it.taxAmount !== undefined && it.taxAmount !== null && Number(it.taxAmount) > 0
+          ? Number(it.taxAmount)
+          : rate > 0
+          ? ((Number(it.costPrice || it.unitPrice || 0) * rate) / 100) * (Number(it.quantity) || 1)
+          : 0;
+        return {
+          ...it,
+          taxRate: rate,
+          taxAmount: Math.round(lineTax * 100) / 100,
+        };
+      });
+
+      const itemsTaxSum = reconciledItems.reduce((acc, it) => acc + (it.taxAmount || 0), 0);
+      const effectiveTaxAmount = Number(t.taxAmount) > 0 ? Number(t.taxAmount) : itemsTaxSum;
+      const reconciledType = t.type || (t.supplierId ? 'purchase' : 'sale');
+
       return {
         ...t,
+        type: reconciledType,
+        paidAmount: effectivePaid,
+        paymentStatus: reconciledPaymentStatus,
+        taxAmount: effectiveTaxAmount,
+        items: reconciledItems,
         isPos,
         saleChannel: isPos ? 'pos' : 'standard',
       };
@@ -1402,12 +1441,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Tax Rates & Tax Groups State
   const [taxRates, setTaxRates] = useState<TaxRate[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_tax_rates`);
-    return saved ? JSON.parse(saved) : initialTaxRates;
+    let list = saved ? JSON.parse(saved) : initialTaxRates;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = [
+        { id: 'tax_rate_gst_18', name: 'GST 18%', rate: 18 },
+        { id: 'tax_rate_gst_5', name: 'GST 5%', rate: 5 },
+        { id: 'tax_rate_gst_12', name: 'GST 12%', rate: 12 },
+        { id: 'tax_rate_gst_28', name: 'GST 28%', rate: 28 },
+      ];
+    }
+    if (!list.some((r: any) => r.name === 'GST 18%' || r.rate === 18)) {
+      list.push({ id: 'tax_rate_gst_18', name: 'GST 18%', rate: 18 });
+    }
+    return list;
   });
 
   const [taxGroups, setTaxGroups] = useState<TaxGroup[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_tax_groups`);
-    return saved ? JSON.parse(saved) : initialTaxGroups;
+    let list = saved ? JSON.parse(saved) : initialTaxGroups;
+    if (!Array.isArray(list) || list.length === 0) {
+      list = [
+        { id: 'tax_group_gst_18', name: 'GST 18%', rate: 18, rateIds: ['tax_rate_gst_18'] },
+      ];
+    }
+    if (!list.some((g: any) => g.name === 'GST 18%' || g.rate === 18)) {
+      list.push({ id: 'tax_group_gst_18', name: 'GST 18%', rate: 18, rateIds: ['tax_rate_gst_18'] });
+    }
+    return list;
   });
 
   // Currencies State
@@ -3425,6 +3485,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             costPrice: productData.costPrice,
             sellingPrice: productData.sellingPrice,
             currentStock: totalStock,
+            initialStock: totalStock,
+            source: 'opening_stock',
             createdDate: new Date().toISOString().slice(0, 10),
           }];
         } else if ((productData as any).source !== 'purchase' && (productData as any).creationSource !== 'direct_purchase') {
@@ -3434,6 +3496,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             costPrice: productData.costPrice,
             sellingPrice: productData.sellingPrice,
             currentStock: totalStock,
+            initialStock: totalStock,
+            source: 'opening_stock',
             createdDate: new Date().toISOString().slice(0, 10),
           }];
         }
@@ -3441,6 +3505,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...productData,
         id: newId,
+        openingStock: (productData as any).openingStock !== undefined ? Number((productData as any).openingStock) : totalStock,
         currentStock: totalStock as number,
         lots: lots,
       } as Product;
@@ -3483,6 +3548,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             costPrice: productData.costPrice,
             sellingPrice: productData.sellingPrice,
             currentStock: totalStock,
+            initialStock: totalStock,
             createdDate: new Date().toISOString().slice(0, 10),
             source: 'opening_stock',
           }];
@@ -3493,6 +3559,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             costPrice: productData.costPrice,
             sellingPrice: productData.sellingPrice,
             currentStock: totalStock,
+            initialStock: totalStock,
             createdDate: new Date().toISOString().slice(0, 10),
             source: 'opening_stock',
           }];
@@ -4564,10 +4631,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (customerData.taxNumber && customerData.taxNumber.trim()) {
       const taxClean = customerData.taxNumber.trim().toLowerCase();
-      const dupCust = customers.find(c => c.id !== customerData.id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
-      const dupSupp = suppliers.find(s => s.id !== customerData.id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
-      if (dupCust || dupSupp) {
-        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+      const dupCust = customers.find(c => 
+        c.id !== customerData.id && 
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') !== (customerData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') &&
+        c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean
+      );
+      if (dupCust) {
+        const dupName = dupCust.businessName || dupCust.name;
         throw new Error(`GST / TAX Number "${customerData.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
       }
     }
@@ -4606,7 +4676,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cCode = (c as any).countryCode || resolveCountryCodeFromContact(c, sysDefaultCode);
       return {
         ...c,
-        id: `cust_${Date.now()}_${index}`,
+        id: (c as any).id || `cust_${Date.now()}_${index}`,
         contactId: cid,
         name: c.name?.trim() || 'Unnamed Customer',
         phone: c.phone?.trim() || 'N/A',
@@ -4635,7 +4705,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const sCode = (s as any).countryCode || resolveCountryCodeFromContact(s, sysDefaultCode);
       return {
         ...s,
-        id: `sup_${Date.now()}_${index}`,
+        id: (s as any).id || `sup_${Date.now()}_${index}`,
         contactId: cid,
         name: s.name?.trim() || 'Unnamed Supplier',
         businessName: s.businessName?.trim() || s.name?.trim() || 'N/A',
@@ -4660,10 +4730,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (data.taxNumber && data.taxNumber.trim()) {
       const taxClean = data.taxNumber.trim().toLowerCase();
-      const dupCust = customers.find(c => c.id !== id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
-      const dupSupp = suppliers.find(s => s.id !== id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
-      if (dupCust || dupSupp) {
-        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+      const dupCust = customers.find(c => 
+        c.id !== id && 
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') &&
+        c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean
+      );
+      if (dupCust) {
+        const dupName = dupCust.businessName || dupCust.name;
         throw new Error(`GST / TAX Number "${data.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
       }
     }
@@ -4709,10 +4782,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (supplierData.taxNumber && supplierData.taxNumber.trim()) {
       const taxClean = supplierData.taxNumber.trim().toLowerCase();
-      const dupCust = customers.find(c => c.id !== supplierData.id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
-      const dupSupp = suppliers.find(s => s.id !== supplierData.id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
-      if (dupCust || dupSupp) {
-        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+      const dupSupp = suppliers.find(s => 
+        s.id !== supplierData.id && 
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') !== (supplierData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') &&
+        s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean
+      );
+      if (dupSupp) {
+        const dupName = dupSupp.businessName || dupSupp.name;
         throw new Error(`GST / TAX Number "${supplierData.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
       }
     }
@@ -4742,10 +4818,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (data.taxNumber && data.taxNumber.trim()) {
       const taxClean = data.taxNumber.trim().toLowerCase();
-      const dupCust = customers.find(c => c.id !== id && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxClean);
-      const dupSupp = suppliers.find(s => s.id !== id && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean);
-      if (dupCust || dupSupp) {
-        const dupName = dupCust ? (dupCust.businessName || dupCust.name) : (dupSupp!.businessName || dupSupp!.name);
+      const dupSupp = suppliers.find(s => 
+        s.id !== id && 
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') &&
+        s.taxNumber && s.taxNumber.trim().toLowerCase() === taxClean
+      );
+      if (dupSupp) {
+        const dupName = dupSupp.businessName || dupSupp.name;
         throw new Error(`GST / TAX Number "${data.taxNumber.trim()}" is already registered to "${dupName}". Each company must have a unique GST / TAX Number.`);
       }
     }
@@ -5256,7 +5335,25 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const selectedLot = effectiveLotId ? product.lots?.find(l => l.id === effectiveLotId) : null;
     const selectedVariation = variationId && product.variations ? product.variations.find(v => v.id === variationId || v.sku === variationId) : null;
     const baseSellingPrice = selectedVariation ? Number(selectedVariation.sellingPrice) : (selectedLot ? selectedLot.sellingPrice : product.sellingPrice);
-    const priceToUse = getCustomerGroupPrice(baseSellingPrice, selectedCustomer);
+    
+    // Calculate customer group discount percentage
+    let groupDiscountPct = 0;
+    if (selectedCustomer && customerGroups) {
+      const group = customerGroups.find(
+        (g) =>
+          (selectedCustomer.customerGroupId && g.id === selectedCustomer.customerGroupId) ||
+          (selectedCustomer.customerGroup && g.name.toLowerCase() === selectedCustomer.customerGroup.toLowerCase())
+      );
+      if (group && group.calculationPercentage) {
+        const pct = Number(group.calculationPercentage) || 0;
+        if (pct < 0) {
+          groupDiscountPct = Math.abs(pct);
+        }
+      }
+    }
+
+    const priceToUse = baseSellingPrice; // Keep original standard price
+    const discountAmt = Math.round(((baseSellingPrice * groupDiscountPct) / 100) * quantity * 100) / 100; // Flat discount
     const costPriceToUse = selectedVariation ? Number(selectedVariation.costPrice) : (selectedLot ? selectedLot.costPrice : product.costPrice);
     const lotNumber = selectedLot ? selectedLot.lotNumber : undefined;
     const varLabel = selectedVariation ? (selectedVariation.value || selectedVariation.name?.replace(/^.*:\s*/, '')) : undefined;
@@ -5285,7 +5382,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const additionMethod = settings.salesItemAdditionMethod || 'add_to_existing_qty';
 
-    const calculated = calculateItemTax(priceToUse, quantity, 0, {
+    const calculated = calculateItemTax(priceToUse, quantity, discountAmt, {
       taxRate: product.taxRate,
       taxGroupId: product.taxGroupId,
       taxType: product.taxType,
@@ -5299,7 +5396,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (existing) {
         const nextQty = existing.quantity + quantity;
         if (!settings.allowOverselling && nextQty > effectiveStock) return prev; // Cannot exceed available stock
-        const nextCalc = calculateItemTax(existing.unitPrice, nextQty, existing.discount, {
+        const nextDisc = Math.round(((existing.unitPrice * groupDiscountPct) / 100) * nextQty * 100) / 100;
+        const nextCalc = calculateItemTax(existing.unitPrice, nextQty, nextDisc, {
           taxRate: existing.taxRate,
           taxGroupId: existing.taxGroupId,
         });
@@ -5309,6 +5407,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ? {
                 ...item,
                 quantity: nextQty,
+                discount: nextDisc,
                 taxAmount: nextCalc.taxAmount,
                 cgstRate: nextCalc.cgstRate,
                 cgstAmount: nextCalc.cgstAmount,
@@ -5316,12 +5415,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 sgstAmount: nextCalc.sgstAmount,
                 igstRate: nextCalc.igstRate,
                 igstAmount: nextCalc.igstAmount,
-                total: (nextQty * item.unitPrice) - item.discount,
+                total: (nextQty * item.unitPrice) - nextDisc,
               }
             : item
         );
       } else {
-        const lineTotal = (quantity * priceToUse);
+        const lineTotal = (quantity * priceToUse) - discountAmt;
         const warObj = product.warrantyId ? warranties.find((w) => w.id === product.warrantyId) : undefined;
         const newItem: CartItem = {
           productId: product.id,
@@ -5341,7 +5440,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sgstAmount: calculated.sgstAmount,
           igstRate: calculated.igstRate,
           igstAmount: calculated.igstAmount,
-          discount: 0,
+          discount: discountAmt,
           total: lineTotal,
           maxStock: effectiveStock,
           lotId: lotId,
@@ -5370,13 +5469,37 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((item) => {
         if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
         const validQty = settings.allowOverselling ? quantity : Math.min(quantity, item.maxStock);
-        const nextCalc = calculateItemTax(item.unitPrice, validQty, item.discount, {
+
+        // Find customer group discount pct
+        let groupDiscountPct = 0;
+        if (selectedCustomer && customerGroups) {
+          const group = customerGroups.find(
+            (g) =>
+              (selectedCustomer.customerGroupId && g.id === selectedCustomer.customerGroupId) ||
+              (selectedCustomer.customerGroup && g.name.toLowerCase() === selectedCustomer.customerGroup.toLowerCase())
+          );
+          if (group && group.calculationPercentage) {
+            const pct = Number(group.calculationPercentage) || 0;
+            if (pct < 0) {
+              groupDiscountPct = Math.abs(pct);
+            }
+          }
+        }
+
+        const guaranteedMinDisc = Math.round(((item.unitPrice * groupDiscountPct) / 100) * validQty * 100) / 100;
+        const currentDiscPerUnit = item.quantity > 0 ? (item.discount / item.quantity) : 0;
+        const currentDiscPctOfPrice = item.unitPrice > 0 ? (currentDiscPerUnit / item.unitPrice) * 100 : 0;
+        const finalDiscPct = Math.max(groupDiscountPct, currentDiscPctOfPrice);
+        const scaledDisc = Math.round(((item.unitPrice * finalDiscPct) / 100) * validQty * 100) / 100;
+
+        const nextCalc = calculateItemTax(item.unitPrice, validQty, scaledDisc, {
           taxRate: item.taxRate,
           taxGroupId: item.taxGroupId,
         });
         return {
           ...item,
           quantity: validQty,
+          discount: scaledDisc,
           taxAmount: nextCalc.taxAmount,
           cgstRate: nextCalc.cgstRate,
           cgstAmount: nextCalc.cgstAmount,
@@ -5384,7 +5507,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sgstAmount: nextCalc.sgstAmount,
           igstRate: nextCalc.igstRate,
           igstAmount: nextCalc.igstAmount,
-          total: (validQty * item.unitPrice) - item.discount,
+          total: Math.max(0, (validQty * item.unitPrice) - scaledDisc),
         };
       })
     );
@@ -5394,7 +5517,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCart((prev) =>
       prev.map((item) => {
         if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
-        const validDiscount = Math.max(0, discount);
+
+        // Find customer group discount pct
+        let groupDiscountPct = 0;
+        if (selectedCustomer && customerGroups) {
+          const group = customerGroups.find(
+            (g) =>
+              (selectedCustomer.customerGroupId && g.id === selectedCustomer.customerGroupId) ||
+              (selectedCustomer.customerGroup && g.name.toLowerCase() === selectedCustomer.customerGroup.toLowerCase())
+          );
+          if (group && (group.calculationPercentage !== undefined || group.percentage !== undefined)) {
+            const raw = group.calculationPercentage !== undefined ? group.calculationPercentage : group.percentage;
+            groupDiscountPct = Math.abs(Number(raw) || 0);
+          }
+        }
+
+        const totalLinePrice = item.quantity * item.unitPrice;
+        const guaranteedMinDisc = Math.round(((totalLinePrice * groupDiscountPct) / 100) * 100) / 100;
+        let validDiscount = Math.max(0, discount);
+
+        if (selectedCustomer && groupDiscountPct > 0 && validDiscount < (guaranteedMinDisc - 0.009)) {
+          showFlashNotification(
+            `Discount cannot be set below the guaranteed customer group discount of ${groupDiscountPct}% (${settings.currencySymbol || '$'}${guaranteedMinDisc.toFixed(2)})`,
+            'error'
+          );
+          validDiscount = guaranteedMinDisc;
+        }
+
         const nextCalc = calculateItemTax(item.unitPrice, item.quantity, validDiscount, {
           taxRate: item.taxRate,
           taxGroupId: item.taxGroupId,
@@ -5417,28 +5566,42 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateCartPrice = (productId: string, unitPrice: number, lotId?: string, variationId?: string) => {
     const prod = products.find((p) => p.id === productId);
-    const minFloorPrice = prod ? (prod.minSellingPrice ?? prod.sellingPrice) : 0;
-    const isMinPriceEnabled = settings.salesPriceIsMinPrice ?? true;
 
     let validPrice = Math.max(0, unitPrice);
-    if (isMinPriceEnabled && minFloorPrice > 0 && validPrice < minFloorPrice) {
-      showFlashNotification(
-        `Sales price cannot be set below minimum price of ${settings.currencySymbol || '$'}${minFloorPrice.toFixed(2)}`,
-        'error'
-      );
-      validPrice = minFloorPrice;
-    }
 
     setCart((prev) =>
       prev.map((item) => {
         if (item.productId !== productId || item.lotId !== lotId || (variationId && (item as any).variationId !== variationId)) return item;
-        const nextCalc = calculateItemTax(validPrice, item.quantity, item.discount, {
+
+        // Find customer group discount pct
+        let groupDiscountPct = 0;
+        if (selectedCustomer && customerGroups) {
+          const group = customerGroups.find(
+            (g) =>
+              (selectedCustomer.customerGroupId && g.id === selectedCustomer.customerGroupId) ||
+              (selectedCustomer.customerGroup && g.name.toLowerCase() === selectedCustomer.customerGroup.toLowerCase())
+          );
+          if (group && group.calculationPercentage) {
+            const pct = Number(group.calculationPercentage) || 0;
+            if (pct < 0) {
+              groupDiscountPct = Math.abs(pct);
+            }
+          }
+        }
+
+        const currentDiscPerUnit = item.quantity > 0 ? (item.discount / item.quantity) : 0;
+        const currentDiscPctOfPrice = item.unitPrice > 0 ? (currentDiscPerUnit / item.unitPrice) * 100 : 0;
+        const finalDiscPct = Math.max(groupDiscountPct, currentDiscPctOfPrice);
+        const scaledDisc = Math.round(((validPrice * finalDiscPct) / 100) * item.quantity * 100) / 100;
+
+        const nextCalc = calculateItemTax(validPrice, item.quantity, scaledDisc, {
           taxRate: item.taxRate,
           taxGroupId: item.taxGroupId,
         });
         return {
           ...item,
           unitPrice: validPrice,
+          discount: scaledDisc,
           taxAmount: nextCalc.taxAmount,
           cgstRate: nextCalc.cgstRate,
           cgstAmount: nextCalc.cgstAmount,
@@ -5446,7 +5609,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sgstAmount: nextCalc.sgstAmount,
           igstRate: nextCalc.igstRate,
           igstAmount: nextCalc.igstAmount,
-          total: Math.max(0, (item.quantity * validPrice) - item.discount),
+          total: Math.max(0, (item.quantity * validPrice) - scaledDisc),
         };
       })
     );
@@ -5460,7 +5623,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCart([]);
   };
 
-  // Recalculate cart item unit prices when selected customer or customer groups change
+  // Recalculate cart item unit prices and group discounts when selected customer or customer groups change
   useEffect(() => {
     if (cart.length === 0) return;
     setCart((prevCart) =>
@@ -5468,18 +5631,41 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const prod = products.find((p) => p.id === item.productId);
         if (!prod) return item;
         const lot = item.lotId ? prod.lots?.find((l) => l.id === item.lotId) : null;
-        const basePrice = lot ? lot.sellingPrice : prod.sellingPrice;
-        const targetPrice = getCustomerGroupPrice(basePrice, selectedCustomer);
-        if (targetPrice === item.unitPrice) return item;
+        const matchingVar = item.variationId && prod.variations
+          ? prod.variations.find((v: any) => v.id === item.variationId || v.sku === item.sku)
+          : null;
+        const basePrice = matchingVar
+          ? Number(matchingVar.sellingPrice)
+          : (lot ? Number(lot.sellingPrice) : (Number(prod.sellingPrice) || 0));
 
-        const nextCalc = calculateItemTax(targetPrice, item.quantity, item.discount, {
+        let groupDiscountPct = 0;
+        if (selectedCustomer && customerGroups) {
+          const group = customerGroups.find(
+            (g) =>
+              (selectedCustomer.customerGroupId && g.id === selectedCustomer.customerGroupId) ||
+              (selectedCustomer.customerGroup && g.name.toLowerCase() === selectedCustomer.customerGroup.toLowerCase())
+          );
+          if (group && group.calculationPercentage) {
+            const pct = Number(group.calculationPercentage) || 0;
+            if (pct < 0) {
+              groupDiscountPct = Math.abs(pct);
+            }
+          }
+        }
+
+        const discountPerUnit = Math.round(((basePrice * groupDiscountPct) / 100) * 100) / 100;
+        const totalDiscount = discountPerUnit * item.quantity;
+
+        const subtotalBeforeTax = (item.quantity * basePrice) - totalDiscount;
+        const nextCalc = calculateItemTax(basePrice, item.quantity, totalDiscount, {
           taxRate: item.taxRate,
           taxGroupId: item.taxGroupId,
         });
 
         return {
           ...item,
-          unitPrice: targetPrice,
+          unitPrice: basePrice,
+          discount: totalDiscount,
           taxAmount: nextCalc.taxAmount,
           cgstRate: nextCalc.cgstRate,
           cgstAmount: nextCalc.cgstAmount,
@@ -5487,7 +5673,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sgstAmount: nextCalc.sgstAmount,
           igstRate: nextCalc.igstRate,
           igstAmount: nextCalc.igstAmount,
-          total: Math.max(0, (item.quantity * targetPrice) - item.discount),
+          total: Math.max(0, subtotalBeforeTax),
         };
       })
     );
@@ -5539,6 +5725,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     shippingAddress?: string;
     shippingStatus?: 'ordered' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
     deliveredTo?: string;
+    roundOff?: number;
     totalAmount: number;
     paidAmount: number;
     paymentMethod?: any;
@@ -5722,7 +5909,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }),
       subtotal: saleData.subtotal,
-      taxAmount: saleData.taxAmount,
+      taxAmount: (() => {
+        const directTax = Number(saleData.taxAmount) || 0;
+        const itemsTax = (saleData.items || []).reduce((s: number, it: any) => {
+          const lineTax = Number(it.taxAmount) || 0;
+          if (lineTax > 0) return s + lineTax;
+          const rate = Number(it.taxRate) || 0;
+          if (rate > 0) {
+            const base = Number(it.unitPrice || it.costPrice || 0);
+            const qty = Number(it.quantity) || 1;
+            return s + ((base * rate) / 100) * qty;
+          }
+          return s;
+        }, 0);
+        return Math.max(directTax, itemsTax);
+      })(),
       discountAmount: saleData.discountAmount,
       discountType: saleData.discountType || 'fixed',
       orderTaxRate: saleData.orderTaxRate || 0,
@@ -5731,9 +5932,36 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       shippingAddress: saleData.shippingAddress,
       shippingStatus: saleData.shippingStatus || 'ordered',
       deliveredTo: saleData.deliveredTo,
-      totalAmount: saleData.totalAmount,
-      paidAmount: saleData.paidAmount,
-      paymentStatus,
+      roundOff: saleData.roundOff !== undefined && saleData.roundOff !== null && !isNaN(Number(saleData.roundOff)) && Number(saleData.roundOff) !== 0
+        ? Number(saleData.roundOff)
+        : (() => {
+            const baseAmount = Number(saleData.totalAmount) > 0
+              ? Number(saleData.totalAmount)
+              : Math.max(0, (Number(saleData.subtotal) || 0) - (Number(saleData.discountAmount) || 0) + (Number(saleData.shippingCharges) || 0) + (saleData.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0));
+            const roundedTotal = applyAmountRounding(baseAmount, settings.amountRoundingMethod);
+            return Math.round((roundedTotal - baseAmount) * 100) / 100;
+          })(),
+      totalAmount: (() => {
+        if (saleData.totalAmount !== undefined && saleData.totalAmount !== null && !isNaN(Number(saleData.totalAmount)) && Number(saleData.totalAmount) > 0) {
+          return applyAmountRounding(Number(saleData.totalAmount), settings.amountRoundingMethod);
+        }
+        const rawTot = (Number(saleData.subtotal) || 0) - (Number(saleData.discountAmount) || 0) + (Number(saleData.taxAmount) || 0) + (Number(saleData.shippingCharges) || 0) + (saleData.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0);
+        return applyAmountRounding(rawTot, settings.amountRoundingMethod);
+      })(),
+      paidAmount: Math.max(Number(saleData.paidAmount) || 0, defaultPaymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)),
+      paymentStatus: (() => {
+        const finalTot = (saleData.totalAmount !== undefined && saleData.totalAmount !== null && !isNaN(Number(saleData.totalAmount)) && Number(saleData.totalAmount) > 0)
+          ? applyAmountRounding(Number(saleData.totalAmount), settings.amountRoundingMethod)
+          : applyAmountRounding(
+              (Number(saleData.subtotal) || 0) - (Number(saleData.discountAmount) || 0) + (Number(saleData.shippingCharges) || 0) + (saleData.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0),
+              settings.amountRoundingMethod
+            );
+        const entriesPaid = defaultPaymentEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        const effPaid = Math.max(Number(saleData.paidAmount) || 0, entriesPaid);
+        if (finalTot <= 0 || effPaid >= finalTot - 0.01) return 'paid';
+        if (effPaid > 0.01) return 'partial';
+        return 'due';
+      })(),
       paymentEntries: defaultPaymentEntries,
       status: saleData.status || 'final',
       notes: saleData.notes,
@@ -5977,8 +6205,62 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSale = (id: string, saleData: any) => {
+    let roundedSaleData = saleData;
+    if (saleData.totalAmount !== undefined) {
+      const baseAmount = Number(saleData.totalAmount) > 0
+        ? Number(saleData.totalAmount)
+        : Math.max(0, (Number(saleData.subtotal) || 0) - (Number(saleData.discountAmount) || 0) + (Number(saleData.taxAmount) || 0) + (Number(saleData.shippingCharges) || 0) + (saleData.additionalExpenses?.reduce((acc: number, e: any) => acc + (Number(e.amount) || 0), 0) || 0));
+      const roundedTotal = applyAmountRounding(baseAmount, settings.amountRoundingMethod);
+      const calculatedRoundOff = saleData.roundOff !== undefined && saleData.roundOff !== null && Number(saleData.roundOff) !== 0
+        ? Number(saleData.roundOff)
+        : Math.round((roundedTotal - baseAmount) * 100) / 100;
+      roundedSaleData = {
+        ...saleData,
+        totalAmount: roundedTotal,
+        roundOff: calculatedRoundOff,
+      };
+    }
     setTransactions((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, ...saleData } : t));
+      const updated = prev.map((t) => {
+        if (t.id !== id) return t;
+        const merged = { ...t, ...roundedSaleData };
+        // Recalculate payment status and paidAmount dynamically
+        const entriesPaid = merged.paymentEntries && merged.paymentEntries.length > 0
+          ? merged.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+          : 0;
+        const effectivePaid = Math.max(Number(merged.paidAmount) || 0, entriesPaid);
+        const effectiveTotal = Number(merged.totalAmount) || 0;
+        let finalStatus = merged.paymentStatus;
+        if (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01) {
+          finalStatus = 'paid';
+        } else if (effectivePaid > 0.01) {
+          finalStatus = 'partial';
+        } else {
+          finalStatus = 'due';
+        }
+
+        // Reconcile tax amount
+        const directTax = Number(merged.taxAmount) || 0;
+        const itemsTax = (merged.items || []).reduce((s: number, it: any) => {
+          const lineTax = Number(it.taxAmount) || 0;
+          if (lineTax > 0) return s + lineTax;
+          const rate = Number(it.taxRate) || 0;
+          if (rate > 0) {
+            const base = Number(it.unitPrice || it.costPrice || 0);
+            const qty = Number(it.quantity) || 1;
+            return s + ((base * rate) / 100) * qty;
+          }
+          return s;
+        }, 0);
+        const effectiveTax = Math.max(directTax, itemsTax);
+
+        return {
+          ...merged,
+          paidAmount: effectivePaid,
+          paymentStatus: finalStatus,
+          taxAmount: effectiveTax,
+        };
+      });
       triggerImmediateSyncPush({ transactions: updated });
       return updated;
     });
@@ -6076,6 +6358,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unitPrice: number; // This is the COST price in purchases
       costPrice: number; // Base cost before tax
       taxRate: number;
+      taxAmount?: number;
       discount: number;
       total: number;
       profitMargin?: number;
@@ -6112,6 +6395,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const matchedSupp = suppliers.find((s) => s.id === purchaseData.supplierId);
     const resolvedSupplierName = purchaseData.supplierName || matchedSupp?.name || '';
 
+    const reconciledItems = (purchaseData.items || []).map((it) => {
+      const rate = Number(it.taxRate) || 0;
+      const lineTax = it.taxAmount !== undefined && it.taxAmount !== null && Number(it.taxAmount) > 0
+        ? Number(it.taxAmount)
+        : rate > 0
+        ? ((Number(it.costPrice || it.unitPrice || 0) * rate) / 100) * (Number(it.quantity) || 1)
+        : 0;
+      return {
+        ...it,
+        taxRate: rate,
+        taxAmount: Math.round(lineTax * 100) / 100,
+      };
+    });
+
+    const itemsTax = reconciledItems.reduce((s: number, it: any) => s + (it.taxAmount || 0), 0);
+    const directTax = Number(purchaseData.taxAmount) || 0;
+    const finalPurchaseTax = Math.max(directTax, itemsTax);
+
     const newPurchase: Transaction = {
       id: `txn_pur_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
       invoiceNo,
@@ -6120,12 +6421,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       locationId: purchaseData.locationId,
       supplierId: purchaseData.supplierId,
       supplierName: resolvedSupplierName,
-      items: purchaseData.items,
+      items: reconciledItems,
       subtotal: purchaseData.subtotal,
-      taxAmount: purchaseData.taxAmount,
+      taxAmount: finalPurchaseTax,
       discountAmount: purchaseData.discountAmount,
       shippingCharges: purchaseData.shippingCharges,
-      totalAmount: purchaseData.totalAmount,
+      totalAmount: applyAmountRounding(purchaseData.totalAmount, settings.amountRoundingMethod),
       paidAmount: purchaseData.paidAmount,
       paymentStatus,
       paymentEntries: [
@@ -6231,10 +6532,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             if (existingLotIdx >= 0) {
               const lotStock = Number(updatedLots[existingLotIdx].currentStock) || 0;
+              const prevInitial = Number(updatedLots[existingLotIdx].initialStock);
               updatedLots[existingLotIdx] = {
                 ...updatedLots[existingLotIdx],
                 lotNumber: cleanTargetLot,
                 currentStock: isReturn ? Math.max(0, lotStock - totalItemQty) : lotStock + totalItemQty,
+                initialStock: !isNaN(prevInitial) && prevInitial > 0 ? prevInitial : lotStock,
                 costPrice: isReturn ? updatedLots[existingLotIdx].costPrice : (matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice),
                 sellingPrice: isReturn ? updatedLots[existingLotIdx].sellingPrice : (matchingItems[0]?.sellingPrice || p.sellingPrice),
               };
@@ -6246,6 +6549,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   ...updatedLots[dummyIdx],
                   lotNumber: cleanTargetLot,
                   currentStock: totalItemQty,
+                  initialStock: totalItemQty,
+                  source: 'purchase',
+                  purchaseId: newPurchase.id,
                   costPrice: matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice,
                   sellingPrice: matchingItems[0]?.sellingPrice || p.sellingPrice,
                   createdDate: nowStr.slice(0, 10),
@@ -6257,6 +6563,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   costPrice: matchingItems[0]?.costPrice || matchingItems[0]?.unitPrice || p.costPrice,
                   sellingPrice: matchingItems[0]?.sellingPrice || p.sellingPrice,
                   currentStock: totalItemQty,
+                  initialStock: totalItemQty,
+                  source: 'purchase',
+                  purchaseId: newPurchase.id,
                   createdDate: nowStr.slice(0, 10),
                 });
               }
@@ -6500,8 +6809,49 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
+    const roundedPurchaseData = purchaseData.totalAmount !== undefined
+      ? { ...purchaseData, totalAmount: applyAmountRounding(purchaseData.totalAmount, settings.amountRoundingMethod) }
+      : purchaseData;
+
     setTransactions((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, ...purchaseData, status: effectiveStatus } : t));
+      const updated = prev.map((t) => {
+        if (t.id !== id) return t;
+        const merged = { ...t, ...roundedPurchaseData, status: effectiveStatus };
+        const entriesPaid = merged.paymentEntries && merged.paymentEntries.length > 0
+          ? merged.paymentEntries.reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0)
+          : 0;
+        const effectivePaid = Math.max(Number(merged.paidAmount) || 0, entriesPaid);
+        const effectiveTotal = Number(merged.totalAmount) || 0;
+        let finalStatus = merged.paymentStatus;
+        if (effectiveTotal <= 0 || effectivePaid >= effectiveTotal - 0.01) {
+          finalStatus = 'paid';
+        } else if (effectivePaid > 0.01) {
+          finalStatus = 'partial';
+        } else {
+          finalStatus = 'due';
+        }
+
+        const itemsTax = (merged.items || []).reduce((s: number, it: any) => {
+          const lineTax = Number(it.taxAmount) || 0;
+          if (lineTax > 0) return s + lineTax;
+          const rate = Number(it.taxRate) || 0;
+          if (rate > 0) {
+            const base = Number(it.costPrice || it.unitPrice || 0);
+            const qty = Number(it.quantity) || 1;
+            return s + ((base * rate) / 100) * qty;
+          }
+          return s;
+        }, 0);
+        const directTax = Number(merged.taxAmount) || 0;
+        const finalPurchaseTax = Math.max(directTax, itemsTax);
+
+        return {
+          ...merged,
+          paidAmount: effectivePaid,
+          paymentStatus: finalStatus,
+          taxAmount: finalPurchaseTax,
+        };
+      });
       triggerImmediateSyncPush({ transactions: updated, products, suppliers });
       return updated;
     });

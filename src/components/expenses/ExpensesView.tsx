@@ -320,7 +320,7 @@ export const ExpensesView: React.FC = () => {
           <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
             <button onClick={() => setViewMode('list')} className="hover:text-slate-300 transition">Expenses</button>
             <span>/</span>
-            <span className="text-slate-400">{editingExpenseId ? 'Edit POS Expense' : 'Record POS Expense'}</span>
+            <span className="text-slate-400">{editingExpenseId ? 'Edit POS Expense' : 'Add Expenses'}</span>
           </div>
 
           {/* Header section with back button */}
@@ -328,7 +328,7 @@ export const ExpensesView: React.FC = () => {
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-rose-400" />
-                <span>{editingExpenseId ? 'Edit POS Expense' : 'Record POS Expense (finias POS Enterprise)'}</span>
+                <span>{editingExpenseId ? 'Edit POS Expense' : 'Add Expenses'}</span>
               </h1>
               <p className="text-xs text-slate-400 mt-1">
                 {editingExpenseId ? 'Update an existing business expenditure entry or refund details.' : 'Create a new business expenditure ledger entry. All inputs compile dynamically in your accounting balance sheet.'}
@@ -728,7 +728,7 @@ export const ExpensesView: React.FC = () => {
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-rose-400 shrink-0" />
-                <span className="truncate">Operating Expenses & Financial Accounts</span>
+                <span className="truncate">Expenses</span>
               </h1>
               <p className="text-xs text-slate-400 mt-1">
                 Track store overheads, logistics rent, employee outlays, and multi-currency payment accounts.
@@ -759,7 +759,7 @@ export const ExpensesView: React.FC = () => {
               className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-950 flex items-center justify-center gap-2 transition w-full sm:w-auto shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Record POS Expense</span>
+              <span>Add Expenses</span>
             </button>
           </div>
 
