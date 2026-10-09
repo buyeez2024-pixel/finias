@@ -31,7 +31,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
   onClose,
   onOpenReceipt,
 }) => {
-  const { customers, settings, locations } = useErp();
+  const { customers, settings, locations, convertQuotationToInvoice } = useErp();
 
   if (!isOpen || !sale) return null;
 
@@ -345,6 +345,19 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
               <Package className="w-4 h-4" />
               <span>Packing Slip</span>
             </button>
+            {(sale.status === 'quotation' || sale.status === 'draft') && (
+              <button
+                onClick={() => {
+                  convertQuotationToInvoice(sale.id);
+                  onClose();
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
+                title="Convert quotation to final sale invoice and trigger email/SMS"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Convert to Final Invoice</span>
+              </button>
+            )}
             <button
               onClick={() => onOpenReceipt(sale)}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition"

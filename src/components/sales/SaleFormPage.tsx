@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useErp, normalizeRole } from '../../context/ErpContext';
 import { TransactionItem, TransactionStatus, PaymentMethod, Product, Customer } from '../../types/erp';
 import { isTransactionEditable, formatCurrency, applyAmountRounding, validateEmail } from '../../utils/formatters';
-import { validatePhoneNumber } from '../../utils/phoneValidation';
+import { validatePhoneNumber, isDuplicatePhone } from '../../utils/phoneValidation';
 import { validateSaleData } from '../../utils/validation';
 import {
   Receipt,
@@ -344,7 +344,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
   const [status, setStatus] = useState<TransactionStatus>(saleToUse?.status || initialStatus || 'final');
 
   useEffect(() => {
-    if (!saleToUse) {
+    if (!saleToUse || saleToUse.status === 'quotation' || saleToUse.status === 'draft') {
       if (status === 'quotation' && !invoiceNo.startsWith('Q-')) {
         setInvoiceNo(invoiceNo.replace(/^(INV|DRF)-/, 'Q-'));
       } else if (status === 'draft' && !invoiceNo.startsWith('DRF-')) {
@@ -1073,6 +1073,12 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         showFlashNotification(`Phone Error: ${phoneVal.error}`, 'error');
         return;
       }
+
+      const dupPhone = customers.find(c => c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, newCustPhone));
+      if (dupPhone) {
+        showFlashNotification(`Mobile number is already registered to "${dupPhone.businessName || dupPhone.name}". Phone numbers must be unique.`, 'error');
+        return;
+      }
     }
 
     if (newCustEmail.trim() && newCustEmail.trim().toUpperCase() !== 'N/A') {
@@ -1080,23 +1086,35 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         showFlashNotification('Please enter a valid email address with a proper domain (e.g. name@mail.com).', 'error');
         return;
       }
+
+      const cleanEmail = newCustEmail.trim().toLowerCase();
+      const dupEmail = customers.find(c => c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail);
+      if (dupEmail) {
+        showFlashNotification(`Email address is already registered to "${dupEmail.businessName || dupEmail.name}". Emails must be unique.`, 'error');
+        return;
+      }
     }
-    const created = addCustomer({
-      name: newCustName.trim(),
-      phone: newCustPhone.trim() || 'N/A',
-      email: newCustEmail.trim() || `${newCustName.toLowerCase().replace(/\s+/g, '')}@client.com`,
-      address: newCustAddress.trim() || 'City Center',
-      creditLimit: parseFloat(newCustCreditLimit) || 5000,
-      customerGroup: 'Standard Retail',
-      priceTier: 'retail'
-    });
-    setCustomerId(created.id);
-    setShowAddCustomerModal(false);
-    setNewCustName('');
-    setNewCustPhone('');
-    setNewCustEmail('');
-    setNewCustAddress('');
-    showFlashNotification(`Customer ${created.name} added successfully!`, 'success');
+
+    try {
+      const created = addCustomer({
+        name: newCustName.trim(),
+        phone: newCustPhone.trim() || 'N/A',
+        email: newCustEmail.trim() || `${newCustName.toLowerCase().replace(/\s+/g, '')}@client.com`,
+        address: newCustAddress.trim() || 'City Center',
+        creditLimit: parseFloat(newCustCreditLimit) || 5000,
+        customerGroup: 'Standard Retail',
+        priceTier: 'retail'
+      });
+      setCustomerId(created.id);
+      setShowAddCustomerModal(false);
+      setNewCustName('');
+      setNewCustPhone('');
+      setNewCustEmail('');
+      setNewCustAddress('');
+      showFlashNotification(`Customer ${created.name} added successfully!`, 'success');
+    } catch (err: any) {
+      showFlashNotification(err?.message || 'Failed to add customer', 'error');
+    }
   };
 
   // Form Submission
@@ -1163,8 +1181,13 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
       ? 'partial'
       : 'due';
 
+    const finalInvoiceNo = invoiceNo || generateInvoiceNo();
+    const effectiveInvoiceNo = (targetStatus === 'final' && finalInvoiceNo.startsWith('Q-'))
+      ? finalInvoiceNo.replace(/^Q-/, 'INV-')
+      : finalInvoiceNo;
+
     const payload = {
-      invoiceNo: invoiceNo || generateInvoiceNo(),
+      invoiceNo: effectiveInvoiceNo,
       locationId,
       customerId,
       date: transactionDate,
@@ -1309,7 +1332,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                 className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-950 flex items-center gap-2 transition"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isEditMode ? 'Update Invoice' : 'Finalize & Save'}</span>
+                <span>{isEditMode && (saleToUse?.status === 'quotation' || saleToUse?.status === 'draft') ? 'Convert to Invoice & Save' : isEditMode ? 'Update Invoice' : 'Finalize & Save'}</span>
               </button>
             </>
           )}
@@ -2465,11 +2488,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
             <button
               type="button"
               id="sale-bottom-submit-btn"
-              onClick={() => handleSaveSale(status)}
+              onClick={() => {
+                const target = (isEditMode && (saleToUse?.status === 'quotation' || saleToUse?.status === 'draft') && status === 'quotation') ? 'final' : (status || 'final');
+                handleSaveSale(target);
+              }}
               className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-950 flex items-center gap-2 transition"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{isEditMode ? 'Update Sale Invoice' : 'Finalize & Save Invoice'}</span>
+              <span>{isEditMode && (saleToUse?.status === 'quotation' || saleToUse?.status === 'draft') ? 'Convert to Invoice & Save' : isEditMode ? 'Update Sale Invoice' : 'Finalize & Save Invoice'}</span>
             </button>
           )}
         </div>

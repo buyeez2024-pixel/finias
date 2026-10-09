@@ -28,7 +28,8 @@ import {
   CreditCard,
   ShieldCheck,
   Award,
-  Wallet
+  Wallet,
+  AlertCircle
 } from 'lucide-react';
 
 export interface ContactFormPageProps {
@@ -255,9 +256,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
   const isSameCompanyOrContact = (
     record: { id: string; contactId?: string; name?: string; businessName?: string; phone?: string; taxNumber?: string; email?: string },
-    checkTaxVal?: string
+    _checkTaxVal?: string
   ): boolean => {
-    const currentId = editingContact?.id;
+    if (!isEditMode || !editingContact) return false;
+    const currentId = editingContact.id;
     const matchedSuppId = matchingSupplier?.id;
     const matchedCustId = matchingCustomer?.id;
 
@@ -267,41 +269,11 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     if (matchedSuppId && record.id === matchedSuppId) return true;
     if (currentId && record.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === currentId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '')) return true;
 
-    // 2. Same custom ID (ignoring CUST- vs SUP- prefix)
+    // 2. Same custom ID (ignoring CUST- vs SUP- prefix) if editing counterpart
     if (contactCustomId.trim() && record.contactId) {
       const cleanCustom = contactCustomId.trim().replace('SUP-', '').replace('CUST-', '');
       const recCustom = record.contactId.trim().replace('SUP-', '').replace('CUST-', '');
-      if (cleanCustom && cleanCustom === recCustom) return true;
-    }
-
-    const currentBiz = businessName.trim().toLowerCase();
-    const currentN = name.trim().toLowerCase();
-    const recBiz = record.businessName?.trim().toLowerCase();
-    const recN = record.name?.trim().toLowerCase();
-
-    // 3. Matching company / business name or contact name (belongs to same company)
-    if (currentBiz && recBiz && currentBiz === recBiz) return true;
-    if (currentBiz && recN && currentBiz === recN) return true;
-    if (currentN && recBiz && currentN === recBiz) return true;
-    if (currentN && recN && currentN === recN) return true;
-
-    // 4. Matching phone
-    if (phone.trim() && record.phone && record.phone !== 'N/A' && isDuplicatePhone(record.phone, phone)) return true;
-
-    // 5. Matching email
-    if (email.trim() && email.trim().toUpperCase() !== 'N/A' && record.email && record.email.trim().toUpperCase() !== 'N/A' && email.trim().toLowerCase() === record.email.trim().toLowerCase()) return true;
-
-    // 6. When editing an existing contact and contactType is 'both' (or counterpart shares tax number)
-    if (isEditMode) {
-      const cleanCheck = (checkTaxVal !== undefined ? checkTaxVal : taxNumber).trim().toLowerCase();
-      const editTax = (editingContact?.taxNumber || '').trim().toLowerCase();
-      const suppTax = (matchingSupplier?.taxNumber || '').trim().toLowerCase();
-      const custTax = (matchingCustomer?.taxNumber || '').trim().toLowerCase();
-      if (cleanCheck && (cleanCheck === editTax || cleanCheck === suppTax || cleanCheck === custTax)) {
-        if (record.id === editingContact?.id || record.id === matchingSupplier?.id || record.id === matchingCustomer?.id) {
-          return true;
-        }
-      }
+      if (cleanCustom && cleanCustom === recCustom && (record.id === matchedCustId || record.id === matchedSuppId)) return true;
     }
 
     return false;
@@ -510,23 +482,22 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
       }
     }
 
-    // Duplicate Phone check
+    // Duplicate Phone check across ALL contacts
     if (phone.trim()) {
-      const phoneExists = contactType === 'supplier'
-        ? suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
-        : (contactType === 'both'
-            ? customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone)) ||
-              suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
-            : customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone))
-          );
-      if (phoneExists) {
-        setFieldErrors(prev => ({ ...prev, mobile: 'Mobile number is already registered under another contact' }));
-        showFlashNotification('Mobile number is already registered under another contact', 'error');
+      const dupCust = customers.find(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone));
+      const dupSupp = suppliers.find(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone));
+      const conflict = dupCust || dupSupp;
+      if (conflict) {
+        const conflictLabel = conflict.businessName ? `${conflict.name} (${conflict.businessName})` : conflict.name;
+        const entityType = dupCust ? 'customer' : 'supplier';
+        const msg = `Mobile / Phone number is already registered to ${entityType} "${conflictLabel}". Phone numbers must be unique.`;
+        setFieldErrors(prev => ({ ...prev, mobile: msg }));
+        showFlashNotification(msg, 'error');
         return;
       }
     }
 
-    // Email format validation & Duplicate Email check
+    // Email format validation & Duplicate Email check across ALL contacts
     if (email.trim() && email.trim().toUpperCase() !== 'N/A') {
       if (!validateEmail(email)) {
         setFieldErrors(prev => ({ ...prev, email: 'Please enter a valid email address with a proper domain (e.g. name@mail.com).' }));
@@ -534,16 +505,15 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         return;
       }
       const emailClean = email.trim().toLowerCase();
-      const emailExists = contactType === 'supplier'
-        ? suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
-        : (contactType === 'both'
-            ? customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean) ||
-              suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
-            : customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean)
-          );
-      if (emailExists) {
-        setFieldErrors(prev => ({ ...prev, email: 'Email is already registered under another contact' }));
-        showFlashNotification('Email is already registered under another contact', 'error');
+      const dupCust = customers.find(c => !isSameCompanyOrContact(c) && c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === emailClean);
+      const dupSupp = suppliers.find(s => !isSameCompanyOrContact(s) && s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === emailClean);
+      const conflict = dupCust || dupSupp;
+      if (conflict) {
+        const conflictLabel = conflict.businessName ? `${conflict.name} (${conflict.businessName})` : conflict.name;
+        const entityType = dupCust ? 'customer' : 'supplier';
+        const msg = `Email address "${email.trim()}" is already registered to ${entityType} "${conflictLabel}". Emails must be unique.`;
+        setFieldErrors(prev => ({ ...prev, email: msg }));
+        showFlashNotification(msg, 'error');
         return;
       }
     }
@@ -632,17 +602,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
           };
-          const existingCust = (matchedCustId ? customers.find(c => c.id === matchedCustId) : null) ||
-            customers.find(c =>
-              c.id === contactId ||
-              c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === contactId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') ||
-              (contactCustomId.trim() && c.contactId && c.contactId.trim().replace('SUP-', '').replace('CUST-', '') === contactCustomId.trim().replace('SUP-', '').replace('CUST-', '')) ||
-              (taxNumber.trim() && c.taxNumber && c.taxNumber.trim().toLowerCase() === taxNumber.trim().toLowerCase()) ||
-              (businessName.trim() && ((c.businessName && c.businessName.trim().toLowerCase() === businessName.trim().toLowerCase()) || (c.name && c.name.trim().toLowerCase() === businessName.trim().toLowerCase()))) ||
-              (name.trim() && ((c.name && c.name.trim().toLowerCase() === name.trim().toLowerCase()) || (c.businessName && c.businessName.trim().toLowerCase() === name.trim().toLowerCase()))) ||
-              (phone.trim() && c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, phone))
-            );
-          const targetCustId = existingCust?.id || (customers.some(c => c.id === contactId) ? contactId : undefined);
+          const targetCustId = matchedCustId || (customers.some(c => c.id === contactId) ? contactId : undefined);
           if (targetCustId) {
             updateCustomer(targetCustId, customerData);
             savedObj = { ...customerData, id: targetCustId };
@@ -652,17 +612,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         }
         
         if (contactType === 'supplier' || contactType === 'both') {
-          const existingSupp = (matchedSuppId ? suppliers.find(s => s.id === matchedSuppId) : null) ||
-            suppliers.find(s =>
-              s.id === contactId ||
-              s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') === contactId.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '') ||
-              (contactCustomId.trim() && s.contactId && s.contactId.trim().replace('SUP-', '').replace('CUST-', '') === contactCustomId.trim().replace('SUP-', '').replace('CUST-', '')) ||
-              (taxNumber.trim() && s.taxNumber && s.taxNumber.trim().toLowerCase() === taxNumber.trim().toLowerCase()) ||
-              (businessName.trim() && ((s.businessName && s.businessName.trim().toLowerCase() === businessName.trim().toLowerCase()) || (s.name && s.name.trim().toLowerCase() === businessName.trim().toLowerCase()))) ||
-              (name.trim() && ((s.name && s.name.trim().toLowerCase() === name.trim().toLowerCase()) || (s.businessName && s.businessName.trim().toLowerCase() === name.trim().toLowerCase()))) ||
-              (phone.trim() && s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, phone))
-            );
-          const targetSuppId = existingSupp?.id || (suppliers.some(s => s.id === contactId) ? contactId : undefined);
+          const targetSuppId = matchedSuppId || (suppliers.some(s => s.id === contactId) ? contactId : undefined);
           if (targetSuppId) {
             updateSupplier(targetSuppId, baseData as any);
             if (!savedObj) savedObj = { ...baseData, id: targetSuppId };
@@ -825,31 +775,30 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               <FormFieldError error={fieldErrors.name} />
             </div>
 
-            {(contactType === 'supplier' || contactType === 'both') && (
-              <div>
-                <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                  Business / Organization Name
-                </label>
-                <input
-                  type="text"
-                  id="input-customer-business"
-                  value={businessName}
-                  onChange={(e) => {
-                    setBusinessName(e.target.value);
-                    if (fieldErrors.businessName) setFieldErrors(prev => ({ ...prev, businessName: '' }));
-                  }}
-                  placeholder="e.g. Doe Enterprises Inc."
-                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
-                    fieldErrors.businessName
-                      ? 'border-red-500 ring-1 ring-red-500/20'
-                      : isLight
-                      ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
-                      : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
-                  }`}
-                />
-                <FormFieldError error={fieldErrors.businessName} />
-              </div>
-            )}
+            {/* Business / Organization Name (Visible for Customers, Suppliers, Both) */}
+            <div>
+              <label className={`block text-xs font-semibold mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                Business / Organization Name
+              </label>
+              <input
+                type="text"
+                id="input-customer-business"
+                value={businessName}
+                onChange={(e) => {
+                  setBusinessName(e.target.value);
+                  if (fieldErrors.businessName) setFieldErrors(prev => ({ ...prev, businessName: '' }));
+                }}
+                placeholder="e.g. Doe Enterprises Inc."
+                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
+                  fieldErrors.businessName
+                    ? 'border-red-500 ring-1 ring-red-500/20'
+                    : isLight
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'
+                    : 'bg-slate-950 border-slate-700/80 text-slate-100 placeholder-slate-500'
+                }`}
+              />
+              <FormFieldError error={fieldErrors.businessName} />
+            </div>
 
             {/* Customer Type */}
             <div>
@@ -860,8 +809,12 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 id="select-customer-type"
                 value={contactType}
                 onChange={(e) => {
-                  setContactType(e.target.value as any);
+                  const newType = e.target.value as any;
+                  setContactType(newType);
                   if (fieldErrors.contactType) setFieldErrors(prev => ({ ...prev, contactType: '' }));
+                  if (!isEditMode && (settings.autoGenerateContactId ?? true)) {
+                    setContactCustomId(generateNextContactId(newType === 'supplier' ? 'supplier' : 'customer'));
+                  }
                 }}
                 disabled={isEditMode}
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition ${
@@ -990,18 +943,17 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               />
               <FormFieldError error={fieldErrors.mobile} />
               {phone.trim() && (() => {
-                const phoneDup = contactType === 'supplier'
-                  ? suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
-                  : (contactType === 'both'
-                      ? customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone)) ||
-                        suppliers.some(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone))
-                      : customers.some(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone))
-                    );
-                if (phoneDup) {
+                const matchedCust = customers.find(c => !isSameCompanyOrContact(c) && c.phone && isDuplicatePhone(c.phone, phone));
+                const matchedSupp = suppliers.find(s => !isSameCompanyOrContact(s) && s.phone && isDuplicatePhone(s.phone, phone));
+                const conflict = matchedCust || matchedSupp;
+                if (conflict) {
+                  const conflictLabel = conflict.businessName ? `${conflict.name} (${conflict.businessName})` : conflict.name;
+                  const entityType = matchedCust ? 'Customer' : 'Supplier';
                   return (
-                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
-                      Mobile number is already registered under another contact
-                    </p>
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold mt-1.5 animate-fadeIn">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Mobile number is already registered to {entityType} &quot;{conflictLabel}&quot;. Numbers must be unique.</span>
+                    </div>
                   );
                 }
                 return null;
@@ -1056,18 +1008,17 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               <FormFieldError error={fieldErrors.email} />
               {email.trim() && email.trim() !== 'N/A' && (() => {
                 const emailClean = email.trim().toLowerCase();
-                const emailDup = contactType === 'supplier'
-                  ? suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
-                  : (contactType === 'both'
-                      ? customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean) ||
-                        suppliers.some(s => !isSameCompanyOrContact(s) && s.email?.trim().toLowerCase() === emailClean)
-                      : customers.some(c => !isSameCompanyOrContact(c) && c.email?.trim().toLowerCase() === emailClean)
-                    );
-                if (emailDup) {
+                const matchedCust = customers.find(c => !isSameCompanyOrContact(c) && c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === emailClean);
+                const matchedSupp = suppliers.find(s => !isSameCompanyOrContact(s) && s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === emailClean);
+                const conflict = matchedCust || matchedSupp;
+                if (conflict) {
+                  const conflictLabel = conflict.businessName ? `${conflict.name} (${conflict.businessName})` : conflict.name;
+                  const entityType = matchedCust ? 'Customer' : 'Supplier';
                   return (
-                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
-                      Email is already registered under another contact
-                    </p>
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold mt-1.5 animate-fadeIn">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Email address is already registered to {entityType} &quot;{conflictLabel}&quot;. Emails must be unique.</span>
+                    </div>
                   );
                 }
                 return null;

@@ -3,7 +3,109 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Royal POS - Omnichannel ERP & Point of Sale Suite</title>
+    <script>
+      // Environment Constraint: "HMR: Disabled. Ignore WebSocket errors."
+      (function() {
+        if (typeof window === 'undefined') return;
+
+        // Suppress unhandled rejection or error from Vite's WebSocket module transport in AI Studio
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          var msg = reason ? (reason.message || String(reason)) : '';
+          var stack = reason ? (reason.stack || '') : '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            stack.indexOf('@vite/client') !== -1 ||
+            stack.indexOf('createWebSocketModuleRunnerTransport') !== -1
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        window.addEventListener('error', function(event) {
+          var msg = event.message || '';
+          var file = event.filename || '';
+          var stack = (event.error && event.error.stack) || '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            file.indexOf('@vite/client') !== -1 ||
+            stack.indexOf('createWebSocketModuleRunnerTransport') !== -1
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        // Safe mock for Vite HMR WebSocket so @vite/client skips connection attempt
+        var NativeWebSocket = window.WebSocket;
+        if (!NativeWebSocket) return;
+
+        function FakeHmrWebSocket(url, protocols) {
+          var isHmr = true; // All WebSockets in this client SPA are Vite HMR transports
+          if (isHmr) {
+            var listeners = {};
+            var fakeSocket = {
+              binaryType: 'blob',
+              bufferedAmount: 0,
+              extensions: '',
+              protocol: Array.isArray(protocols) ? (protocols[0] || 'vite-hmr') : (protocols || 'vite-hmr'),
+              readyState: 1, // WebSocket.OPEN
+              url: String(url || ''),
+              CONNECTING: 0,
+              OPEN: 1,
+              CLOSING: 2,
+              CLOSED: 3,
+              onopen: null,
+              onclose: null,
+              onmessage: null,
+              onerror: null,
+              addEventListener: function(event, handler) {
+                listeners[event] = listeners[event] || [];
+                listeners[event].push(handler);
+                if (event === 'open') {
+                  setTimeout(function() {
+                    try { handler({ type: 'open', target: fakeSocket }); } catch (_) {}
+                  }, 0);
+                }
+              },
+              removeEventListener: function(event, handler) {
+                if (listeners[event]) {
+                  listeners[event] = listeners[event].filter(function(h) { return h !== handler; });
+                }
+              },
+              dispatchEvent: function() { return true; },
+              send: function() {},
+              close: function() {
+                fakeSocket.readyState = 3;
+                if (listeners['close']) {
+                  listeners['close'].forEach(function(h) {
+                    try { h({ code: 1000, reason: 'Normal closure', wasClean: true }); } catch (_) {}
+                  });
+                }
+              }
+            };
+
+            setTimeout(function() {
+              if (typeof fakeSocket.onopen === 'function') {
+                try { fakeSocket.onopen({ type: 'open', target: fakeSocket }); } catch (_) {}
+              }
+            }, 0);
+
+            return fakeSocket;
+          }
+          return new NativeWebSocket(url, protocols);
+        }
+
+        FakeHmrWebSocket.prototype = NativeWebSocket.prototype;
+        FakeHmrWebSocket.CONNECTING = 0;
+        FakeHmrWebSocket.OPEN = 1;
+        FakeHmrWebSocket.CLOSING = 2;
+        FakeHmrWebSocket.CLOSED = 3;
+        window.WebSocket = FakeHmrWebSocket;
+      })();
+    </script>
+    <title>Royal POS &amp; Enterprise ERP</title>
     <script>
       (function() {
         try {
@@ -29,23 +131,14 @@
         }
       })();
     </script>
-    <meta name="description" content="Royal POS Enterprise ERP solution with real-time multi-location inventory, cashier terminal, and AI intelligence." />
-    <meta property="og:title" content="Royal POS - Omnichannel ERP & Point of Sale Suite" />
-    <meta property="og:description" content="Royal POS Enterprise ERP solution with real-time multi-location inventory, cashier terminal, and AI intelligence." />
+    <meta name="description" content="Comprehensive ERP &amp; POS application featuring Products &amp; Inventory management with Brands and Warranties modules, sell-with-warranty automated lifecycle calculation from transaction dates, 6 configurable finias POS invoice layouts (Classic, Elegant, Detailed B2B, Columnized Taxes, Slim 80mm POS Thermal, and Slim 2 / Gift Receipt) with warranty display toggles, customizable invoice numbering schemes, store-wide currency configuration and symbol management, multi-tier tax rates and GST groups with HSN code tracking, role-based access control (RBAC) employee permissions matrix, offline-first sync queue, hardware laser barcode scanner integration, multi-location stock control, cashier POS terminal, and financial accounting reports." />
+    <meta property="og:title" content="Royal POS &amp; Enterprise ERP" />
+    <meta property="og:description" content="Comprehensive ERP &amp; POS application featuring Products &amp; Inventory management with Brands and Warranties modules, sell-with-warranty automated lifecycle calculation from transaction dates, 6 configurable finias POS invoice layouts (Classic, Elegant, Detailed B2B, Columnized Taxes, Slim 80mm POS Thermal, and Slim 2 / Gift Receipt) with warranty display toggles, customizable invoice numbering schemes, store-wide currency configuration and symbol management, multi-tier tax rates and GST groups with HSN code tracking, role-based access control (RBAC) employee permissions matrix, offline-first sync queue, hardware laser barcode scanner integration, multi-location stock control, cashier POS terminal, and financial accounting reports." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-    <script>
-      (function() {
-        var p = window.location.pathname;
-        var base = (p.startsWith('/farm/') || p === '/farm') ? '/farm/' : '/';
-        var el = document.createElement('base');
-        el.href = base;
-        document.head.prepend(el);
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -15,7 +15,7 @@ import {
 import { Customer } from '../../types/erp';
 import { useErp } from '../../context/ErpContext';
 import { formatCurrency, validateEmail } from '../../utils/formatters';
-import { validatePhoneWithCountry } from '../../utils/phoneValidation';
+import { validatePhoneWithCountry, isDuplicatePhone } from '../../utils/phoneValidation';
 import { validateContactData } from '../../utils/validation';
 import { FormFieldError } from '../common/FormFieldError';
 import { PhoneInputWithCountry } from '../common/PhoneInputWithCountry';
@@ -86,12 +86,37 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
         showFlashNotification(`Phone Error: ${phoneVal.error}`, 'error');
         return;
       }
+
+      const dupCust = customers.find(c => c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, phone));
+      const dupSupp = suppliers.find(s => s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, phone));
+      const conflictPhone = dupCust || dupSupp;
+      if (conflictPhone) {
+        const conflict = conflictPhone.businessName || conflictPhone.name;
+        const entity = dupCust ? 'customer' : 'supplier';
+        const msg = `Mobile number is already registered to ${entity} "${conflict}". Numbers must be unique.`;
+        setFieldErrors(prev => ({ ...prev, mobile: msg }));
+        showFlashNotification(msg, 'error');
+        return;
+      }
     }
 
     if (email.trim() && email.trim().toUpperCase() !== 'N/A') {
       if (!validateEmail(email)) {
         setFieldErrors(prev => ({ ...prev, email: 'Please enter a valid email address with a proper domain (e.g. name@mail.com).' }));
         showFlashNotification('Please enter a valid email address with a proper domain (e.g. name@mail.com).', 'error');
+        return;
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const dupCust = customers.find(c => c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail);
+      const dupSupp = suppliers.find(s => s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === cleanEmail);
+      const conflictEmail = dupCust || dupSupp;
+      if (conflictEmail) {
+        const conflict = conflictEmail.businessName || conflictEmail.name;
+        const entity = dupCust ? 'customer' : 'supplier';
+        const msg = `Email address "${email.trim()}" is already registered to ${entity} "${conflict}". Emails must be unique.`;
+        setFieldErrors(prev => ({ ...prev, email: msg }));
+        showFlashNotification(msg, 'error');
         return;
       }
     }
@@ -221,16 +246,33 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
             </div>
 
             {/* Mobile / Phone */}
-            <PhoneInputWithCountry
-              label="Mobile / Phone"
-              id="quick-customer-phone-input"
-              phoneValue={phone}
-              countryCode={countryCode}
-              onChangePhone={setPhone}
-              onChangeCountryCode={setCountryCode}
-              showHint={true}
-              required={true}
-            />
+            <div>
+              <PhoneInputWithCountry
+                label="Mobile / Phone"
+                id="quick-customer-phone-input"
+                phoneValue={phone}
+                countryCode={countryCode}
+                onChangePhone={(val) => {
+                  setPhone(val);
+                  if (fieldErrors.mobile) setFieldErrors((prev) => ({ ...prev, mobile: '' }));
+                }}
+                onChangeCountryCode={setCountryCode}
+                showHint={true}
+                required={true}
+              />
+              <FormFieldError error={fieldErrors.mobile} />
+              {phone.trim() && (() => {
+                const dup = customers.find((c) => c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, phone));
+                if (dup) {
+                  return (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      Mobile number is already registered to &quot;{dup.businessName || dup.name}&quot;
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
 
             {/* Email */}
             <div className="space-y-1.5">
@@ -241,10 +283,28 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
+                }}
                 placeholder="e.g. client@company.com"
-                className="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs placeholder:text-slate-600"
+                className={`w-full bg-slate-950 text-white px-4 py-3 rounded-xl border ${
+                  fieldErrors.email ? 'border-red-500 ring-1 ring-red-500/20' : 'border-slate-800'
+                } focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs placeholder:text-slate-600 font-mono`}
               />
+              <FormFieldError error={fieldErrors.email} />
+              {email.trim() && email.trim().toUpperCase() !== 'N/A' && (() => {
+                const clean = email.trim().toLowerCase();
+                const dup = customers.find((c) => c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === clean);
+                if (dup) {
+                  return (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      Email address is already registered to &quot;{dup.businessName || dup.name}&quot;
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Customer Group */}

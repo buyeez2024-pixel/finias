@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { getApiUrl } from '../utils/apiBase';
 import { getCategoryName, getBrandName, applyAmountRounding } from '../utils/formatters';
-import { validatePhoneNumber, validatePhoneWithCountry, resolveCountryCodeFromContact, extractRawPhoneAndCountry } from '../utils/phoneValidation';
+import { validatePhoneNumber, validatePhoneWithCountry, resolveCountryCodeFromContact, extractRawPhoneAndCountry, isDuplicatePhone } from '../utils/phoneValidation';
 import { validateFullName } from '../utils/validation';
 import {
   Brand,
@@ -128,35 +128,17 @@ export const isUserAdmin = (userOrRole?: User | string | null): boolean => {
 };
 
 export const checkIsSystemInstalled = (): boolean => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') return true;
 
-  // Direct installation lock flags (set after installation wizard finishes)
   if (
-    localStorage.getItem('pos_installed') === 'true' ||
-    localStorage.getItem('app_installed') === 'true' ||
-    localStorage.getItem('app_installation_completed') === 'true' ||
-    localStorage.getItem('is_installed') === 'true' ||
-    localStorage.getItem('system_installed') === 'true' ||
-    localStorage.getItem('installation_locked') === 'true' ||
-    localStorage.getItem('installation_wizard_deleted') === 'true' ||
-    localStorage.getItem('app_fresh_installed') === 'true'
+    localStorage.getItem('app_uninstalled') === 'true' ||
+    localStorage.getItem('force_setup_wizard') === 'true'
   ) {
-    return true;
+    return false;
   }
 
-  const savedSettings = localStorage.getItem(`${STORAGE_KEY}_settings`);
-  if (savedSettings) {
-    try {
-      const parsed = JSON.parse(savedSettings);
-      if (parsed.isInstalled === true || parsed.installationCompleted === true) {
-        return true;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  return false;
+  // System is pre-configured and installed by default
+  return true;
 };
 
 export interface FinancialSummary {
@@ -420,6 +402,7 @@ interface ErpContextType {
     additionalExpenses?: { name: string; amount: number }[];
   }) => Transaction;
   updateSale: (id: string, saleData: any) => void;
+  convertQuotationToInvoice: (id: string) => void;
   deleteSale: (id: string) => void;
   openAddSalePage: () => void;
   openEditSalePage: (sale: Transaction) => void;
@@ -4629,6 +4612,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
     }
 
+    // Duplicate Phone Number Check across all contacts
+    if (customerData.phone && customerData.phone.trim() && customerData.phone.trim() !== 'N/A') {
+      const dupCustPhone = customers.find(c => 
+        c.id !== customerData.id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (customerData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, customerData.phone)
+      );
+      const dupSuppPhone = suppliers.find(s => 
+        s.id !== customerData.id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (customerData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, customerData.phone)
+      );
+      const conflictPhone = dupCustPhone || dupSuppPhone;
+      if (conflictPhone) {
+        const conflictName = conflictPhone.businessName || conflictPhone.name;
+        const entity = dupCustPhone ? 'customer' : 'supplier';
+        throw new Error(`Mobile / Phone number is already registered to ${entity} "${conflictName}". Phone numbers must be unique.`);
+      }
+    }
+
+    // Duplicate Email Address Check across all contacts
+    if (customerData.email && customerData.email.trim() && customerData.email.trim().toUpperCase() !== 'N/A') {
+      const cleanEmail = customerData.email.trim().toLowerCase();
+      const dupCustEmail = customers.find(c =>
+        c.id !== customerData.id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (customerData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail
+      );
+      const dupSuppEmail = suppliers.find(s =>
+        s.id !== customerData.id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (customerData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === cleanEmail
+      );
+      const conflictEmail = dupCustEmail || dupSuppEmail;
+      if (conflictEmail) {
+        const conflictName = conflictEmail.businessName || conflictEmail.name;
+        const entity = dupCustEmail ? 'customer' : 'supplier';
+        throw new Error(`Email address "${customerData.email.trim()}" is already registered to ${entity} "${conflictName}". Emails must be unique.`);
+      }
+    }
+
     if (customerData.taxNumber && customerData.taxNumber.trim()) {
       const taxClean = customerData.taxNumber.trim().toLowerCase();
       const dupCust = customers.find(c => 
@@ -4728,6 +4752,48 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (data.openingBalance !== undefined && Number(data.openingBalance) < 0) {
       throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
     }
+
+    // Duplicate Phone Check across all contacts
+    if (data.phone && data.phone.trim() && data.phone.trim() !== 'N/A') {
+      const dupCustPhone = customers.find(c => 
+        c.id !== id && 
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, data.phone)
+      );
+      const dupSuppPhone = suppliers.find(s => 
+        s.id !== id && 
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, data.phone)
+      );
+      const conflictPhone = dupCustPhone || dupSuppPhone;
+      if (conflictPhone) {
+        const conflictName = conflictPhone.businessName || conflictPhone.name;
+        const entity = dupCustPhone ? 'customer' : 'supplier';
+        throw new Error(`Mobile / Phone number is already registered to ${entity} "${conflictName}". Phone numbers must be unique.`);
+      }
+    }
+
+    // Duplicate Email Check across all contacts
+    if (data.email && data.email.trim() && data.email.trim().toUpperCase() !== 'N/A') {
+      const cleanEmail = data.email.trim().toLowerCase();
+      const dupCustEmail = customers.find(c =>
+        c.id !== id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail
+      );
+      const dupSuppEmail = suppliers.find(s =>
+        s.id !== id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === cleanEmail
+      );
+      const conflictEmail = dupCustEmail || dupSuppEmail;
+      if (conflictEmail) {
+        const conflictName = conflictEmail.businessName || conflictEmail.name;
+        const entity = dupCustEmail ? 'customer' : 'supplier';
+        throw new Error(`Email address "${data.email.trim()}" is already registered to ${entity} "${conflictName}". Emails must be unique.`);
+      }
+    }
+
     if (data.taxNumber && data.taxNumber.trim()) {
       const taxClean = data.taxNumber.trim().toLowerCase();
       const dupCust = customers.find(c => 
@@ -4780,6 +4846,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
     }
 
+    // Duplicate Phone Number Check for Supplier across all contacts
+    if (supplierData.phone && supplierData.phone.trim() && supplierData.phone.trim() !== 'N/A') {
+      const dupSuppPhone = suppliers.find(s => 
+        s.id !== supplierData.id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (supplierData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, supplierData.phone)
+      );
+      const dupCustPhone = customers.find(c => 
+        c.id !== supplierData.id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (supplierData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, supplierData.phone)
+      );
+      const conflictPhone = dupSuppPhone || dupCustPhone;
+      if (conflictPhone) {
+        const conflictName = conflictPhone.businessName || conflictPhone.name;
+        const entity = dupSuppPhone ? 'supplier' : 'customer';
+        throw new Error(`Mobile / Phone number is already registered to ${entity} "${conflictName}". Phone numbers must be unique.`);
+      }
+    }
+
+    // Duplicate Email Address Check for Supplier across all contacts
+    if (supplierData.email && supplierData.email.trim() && supplierData.email.trim().toUpperCase() !== 'N/A') {
+      const cleanEmail = supplierData.email.trim().toLowerCase();
+      const dupSuppEmail = suppliers.find(s =>
+        s.id !== supplierData.id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (supplierData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === cleanEmail
+      );
+      const dupCustEmail = customers.find(c =>
+        c.id !== supplierData.id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== (supplierData.id || '').replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail
+      );
+      const conflictEmail = dupSuppEmail || dupCustEmail;
+      if (conflictEmail) {
+        const conflictName = conflictEmail.businessName || conflictEmail.name;
+        const entity = dupSuppEmail ? 'supplier' : 'customer';
+        throw new Error(`Email address "${supplierData.email.trim()}" is already registered to ${entity} "${conflictName}". Emails must be unique.`);
+      }
+    }
+
     if (supplierData.taxNumber && supplierData.taxNumber.trim()) {
       const taxClean = supplierData.taxNumber.trim().toLowerCase();
       const dupSupp = suppliers.find(s => 
@@ -4816,6 +4923,48 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (data.openingBalance !== undefined && Number(data.openingBalance) < 0) {
       throw new Error('Opening Balance cannot be negative. Must be 0 or greater.');
     }
+
+    // Duplicate Phone Number Check for Supplier across all contacts
+    if (data.phone && data.phone.trim() && data.phone.trim() !== 'N/A') {
+      const dupSuppPhone = suppliers.find(s => 
+        s.id !== id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.phone && s.phone !== 'N/A' && isDuplicatePhone(s.phone, data.phone)
+      );
+      const dupCustPhone = customers.find(c => 
+        c.id !== id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, data.phone)
+      );
+      const conflictPhone = dupSuppPhone || dupCustPhone;
+      if (conflictPhone) {
+        const conflictName = conflictPhone.businessName || conflictPhone.name;
+        const entity = dupSuppPhone ? 'supplier' : 'customer';
+        throw new Error(`Mobile / Phone number is already registered to ${entity} "${conflictName}". Phone numbers must be unique.`);
+      }
+    }
+
+    // Duplicate Email Address Check for Supplier across all contacts
+    if (data.email && data.email.trim() && data.email.trim().toUpperCase() !== 'N/A') {
+      const cleanEmail = data.email.trim().toLowerCase();
+      const dupSuppEmail = suppliers.find(s =>
+        s.id !== id &&
+        s.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        s.email && s.email.trim().toUpperCase() !== 'N/A' && s.email.trim().toLowerCase() === cleanEmail
+      );
+      const dupCustEmail = customers.find(c =>
+        c.id !== id &&
+        c.id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') !== id.replace('sup_', '').replace('cust_', '').replace('contact_imp_', '').replace('contact_', '') &&
+        c.email && c.email.trim().toUpperCase() !== 'N/A' && c.email.trim().toLowerCase() === cleanEmail
+      );
+      const conflictEmail = dupSuppEmail || dupCustEmail;
+      if (conflictEmail) {
+        const conflictName = conflictEmail.businessName || conflictEmail.name;
+        const entity = dupSuppEmail ? 'supplier' : 'customer';
+        throw new Error(`Email address "${data.email.trim()}" is already registered to ${entity} "${conflictName}". Emails must be unique.`);
+      }
+    }
+
     if (data.taxNumber && data.taxNumber.trim()) {
       const taxClean = data.taxNumber.trim().toLowerCase();
       const dupSupp = suppliers.find(s => 
@@ -4923,6 +5072,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       variables: {
         '{invoice_number}': receiptNo,
         '{received_amount}': formatMoney(amount),
+        '{paid_amount}': formatMoney(amount),
+        '{due_amount}': formatMoney(Math.max(0, cust.totalDue - amount)),
         '{payment_method}': paymentMethod,
         '{payment_ref_no}': receiptNo,
       }
@@ -6202,17 +6353,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Auto-send sale notification
-    console.log("CreateSale: Auto-sending notification. Settings email settings:", settings.emailSettings);
-    sendOneClickNotifications({
-      templateType: 'new_sale',
-      recipientContactId: newSale.customerId,
-      variables: {
-        '{invoice_number}': newSale.invoiceNo,
-        '{total_amount}': formatMoney(newSale.totalAmount),
-        '{paid_amount}': formatMoney(newSale.paidAmount),
-        '{due_amount}': formatMoney(newSale.totalAmount - saleData.paidAmount),
-      }
-    }).catch(err => console.error("CreateSale: Error in auto-sending notification:", err));
+    const autoNotificationType: NotificationType = newSale.status === 'quotation' ? 'new_quotation' : 'new_sale';
+    if (newSale.status !== 'draft') {
+      sendOneClickNotifications({
+        templateType: autoNotificationType,
+        recipientContactId: newSale.customerId,
+        variables: {
+          '{invoice_number}': newSale.invoiceNo,
+          '{total_amount}': formatMoney(newSale.totalAmount),
+          '{paid_amount}': formatMoney(newSale.paidAmount),
+          '{due_amount}': formatMoney(Math.max(0, newSale.totalAmount - (saleData.paidAmount || 0))),
+          '{location_name}': currentLocation?.name || 'Main Branch',
+          '{business_name}': settings.name || 'Royal POS ERP',
+        }
+      }).catch(err => console.error("CreateSale: Error in auto-sending notification:", err));
+    }
 
     return newSale;
   };
@@ -6233,6 +6388,126 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         roundOff: calculatedRoundOff,
       };
     }
+
+    const existingTxn = transactions.find((t) => t.id === id);
+    const preMerged = existingTxn ? { ...existingTxn, ...roundedSaleData } : roundedSaleData;
+    const entriesPaid = preMerged.paymentEntries && preMerged.paymentEntries.length > 0
+      ? preMerged.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+      : 0;
+    const effectivePaid = Math.max(Number(preMerged.paidAmount) || 0, entriesPaid);
+    const effectiveTotal = Number(preMerged.totalAmount) || 0;
+    const effectiveInvoiceNo = (preMerged.status === 'final' && (preMerged.invoiceNo?.startsWith('Q-') || preMerged.invoiceNo?.startsWith('DRF-')))
+      ? preMerged.invoiceNo.replace(/^(Q|DRF)-/, 'INV-')
+      : preMerged.invoiceNo;
+
+    const wasQuoteOrDraft = existingTxn && (
+      existingTxn.status === 'quotation' ||
+      existingTxn.status === 'draft' ||
+      existingTxn.invoiceNo?.startsWith('Q-') ||
+      existingTxn.invoiceNo?.startsWith('DRF-')
+    );
+
+    // If transitioning from quotation/draft to final, deduct product inventory stock
+    if (wasQuoteOrDraft && preMerged.status === 'final') {
+      setProducts((prev) => {
+        const updatedProds = prev.map((p) => {
+          const item = (preMerged.items || []).find((i: any) => i.productId === p.id);
+          if (!item) return p;
+
+          const currentLoc = p.locationStocks?.[preMerged.locationId] || 0;
+          const newLoc = Math.max(0, currentLoc - Number(item.quantity || 0));
+          const newLocationStocks = {
+            ...p.locationStocks,
+            [preMerged.locationId]: newLoc,
+          };
+          const total = (Object.values(newLocationStocks) as number[]).reduce((a: any, b: any) => a + b, 0);
+
+          return {
+            ...p,
+            locationStocks: newLocationStocks,
+            currentStock: total,
+          };
+        });
+        triggerImmediateSyncPush({ products: updatedProds });
+        return updatedProds;
+      });
+
+      // Update customer total sales & due balance
+      if (preMerged.customerId) {
+        setCustomers((prev) => {
+          const updatedCusts = prev.map((c) => {
+            if (c.id !== preMerged.customerId) return c;
+            const dueDelta = Math.max(0, effectiveTotal - effectivePaid);
+            return {
+              ...c,
+              totalSales: (c.totalSales || 0) + effectiveTotal,
+              totalDue: (c.totalDue || 0) + dueDelta,
+            };
+          });
+          triggerImmediateSyncPush({ customers: updatedCusts });
+          return updatedCusts;
+        });
+      }
+    }
+
+    let notificationsToSend: Array<{
+      templateType: NotificationType;
+      recipientContactId?: string;
+      customRecipient?: { name: string; email?: string; phone?: string };
+      variables: Record<string, string>;
+    }> = [];
+
+    // Auto-send order status notification if status changed (excluding quote/draft to final conversion which sends new_sale)
+    if (existingTxn && existingTxn.status !== preMerged.status && !wasQuoteOrDraft) {
+      notificationsToSend.push({
+        templateType: 'order_status',
+        recipientContactId: preMerged.customerId,
+        variables: {
+          '{invoice_number}': effectiveInvoiceNo,
+          '{order_status}': preMerged.status,
+          '{location_name}': currentLocation?.name || 'Main Branch',
+        }
+      });
+    }
+
+    // Auto-send new sale notification if converted from quotation or draft to final
+    if (wasQuoteOrDraft && preMerged.status === 'final') {
+      const matchedCust = customers.find(c => c.id === preMerged.customerId);
+      notificationsToSend.push({
+        templateType: 'new_sale',
+        recipientContactId: preMerged.customerId,
+        customRecipient: matchedCust ? { name: matchedCust.name, email: matchedCust.email, phone: matchedCust.phone } : undefined,
+        variables: {
+          '{contact_name}': matchedCust?.name || 'Valued Customer',
+          '{invoice_number}': effectiveInvoiceNo,
+          '{total_amount}': formatMoney(effectiveTotal),
+          '{paid_amount}': formatMoney(effectivePaid),
+          '{due_amount}': formatMoney(Math.max(0, effectiveTotal - effectivePaid)),
+          '{location_name}': currentLocation?.name || 'Main Branch',
+          '{business_name}': settings.name || 'Royal POS ERP',
+        }
+      });
+    }
+
+    // Auto-send payment received notification if payment amount increased
+    const oldPaid = Number(existingTxn?.paidAmount) || 0;
+    if (effectivePaid > oldPaid + 0.01) {
+      const addedAmount = effectivePaid - oldPaid;
+      const latestPayment = preMerged.paymentEntries?.[preMerged.paymentEntries.length - 1];
+      notificationsToSend.push({
+        templateType: 'payment_received',
+        recipientContactId: preMerged.customerId,
+        variables: {
+          '{invoice_number}': effectiveInvoiceNo,
+          '{received_amount}': formatMoney(addedAmount),
+          '{paid_amount}': formatMoney(effectivePaid),
+          '{due_amount}': formatMoney(Math.max(0, effectiveTotal - effectivePaid)),
+          '{payment_method}': latestPayment?.method || preMerged.paymentMethod || 'cash',
+          '{payment_ref_no}': latestPayment?.referenceNo || effectiveInvoiceNo,
+        }
+      });
+    }
+
     setTransactions((prev) => {
       const updated = prev.map((t) => {
         if (t.id !== id) return t;
@@ -6267,17 +6542,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }, 0);
         const effectiveTax = Math.max(directTax, itemsTax);
 
-        // Auto-send order status notification if status changed
-        if (t.status !== merged.status) {
-            sendOneClickNotifications({
-              templateType: 'order_status',
-              recipientContactId: merged.customerId,
-              variables: {
-                '{invoice_number}': merged.invoiceNo,
-                '{order_status}': merged.status,
-                '{location_name}': currentLocation?.name || 'Main Branch',
-              }
-            }).catch(err => console.error("Error in order status notification:", err));
+        if (merged.status === 'final' && (merged.invoiceNo?.startsWith('Q-') || merged.invoiceNo?.startsWith('DRF-'))) {
+          merged.invoiceNo = merged.invoiceNo.replace(/^(Q|DRF)-/, 'INV-');
         }
 
         return {
@@ -6290,7 +6556,33 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ transactions: updated });
       return updated;
     });
+
+    notificationsToSend.forEach((notif) => {
+      sendOneClickNotifications(notif).catch((err) =>
+        console.error(`Error sending ${notif.templateType} notification from updateSale:`, err)
+      );
+    });
+
     showFlashNotification(`Sale invoice ${saleData.invoiceNo || ''} updated successfully.`, 'success');
+  };
+
+  const convertQuotationToInvoice = (quotationId: string) => {
+    const txn = transactions.find((t) => t.id === quotationId);
+    if (!txn || (txn.status !== 'quotation' && txn.status !== 'draft')) {
+      showFlashNotification('Quotation or draft transaction not found', 'error');
+      return;
+    }
+
+    const newInvoiceNo = txn.invoiceNo.replace(/^(Q|DRF)-/, 'INV-');
+    const updatedPayload = {
+      ...txn,
+      invoiceNo: newInvoiceNo,
+      status: 'final' as TransactionStatus,
+      paymentStatus: (txn.paidAmount >= txn.totalAmount - 0.01) ? 'paid' : txn.paidAmount > 0.01 ? 'partial' : 'due',
+    };
+
+    updateSale(quotationId, updatedPayload);
+    showFlashNotification(`Quotation successfully converted to invoice ${newInvoiceNo}!`, 'success');
   };
 
   const deleteSale = (id: string) => {
@@ -9749,9 +10041,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const supplier = suppliers.find((s) => s.id === params.recipientContactId);
       const contact = customer || supplier;
       if (contact) {
-        recipientName = contact.name;
-        recipientEmail = (contact as any).email || '';
-        recipientPhone = contact.phone || '';
+        recipientName = contact.name || recipientName;
+        recipientEmail = (contact as any).email || recipientEmail;
+        recipientPhone = contact.phone || recipientPhone;
       }
     }
 
@@ -10107,6 +10399,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         transactions,
         createSale,
         updateSale,
+        convertQuotationToInvoice,
         deleteSale,
         openAddSalePage,
         openEditSalePage,

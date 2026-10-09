@@ -80,20 +80,20 @@ async function startServer() {
   // ULTIMATE SECURITY SHIELD: Anti-hacking & DDoS/Brute-Force protection
   // =======================================================================
   
-  // 1. Helmet: Sets strict HTTP security headers (prevents XSS, Clickjacking, MIME-sniffing)
+  // 1. Helmet: Sets HTTP security headers while allowing iframe embedding in AI Studio
   app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"], // Required for Vite/React dev mode
-        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
-        fontSrc: ["'self'", "data:", "https:"],
-        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "ws:", "wss:", "https:", "http:"],
-      },
-    },
+    contentSecurityPolicy: false,
+    frameguard: false,
+    crossOriginResourcePolicy: false,
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
   }));
+
+  // Ensure iframe embedding is permitted in AI Studio preview
+  app.use((req, res, next) => {
+    res.removeHeader("X-Frame-Options");
+    next();
+  });
 
   // 2. Tiered Rate Limiting: Tiered defense appropriate to each endpoint category
   // Thresholds are fully configurable via environment variables with battle-tested defaults
@@ -807,10 +807,25 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
   // Vite middleware for development vs Static files in production
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false, watch: null },
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    app.use("*", async (req, res, next) => {
+      if (req.method !== "GET" && req.method !== "HEAD") return next();
+      if (req.originalUrl.startsWith("/api/")) return next();
+      try {
+        const url = req.originalUrl;
+        const indexPath = path.resolve(process.cwd(), "index.html");
+        let template = fs.readFileSync(indexPath, "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));

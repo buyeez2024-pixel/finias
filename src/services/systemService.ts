@@ -24,9 +24,13 @@ export const checkServerSystemStatus = async (): Promise<SystemStatusResponse> =
   for (const endpoint of endpoints) {
     try {
       const url = endpoint + (endpoint.includes('?') ? '&' : '?') + 't=' + Date.now();
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 2000);
       const res = await fetch(url, {
         headers: { Accept: 'application/json' },
+        signal: ctrl.signal,
       });
+      clearTimeout(timer);
 
       if (res.ok) {
         const text = await res.text();

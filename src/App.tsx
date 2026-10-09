@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { ErpProvider, useErp, isUserAdmin, checkIsSystemInstalled } from './context/ErpContext';
 import { UninstalledGatewayScreen } from './components/installer/UninstalledGatewayScreen';
-import { validatePhoneWithCountry } from './utils/phoneValidation';
+import { validatePhoneWithCountry, isDuplicatePhone } from './utils/phoneValidation';
 import { PhoneInputWithCountry } from './components/common/PhoneInputWithCountry';
 import { AddUserPage } from './components/users/AddUserPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -61,6 +61,7 @@ const MainAppContent: React.FC = () => {
     setActiveTab,
     contactsSubTab,
     transactions,
+    customers,
     addCustomer,
     isAuthenticated,
     currentUser,
@@ -169,16 +170,27 @@ const MainAppContent: React.FC = () => {
         showFlashNotification(`Phone Error: ${phoneVal.error}`, 'error');
         return;
       }
+
+      const dupCust = customers.find(c => c.phone && c.phone !== 'N/A' && isDuplicatePhone(c.phone, newCustPhone));
+      if (dupCust) {
+        showFlashNotification(`Mobile number is already registered to "${dupCust.businessName || dupCust.name}". Phone numbers must be unique.`, 'error');
+        return;
+      }
     }
 
-    addCustomer({
-      name: newCustName,
-      phone: newCustPhone.trim() ? `${newCustCountryCode} ${newCustPhone.trim()}` : 'N/A',
-      creditLimit: parseFloat(newCustCredit) || 500,
-    });
-    setNewCustName('');
-    setNewCustPhone('');
-    setShowAddCustomerModal(false);
+    try {
+      const created = addCustomer({
+        name: newCustName,
+        phone: newCustPhone.trim() ? `${newCustCountryCode} ${newCustPhone.trim()}` : 'N/A',
+        creditLimit: parseFloat(newCustCredit) || 500,
+      });
+      setNewCustName('');
+      setNewCustPhone('');
+      setShowAddCustomerModal(false);
+      showFlashNotification(`Customer "${created.name}" created and selected!`, 'success');
+    } catch (err: any) {
+      showFlashNotification(err?.message || 'Failed to add customer', 'error');
+    }
   };
 
   const onOpenPaymentModal = useCallback(() => setShowPaymentModal(true), []);
@@ -887,10 +899,12 @@ const MainAppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <ErpProvider>
-      <ErrorBoundary>
-        <MainAppContent />
-      </ErrorBoundary>
-    </ErpProvider>
+    <ErrorBoundary>
+      <ErpProvider>
+        <ErrorBoundary>
+          <MainAppContent />
+        </ErrorBoundary>
+      </ErpProvider>
+    </ErrorBoundary>
   );
 }

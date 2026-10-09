@@ -77,14 +77,14 @@ export const ContactsView: React.FC = () => {
 
   // Column definitions for visibility toggle
   const customerColumns = [
-    { key: 'id', label: 'ID' }, { key: 'name', label: 'Name' }, { key: 'business', label: 'Business / Tier' },
-    { key: 'contact', label: 'Contact' }, { key: 'tax', label: 'Tax & Address' }, { key: 'balance', label: 'Balance' },
-    { key: 'credit', label: 'Credit Limit' }, { key: 'due', label: 'Current Due' }, { key: 'loyalty', label: 'Loyalty' },
+    { key: 'id', label: 'Customer Code / ID' }, { key: 'name', label: 'Customer Name' }, { key: 'business', label: 'Business / Tier' },
+    { key: 'contact', label: 'Contact Coordinates' }, { key: 'tax', label: 'Tax & Address' }, { key: 'balance', label: 'Opening / Adv Balance' },
+    { key: 'credit', label: 'Credit Limit' }, { key: 'due', label: 'Current Due' }, { key: 'loyalty', label: 'Loyalty Points' },
     { key: 'actions', label: 'Actions' }
   ];
   const supplierColumns = [
-    { key: 'id', label: 'ID' }, { key: 'name', label: 'Supplier' }, { key: 'company', label: 'Company' },
-    { key: 'contact', label: 'Contact' }, { key: 'tax', label: 'Tax & Location' }, { key: 'balance', label: 'Balance' },
+    { key: 'id', label: 'Supplier Code / ID' }, { key: 'name', label: 'Supplier Name' }, { key: 'company', label: 'Company' },
+    { key: 'contact', label: 'Contact Coordinates' }, { key: 'tax', label: 'Tax & Location' }, { key: 'balance', label: 'Opening Balance' },
     { key: 'payable', label: 'Payables' }, { key: 'actions', label: 'Actions' }
   ];
 
@@ -99,10 +99,10 @@ export const ContactsView: React.FC = () => {
 
   const filteredCustomers = customers.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.contactId || c.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery) ||
+      (c.phone || '').includes(searchQuery) ||
       (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.taxNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.city || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,10 +110,10 @@ export const ContactsView: React.FC = () => {
 
   const filteredSuppliers = suppliers.filter(
     (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.contactId || s.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.phone.includes(searchQuery) ||
+      (s.phone || '').includes(searchQuery) ||
       (s.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.taxNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.city || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -412,8 +412,8 @@ export const ContactsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const standard = { name: true, contact: true, balance: true, actions: true };
-                    const defaultCust = { name: true, contact: true, balance: true, actions: true };
+                    const standard = { id: true, name: true, company: true, contact: true, balance: true, actions: true };
+                    const defaultCust = { id: true, name: true, business: true, contact: true, balance: true, actions: true };
                     isSuppliers ? setVisibleSupplierColumns(standard) : setVisibleCustomerColumns(defaultCust);
                   }}
                   className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
@@ -423,8 +423,8 @@ export const ContactsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const compact = { name: true, balance: true, actions: true };
-                    const compactCust = { name: true, balance: true, actions: true };
+                    const compact = { id: true, name: true, balance: true, actions: true };
+                    const compactCust = { id: true, name: true, balance: true, actions: true };
                     isSuppliers ? setVisibleSupplierColumns(compact) : setVisibleCustomerColumns(compactCust);
                   }}
                   className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer hidden sm:inline-block"
@@ -435,7 +435,7 @@ export const ContactsView: React.FC = () => {
                   type="button"
                   onClick={() => {
                     const defaultSupp = { id: true, name: true, company: true, contact: true, tax: true, balance: true, payable: true, actions: true };
-                    const defaultCust = { id: true, name: true, company: true, contact: true, tax: true, group: true, credit: true, due: true, loyalty: true, actions: true };
+                    const defaultCust = { id: true, name: true, business: true, contact: true, tax: true, balance: true, credit: true, due: true, loyalty: true, actions: true };
                     isSuppliers ? setVisibleSupplierColumns(defaultSupp) : setVisibleCustomerColumns(defaultCust);
                   }}
                   className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-950/50 text-rose-400 border border-slate-700 transition flex items-center gap-1 cursor-pointer"
@@ -657,7 +657,7 @@ export const ContactsView: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-bold">
                   <tr>
-                    {visibleCustomerColumns.id && <th className="py-3.5 px-4 text-left">ID</th>}
+                    {visibleCustomerColumns.id && <th className="py-3.5 px-4 text-left">Customer Code / ID</th>}
                     {visibleCustomerColumns.name && <th className="py-3.5 px-4 text-left">Customer Name</th>}
                     {visibleCustomerColumns.business && <th className="py-3.5 px-4 text-left">Business / Tier</th>}
                     {visibleCustomerColumns.contact && <th className="py-3.5 px-4 text-left">Contact Coordinates</th>}

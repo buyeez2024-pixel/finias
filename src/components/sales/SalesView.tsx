@@ -134,6 +134,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     openAddSalePage,
     openEditSalePage,
     openViewSalePage,
+    convertQuotationToInvoice,
     deleteSale,
     hasPermission,
     currentUser
@@ -803,14 +804,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         {isDraftOrQuotation ? (
                           <button
                             onClick={() => {
-                              openEditSalePage({
-                                ...sale,
-                                status: 'final',
-                                invoiceNo: sale.invoiceNo.replace(/^(Q|DRF)-/, 'INV-')
-                              });
+                              convertQuotationToInvoice(sale.id);
                             }}
                             className="p-1.5 bg-slate-800 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-lg transition-colors"
-                            title="Convert to Final Sale"
+                            title="Convert to Final Sale (1-Click & Trigger Mail)"
                           >
                             <ArrowRightLeft className="w-4 h-4" />
                           </button>
