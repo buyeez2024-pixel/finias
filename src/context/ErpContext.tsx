@@ -504,6 +504,14 @@ interface ErpContextType {
     currencySymbol?: string;
     timezone?: string;
     adminName?: string;
+    address?: string;
+    city?: string;
+    province?: string;
+    district?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    phone?: string;
   }) => void;
   setUsersList: (users: User[]) => void;
   upsertSuperAdminUser: (adminData: {
@@ -731,26 +739,65 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedUser = safeJsonParse(`${STORAGE_KEY}_auth_user`, null);
     const activeBizName = savedUser?.businessName || savedSettings?.businessName || savedSettings?.name || 'Royal POSfini';
     const parsed = safeJsonParse(`${STORAGE_KEY}_locations`, []);
+
+    const settingsAddr = savedSettings?.address;
+    const settingsCity = savedSettings?.city;
+    const settingsDistrict = savedSettings?.province || savedSettings?.district;
+    const settingsState = savedSettings?.state;
+    const settingsZip = savedSettings?.zip;
+    const settingsCountry = savedSettings?.country;
+    const settingsPhone = savedSettings?.phone;
+    const hasCustomSettingsAddress = !!(settingsAddr || settingsCity || (settingsCountry && settingsCountry !== 'United States'));
+
     if (Array.isArray(parsed) && parsed.length > 0) {
       const cleaned = parsed
         .filter((l: any) => l.name !== 'Downtown Store' && l.id !== 'loc_store1')
         .map((l: any) => {
-          if (l.name === 'Main HQ' || (l.id === 'loc_main' && (!l.name || l.name === 'Main HQ'))) {
-            return { ...l, name: activeBizName, businessName: activeBizName };
+          if (l.name === 'Main HQ' || l.id === 'loc_main' || l.isDefault) {
+            const isUsPlaceholder =
+              !l.address ||
+              l.address === '123 Business Rd, Suite 100' ||
+              l.address === '123 Business Rd, City, State' ||
+              l.address === '123 Business Rd' ||
+              (l.city === 'New York' && settingsCity && settingsCity !== 'New York') ||
+              (l.country === 'United States' && settingsCountry && settingsCountry !== 'United States');
+
+            return {
+              ...l,
+              name: (l.name === 'Main HQ' || l.name === 'Royal POSfini' || !l.name) ? activeBizName : l.name,
+              businessName: activeBizName,
+              ...(hasCustomSettingsAddress && isUsPlaceholder ? {
+                address: settingsAddr || l.address,
+                city: settingsCity || l.city,
+                district: settingsDistrict || l.district,
+                province: settingsDistrict || l.province,
+                state: settingsState || l.state,
+                zip: settingsZip || l.zip,
+                country: settingsCountry || l.country,
+                phone: settingsPhone || l.phone,
+              } : {})
+            };
           }
           return l;
         });
-      return cleaned.length > 0 ? cleaned : [{
-        id: 'loc_main',
-        name: activeBizName,
-        code: 'HQ01',
-        address: '123 Business Rd, City, State',
-        phone: '555-0100',
-        isDefault: true,
-        businessName: activeBizName,
-      }];
+      if (cleaned.length > 0) return cleaned;
     }
-    return initialLocations;
+
+    return [{
+      id: 'loc_main',
+      name: activeBizName,
+      code: 'HQ01',
+      address: settingsAddr || (hasCustomSettingsAddress ? '' : '123 Business Rd, Suite 100'),
+      city: settingsCity || (hasCustomSettingsAddress ? '' : 'New York'),
+      district: settingsDistrict || '',
+      province: settingsDistrict || '',
+      state: settingsState || (hasCustomSettingsAddress ? '' : 'New York'),
+      zip: settingsZip || (hasCustomSettingsAddress ? '' : '10001'),
+      country: settingsCountry || (hasCustomSettingsAddress ? 'India' : 'United States'),
+      phone: settingsPhone || (hasCustomSettingsAddress ? '' : '+1 (555) 010-0199'),
+      isDefault: true,
+      businessName: activeBizName,
+    }];
   });
 
   const [selectedLocationId, setSelectedLocationId] = useState<string>(() => {
@@ -2786,20 +2833,50 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('installation_type', 'fresh');
       }
 
-      if (newSettings.businessName !== undefined || newSettings.name !== undefined) {
-        const newBizName = newSettings.businessName !== undefined ? newSettings.businessName : newSettings.name;
+      if (
+        newSettings.businessName !== undefined ||
+        newSettings.name !== undefined ||
+        newSettings.address !== undefined ||
+        newSettings.city !== undefined ||
+        newSettings.province !== undefined ||
+        newSettings.district !== undefined ||
+        newSettings.state !== undefined ||
+        newSettings.zip !== undefined ||
+        newSettings.country !== undefined ||
+        newSettings.phone !== undefined
+      ) {
+        const newBizName = newSettings.businessName !== undefined ? newSettings.businessName : (newSettings.name !== undefined ? newSettings.name : updated.businessName || updated.name);
         if (newBizName !== undefined) {
           updated.name = newBizName;
           updated.businessName = newBizName;
-          setLocations((prevLocs) =>
-            prevLocs.map((loc) => {
-              if (loc.isDefault || loc.id === 'loc_main' || loc.name === 'Main HQ') {
-                return { ...loc, name: newBizName, businessName: newBizName };
-              }
-              return loc;
-            })
-          );
         }
+
+        setLocations((prevLocs) => {
+          const nextLocs = prevLocs.map((loc) => {
+            if (loc.isDefault || loc.id === 'loc_main' || loc.name === 'Main HQ') {
+              return {
+                ...loc,
+                name: newBizName || loc.name,
+                businessName: newBizName || loc.businessName,
+                address: newSettings.address !== undefined ? newSettings.address : loc.address,
+                city: newSettings.city !== undefined ? newSettings.city : loc.city,
+                district: (newSettings.province !== undefined ? newSettings.province : (newSettings.district !== undefined ? newSettings.district : loc.district)) || '',
+                province: (newSettings.province !== undefined ? newSettings.province : (newSettings.district !== undefined ? newSettings.district : loc.province)) || '',
+                state: newSettings.state !== undefined ? newSettings.state : loc.state,
+                zip: newSettings.zip !== undefined ? newSettings.zip : loc.zip,
+                country: newSettings.country !== undefined ? newSettings.country : loc.country,
+                phone: newSettings.phone !== undefined ? newSettings.phone : loc.phone,
+              };
+            }
+            return loc;
+          });
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(`${STORAGE_KEY}_locations`, JSON.stringify(nextLocs));
+            }
+          } catch (e) {}
+          return nextLocs;
+        });
       }
 
       // Synchronize and treat uploaded logo as primary logo across the app
@@ -9340,8 +9417,28 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       installedAt: new Date().toISOString(),
     }));
 
+    const bizName = initialAdminUser?.businessName || settings.name || settings.businessName || 'Finias POS Enterprise';
+    const mainLocation: Location = {
+      id: 'loc_main',
+      name: bizName,
+      code: 'HQ01',
+      address: settings.address || '',
+      city: settings.city || '',
+      district: settings.province || settings.district || '',
+      province: settings.province || settings.district || '',
+      state: settings.state || '',
+      zip: settings.zip || '',
+      country: settings.country || 'India',
+      phone: settings.phone || initialAdminUser?.phone || '',
+      isDefault: true,
+      businessName: bizName,
+    };
+    setLocations([mainLocation]);
+    setSelectedLocationId('loc_main');
+    localStorage.setItem(`${STORAGE_KEY}_locations`, JSON.stringify([mainLocation]));
+    localStorage.setItem(`${STORAGE_KEY}_selected_location`, 'loc_main');
+
     if (initialAdminUser) {
-      const bizName = initialAdminUser.businessName || settings.name || settings.businessName || 'Finias POS Enterprise';
       const newAdmin: User = {
         ...initialAdminUser,
         id: `usr_admin_${Date.now()}`,
@@ -9377,6 +9474,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     currencySymbol?: string;
     timezone?: string;
     adminName?: string;
+    address?: string;
+    city?: string;
+    province?: string;
+    district?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    phone?: string;
   }) => {
     // 1. Module Flags & Core Settings
     const updatedEnabledModules = {
@@ -9396,7 +9501,41 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...(config.currencyCode ? { currency: config.currencyCode, currencyCode: config.currencyCode } : {}),
       ...(config.currencySymbol ? { currencySymbol: config.currencySymbol } : {}),
       ...(config.timezone ? { timezone: config.timezone } : {}),
+      ...(config.address ? { address: config.address } : {}),
+      ...(config.city ? { city: config.city } : {}),
+      ...(config.province || config.district ? { province: config.province || config.district, district: config.province || config.district } : {}),
+      ...(config.state ? { state: config.state } : {}),
+      ...(config.zip ? { zip: config.zip } : {}),
+      ...(config.country ? { country: config.country } : {}),
+      ...(config.phone ? { phone: config.phone } : {}),
     };
+
+    if (config.businessName || config.address || config.city || config.state || config.country) {
+      setLocations((prev) => {
+        const nextLocs = prev.map((loc) => {
+          if (loc.isDefault || loc.id === 'loc_main' || loc.name === 'Main HQ') {
+            return {
+              ...loc,
+              name: config.businessName || loc.name,
+              businessName: config.businessName || loc.businessName,
+              address: config.address !== undefined ? config.address : loc.address,
+              city: config.city !== undefined ? config.city : loc.city,
+              district: (config.province !== undefined ? config.province : (config.district !== undefined ? config.district : loc.district)) || '',
+              province: (config.province !== undefined ? config.province : (config.district !== undefined ? config.district : loc.province)) || '',
+              state: config.state !== undefined ? config.state : loc.state,
+              zip: config.zip !== undefined ? config.zip : loc.zip,
+              country: config.country !== undefined ? config.country : loc.country,
+              phone: config.phone !== undefined ? config.phone : loc.phone,
+            };
+          }
+          return loc;
+        });
+        try {
+          localStorage.setItem(`${STORAGE_KEY}_locations`, JSON.stringify(nextLocs));
+        } catch (e) {}
+        return nextLocs;
+      });
+    }
 
     // Auto-configure Double-Entry Accounting
     if (config.enableAccountingModule) {

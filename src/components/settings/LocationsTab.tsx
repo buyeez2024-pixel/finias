@@ -56,19 +56,88 @@ export const LocationsTab: React.FC = () => {
       return true;
     });
     
-    // Auto-update loc_main businessName and name inside display context to maintain consistency
+    // Auto-update loc_main and primary flagship outlet business details inside display context to maintain consistency
     return scoped.map((l) => {
-      if (l.id === 'loc_main') {
-        const activeName = currentUser?.businessName || settings?.businessName || settings?.name || 'Royal POSfini';
+      if (l.id === 'loc_main' || l.isDefault) {
+        const activeName = currentUser?.businessName || settings?.businessName || settings?.name || l.name || 'Royal POSfini';
+        const isDefaultUsAddress =
+          !l.address ||
+          l.address === '123 Business Rd, Suite 100' ||
+          l.address === '123 Business Rd, City, State' ||
+          l.address === '123 Business Rd' ||
+          (l.city === 'New York' && settings?.city && settings.city !== 'New York') ||
+          (l.country === 'United States' && settings?.country && settings.country !== 'United States');
+
+        const resolvedAddress = (isDefaultUsAddress && settings?.address) ? settings.address : (l.address || settings?.address || '');
+        const resolvedCity = (isDefaultUsAddress && settings?.city) ? settings.city : (l.city || settings?.city || '');
+        const resolvedDistrict = (isDefaultUsAddress && (settings?.province || settings?.district)) ? (settings?.province || settings?.district) : (l.district || l.province || settings?.province || settings?.district || '');
+        const resolvedState = (isDefaultUsAddress && settings?.state) ? settings.state : (l.state || settings?.state || '');
+        const resolvedZip = (isDefaultUsAddress && settings?.zip) ? settings.zip : (l.zip || settings?.zip || '');
+        const resolvedCountry = (isDefaultUsAddress && settings?.country) ? settings.country : (l.country || settings?.country || '');
+        const resolvedPhone = (isDefaultUsAddress && settings?.phone) ? settings.phone : (l.phone || settings?.phone || '');
+
         return {
           ...l,
-          name: l.name === 'Royal POSfini' ? activeName : l.name,
+          name: l.name === 'Royal POSfini' || !l.name ? activeName : l.name,
           businessName: activeName,
+          address: resolvedAddress,
+          city: resolvedCity,
+          district: resolvedDistrict,
+          province: resolvedDistrict,
+          state: resolvedState,
+          zip: resolvedZip,
+          country: resolvedCountry,
+          phone: resolvedPhone,
         };
       }
       return l;
     });
-  }, [locations, currentBusinessName, currentBusinessId, currentUser?.locationId, selectedLocationId, settings?.businessName, settings?.name, currentUser?.businessName]);
+  }, [
+    locations,
+    currentBusinessName,
+    currentBusinessId,
+    currentUser?.locationId,
+    selectedLocationId,
+    settings?.businessName,
+    settings?.name,
+    settings?.address,
+    settings?.city,
+    settings?.province,
+    settings?.district,
+    settings?.state,
+    settings?.zip,
+    settings?.country,
+    settings?.phone,
+    currentUser?.businessName,
+  ]);
+
+  // Synchronize primary outlet in state/localStorage if still carrying default US placeholder while settings has user data
+  useEffect(() => {
+    const mainLoc = locations.find((l) => l.id === 'loc_main' || l.isDefault);
+    if (mainLoc && (settings?.address || settings?.city || settings?.country)) {
+      const isDefaultUsAddress =
+        !mainLoc.address ||
+        mainLoc.address === '123 Business Rd, Suite 100' ||
+        mainLoc.address === '123 Business Rd, City, State' ||
+        mainLoc.address === '123 Business Rd' ||
+        (mainLoc.city === 'New York' && settings?.city && settings.city !== 'New York') ||
+        (mainLoc.country === 'United States' && settings?.country && settings.country !== 'United States');
+
+      if (isDefaultUsAddress) {
+        updateLocation(mainLoc.id, {
+          address: settings.address || mainLoc.address,
+          city: settings.city || mainLoc.city,
+          district: settings.province || settings.district || mainLoc.district,
+          state: settings.state || mainLoc.state,
+          zip: settings.zip || mainLoc.zip,
+          country: settings.country || mainLoc.country,
+          phone: settings.phone || mainLoc.phone,
+          businessName: settings.businessName || settings.name || mainLoc.businessName,
+          name: mainLoc.name === 'Royal POSfini' ? (settings.businessName || settings.name || mainLoc.name) : mainLoc.name,
+        });
+      }
+    }
+  }, [settings?.address, settings?.city, settings?.province, settings?.state, settings?.zip, settings?.country, settings?.phone, settings?.businessName, locations, updateLocation]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingLoc, setEditingLoc] = useState<Location | null>(null);
@@ -113,7 +182,7 @@ export const LocationsTab: React.FC = () => {
       city: '',
       district: '',
       state: '',
-      country: settings?.country || 'United States',
+      country: settings?.country || 'India',
       isDefault: displayedLocations.length === 0
     });
     setError(null);
@@ -130,9 +199,9 @@ export const LocationsTab: React.FC = () => {
       address: loc.address || '',
       zip: loc.zip || '',
       city: loc.city || '',
-      district: loc.district || '',
+      district: loc.district || loc.province || '',
       state: loc.state || '',
-      country: loc.country || settings?.country || 'United States',
+      country: loc.country || settings?.country || 'India',
       isDefault: !!loc.isDefault
     });
     setError(null);
@@ -241,6 +310,18 @@ export const LocationsTab: React.FC = () => {
 
     if (editingLoc) {
       updateLocation(editingLoc.id, formData);
+      if (editingLoc.id === 'loc_main' || editingLoc.isDefault) {
+        updateSettings({
+          address: formData.address,
+          city: formData.city,
+          province: formData.district,
+          district: formData.district,
+          state: formData.state,
+          zip: formData.zip,
+          country: formData.country,
+          phone: formData.phone,
+        });
+      }
     } else {
       addLocation(formData);
     }

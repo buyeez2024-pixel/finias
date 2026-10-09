@@ -35,6 +35,7 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
 }) => {
   const { customers, settings, updateSale, locations, paymentMethods } = useErp();
   const [notificationSent, setNotificationSent] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
@@ -86,6 +87,12 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
       : 'due';
 
   const handleOpenAddModal = () => {
+    if (effectivePaymentStatus === 'paid' || dueAmount <= 0.005) {
+      setPaymentError('Payment is settled against this customer. Additional payment is not allowed for fully paid status.');
+      setTimeout(() => setPaymentError(null), 6000);
+      return;
+    }
+    setPaymentError(null);
     setEditingEntryId(null);
     setAmount(dueAmount > 0 ? dueAmount : sale.totalAmount);
     setPaymentMethod('cash');
@@ -131,6 +138,11 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
 
   const handleSavePayment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingEntryId && (effectivePaymentStatus === 'paid' || dueAmount <= 0.005)) {
+      setPaymentError('Payment is settled against this customer. Additional payment is not allowed for fully paid status.');
+      setIsAddEditModalOpen(false);
+      return;
+    }
     
     const extraPaymentDetails = {
       bankAccountNo: bankAccountNo || undefined,
@@ -239,6 +251,14 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
             <div className="p-3 bg-emerald-950/60 border border-emerald-800 rounded-xl flex items-center gap-2 text-emerald-300 text-xs animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Payment received notification successfully sent to customer mobile / email!</span>
+            </div>
+          )}
+
+          {/* Payment Error / Hint Alert */}
+          {paymentError && (
+            <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl flex items-center gap-2 text-rose-300 text-xs animate-in fade-in">
+              <X className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{paymentError}</span>
             </div>
           )}
 

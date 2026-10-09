@@ -67,6 +67,8 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
   const {
     settings,
     updateSettings,
+    locations,
+    updateLocation,
     users,
     addUser,
     updateUser,
@@ -641,20 +643,30 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
 
         // Apply settings & create supreme admin in the actual app store
         try {
+          const finalBizName = businessName.trim();
+          const finalAddress = businessAddress.trim();
+          const finalCity = businessCity.trim();
+          const finalProvince = businessProvince.trim();
+          const finalState = businessState.trim();
+          const finalZip = businessZip.trim();
+          const finalCountry = businessCountry.trim();
+          const finalPhone = businessPhone.trim();
+
           updateSettings({
-            name: businessName,
-            businessName: businessName,
+            name: finalBizName,
+            businessName: finalBizName,
             currency: currencyCode,
             currencyCode: currencyCode,
             currencySymbol: currencySymbol,
             timezone: timezone,
-            address: businessAddress,
-            city: businessCity,
-            province: businessProvince,
-            state: businessState,
-            zip: businessZip,
-            country: businessCountry,
-            phone: businessPhone,
+            address: finalAddress,
+            city: finalCity,
+            province: finalProvince,
+            district: finalProvince,
+            state: finalState,
+            zip: finalZip,
+            country: finalCountry,
+            phone: finalPhone,
             logo: businessLogo,
             logoUrl: businessLogo,
             darkLogoUrl: businessLogo,
@@ -664,6 +676,22 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
             installationType: !isDemoInstallation ? 'fresh' : 'demo',
             installedAt: new Date().toISOString(),
           });
+
+          // Explicitly synchronize primary flagship branch outlet with Step 3 business data
+          updateLocation('loc_main', {
+            name: finalBizName,
+            businessName: finalBizName,
+            address: finalAddress,
+            city: finalCity,
+            district: finalProvince,
+            province: finalProvince,
+            state: finalState,
+            zip: finalZip,
+            country: finalCountry,
+            phone: finalPhone,
+            isDefault: true,
+          });
+
           if (businessLogo && typeof localStorage !== 'undefined') {
             localStorage.setItem('royal_pos_v1_primary_logo', businessLogo);
           }
@@ -711,11 +739,19 @@ export const InstallationWizard: React.FC<InstallationWizardProps> = ({
             enableBarcodeStudio,
             enableAccountingModule,
             enableAiAssistant,
-            businessName,
+            businessName: finalBizName,
             currencyCode,
             currencySymbol,
             timezone,
             adminName,
+            address: finalAddress,
+            city: finalCity,
+            province: finalProvince,
+            district: finalProvince,
+            state: finalState,
+            zip: finalZip,
+            country: finalCountry,
+            phone: finalPhone,
           });
 
           // Mark installation as completed in localStorage
@@ -1879,24 +1915,42 @@ SET FOREIGN_KEY_CHECKS = 1;
                     return;
                   }
                   // Save Store Profile & Primary Logo to settings immediately
-                  updateSettings({
+                  const step3BizData = {
                     name: businessName.trim(),
                     businessName: businessName.trim(),
                     currency: currencyCode,
                     currencyCode: currencyCode,
                     currencySymbol: currencySymbol,
                     timezone: timezone,
-                    address: businessAddress,
-                    city: businessCity,
-                    province: businessProvince,
-                    state: businessState,
-                    zip: businessZip,
-                    country: businessCountry,
-                    phone: businessPhone,
+                    address: businessAddress.trim(),
+                    city: businessCity.trim(),
+                    province: businessProvince.trim(),
+                    district: businessProvince.trim(),
+                    state: businessState.trim(),
+                    zip: businessZip.trim(),
+                    country: businessCountry.trim(),
+                    phone: businessPhone.trim(),
                     logo: businessLogo || '',
                     logoUrl: businessLogo || '',
                     darkLogoUrl: businessLogo || '',
+                  };
+                  updateSettings(step3BizData);
+
+                  // Update primary flagship outlet immediately
+                  updateLocation('loc_main', {
+                    name: businessName.trim(),
+                    businessName: businessName.trim(),
+                    address: businessAddress.trim(),
+                    city: businessCity.trim(),
+                    district: businessProvince.trim(),
+                    province: businessProvince.trim(),
+                    state: businessState.trim(),
+                    zip: businessZip.trim(),
+                    country: businessCountry.trim(),
+                    phone: businessPhone.trim(),
+                    isDefault: true,
                   });
+
                   if (businessLogo && typeof localStorage !== 'undefined') {
                     localStorage.setItem('royal_pos_v1_primary_logo', businessLogo);
                   }
