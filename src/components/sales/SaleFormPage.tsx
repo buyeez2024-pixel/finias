@@ -35,10 +35,12 @@ import {
   Layers,
   Users,
   FileCheck,
-  Sparkles
+  Sparkles,
+  Camera
 } from 'lucide-react';
 import { ProductFormPage } from '../inventory/ProductFormPage';
 import { SearchableDropdown } from '../common/SearchableDropdown';
+import { CameraBarcodeScannerModal } from '../common/CameraBarcodeScannerModal';
 
 interface SaleFormPageProps {
   onOpenReceiptModal?: (sale: any) => void;
@@ -329,6 +331,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
   const [locationId, setLocationId] = useState(saleToUse?.locationId || selectedLocationId);
   const [customerId, setCustomerId] = useState(saleToUse?.customerId || '');
   const [invoiceNo, setInvoiceNo] = useState(saleToUse?.invoiceNo || '');
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   
   const generateInvoiceNo = () => {
     const year = new Date().getFullYear();
@@ -680,6 +683,39 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     return list;
   }, [taxGroups, taxRates, settings.defaultTaxRate]);
 
+  const handleCameraBarcodeScan = (scannedCode: string) => {
+    const q = scannedCode.trim().toLowerCase();
+    let foundProd: Product | null = null;
+    let foundVar: any = null;
+
+    for (const p of products) {
+      if (!p) continue;
+      const pBar = String(p.barcode || '').toLowerCase();
+      const pSku = String(p.sku || '').toLowerCase();
+      if (pBar === q || pSku === q) {
+        foundProd = p;
+        break;
+      }
+      if (p.variations && p.variations.length > 0) {
+        const vMatch = p.variations.find((v: any) =>
+          String(v.barcode || '').toLowerCase() === q || String(v.sku || '').toLowerCase() === q
+        );
+        if (vMatch) {
+          foundProd = p;
+          foundVar = vMatch;
+          break;
+        }
+      }
+    }
+
+    if (foundProd) {
+      addProductToItems(foundProd, undefined, foundVar);
+      showFlashNotification(`Scanned: ${foundProd.name}`, 'success');
+    } else {
+      showFlashNotification(`No product found for barcode: ${scannedCode}`, 'error');
+    }
+  };
+
   // Add Product or Variation to Items table
   const addProductToItems = (prod: Product, selectedLotId?: string, selectedVariation?: any) => {
     if (!prod) return;
@@ -1000,6 +1036,13 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
     }
   }, [grandTotal, isEditMode, paidAmountInput]);
 
+  // Convert quotation to invoice: update paid amount
+  useEffect(() => {
+    if (isEditMode && saleToUse?.status === 'quotation' && status === 'final' && paymentMethod === 'cash') {
+      setPaidAmountInput(grandTotal.toFixed(2));
+    }
+  }, [status, isEditMode, saleToUse, grandTotal, paymentMethod]);
+
   const effectivePaidAmount = isViewMode 
     ? (saleToUse?.paidAmount || 0)
     : (paidAmountInput === '' ? grandTotal : Math.max(0, parseFloat(paidAmountInput) || 0));
@@ -1167,6 +1210,14 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
           `Discount on "${item.productName}" cannot be set below the guaranteed customer group discount of ${minGuaranteedPct}%`,
           'error'
         );
+        return;
+      }
+    }
+
+    if (settings?.enableHsnCode) {
+      const missingHsn = items.some(it => !it.hsnCode || !it.hsnCode.trim());
+      if (missingHsn) {
+        showFlashNotification('HSN / SAC code is mandatory for all sale line items when HSN codes are enabled.', 'error');
         return;
       }
     }
@@ -1637,19 +1688,30 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
         {/* Product Search Bar */}
         {!isViewMode && (
           <div className="relative">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={productSearch}
-                onFocus={() => setShowSearchResults(true)}
-                onChange={(e) => {
-                  setProductSearch(e.target.value);
-                  setShowSearchResults(true);
-                }}
-                placeholder="Search by product name, SKU, or scan barcode..."
-                className="w-full bg-slate-950 text-white text-xs pl-10 pr-4 py-3 rounded-xl border border-slate-700 focus:border-indigo-500 focus:outline-none"
-              />
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={productSearch}
+                  onFocus={() => setShowSearchResults(true)}
+                  onChange={(e) => {
+                    setProductSearch(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  placeholder="Search by product name, SKU, or scan barcode..."
+                  className="w-full bg-slate-950 text-white text-xs pl-10 pr-4 py-3 rounded-xl border border-slate-700 focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCameraScannerOpen(true)}
+                className="px-3.5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 shadow-lg shadow-indigo-600/30"
+                title="Scan Barcode with Mobile / Device Camera"
+              >
+                <Camera className="w-4 h-4" />
+                <span className="hidden sm:inline">Scan Camera</span>
+              </button>
             </div>
 
             {/* Search Dropdown Results */}
@@ -1785,6 +1847,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
               <tr>
                 <th className="py-3 px-3 w-10">#</th>
                 <th className="py-3 px-3 min-w-[200px]">Product & SKU</th>
+                {settings?.enableHsnCode && <th className="py-3 px-3 text-center min-w-[110px]">HSN/SAC *</th>}
                 <th className="py-3 px-3 text-center min-w-[120px]">Quantity</th>
                 <th className="py-3 px-3 text-right min-w-[120px]">Unit Price ({settings.currencySymbol})</th>
                 <th className="py-3 px-3 text-right min-w-[130px]">Discount (%)</th>
@@ -1852,6 +1915,27 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
                           </div>
                         )}
                       </td>
+                      {settings?.enableHsnCode && (
+                        <td className="py-3 px-3 text-center">
+                          {isViewMode ? (
+                            <span className="font-mono font-bold text-white">{item.hsnCode || '-'}</span>
+                          ) : (
+                            <input
+                              type="text"
+                              required={!!settings?.enableHsnCode}
+                              value={item.hsnCode || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setItems(prev => prev.map((it, i) => i === idx ? { ...it, hsnCode: val } : it));
+                              }}
+                              placeholder="HSN Code"
+                              className={`w-24 bg-slate-950 text-center font-mono font-bold text-xs py-1 px-1 rounded-lg border ${
+                                !item.hsnCode?.trim() ? 'border-rose-500 text-rose-400' : 'border-slate-700 text-white'
+                              } focus:outline-none`}
+                            />
+                          )}
+                        </td>
+                      )}
                       <td className="py-3 px-3 text-center">
                         {isViewMode ? (
                           <span className="font-mono font-bold text-white">
@@ -2829,6 +2913,12 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
           </div>
         </div>
       )}
+      {/* Camera Barcode Scanner Modal */}
+      <CameraBarcodeScannerModal
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        onScan={handleCameraBarcodeScan}
+      />
     </div>
   );
 };

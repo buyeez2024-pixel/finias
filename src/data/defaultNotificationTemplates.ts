@@ -12,7 +12,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification triggered automatically when a new POS checkout or sales order invoice is completed.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Invoice #{invoice_number} from {business_name}',
     emailCc: '',
@@ -45,10 +44,11 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
 
   <p>Branch / Location: <strong>{location_name}</strong><br/>{location_address}<br/>Phone: {location_phone} | Email: {location_email}</p>
   
+  <p style="margin-top: 10px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px;">Invoice Layout: Standard (Default)</p>
+
   <p style="margin-top: 24px;">Warm regards,<br/><strong>{business_name} Team</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, thank you for shopping at {business_name}! Invoice #{invoice_number} generated. Total: {total_amount}, Paid: {paid_amount}, Due: {due_amount}. Visit again!`,
-    whatsappBody: `Hello *{contact_name}* 👋\n\nThank you for shopping at *{business_name}*!\n\n📄 *Invoice Details:*\n• Invoice No: *#{invoice_number}*\n• Total Amount: *{total_amount}*\n• Paid Amount: *{paid_amount}*\n• Balance Due: *{due_amount}*\n\n📍 *Store Location:*\n{location_name}\n📞 {location_phone}\n\nWe appreciate your business! ✨`,
     availableTags: [
       '{contact_name}',
       '{invoice_number}',
@@ -81,7 +81,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent when customer clears due balance or partial invoice payment.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Payment Confirmation for Invoice #{invoice_number} - {business_name}',
     emailCc: '',
@@ -103,7 +102,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, payment of {received_amount} received for invoice #{invoice_number} via {payment_method}. Remaining Due: {due_amount}. Thanks, {business_name}.`,
-    whatsappBody: `Dear *{contact_name}*,\n\nWe have received your payment of *{received_amount}* against Invoice *#{invoice_number}*.\n\n💳 *Payment Ref:* {payment_ref_no}\n💰 *Method:* {payment_method}\n⏳ *Remaining Due:* *{due_amount}*\n\nThank you for choosing *{business_name}*!`,
     availableTags: [
       '{contact_name}',
       '{invoice_number}',
@@ -125,7 +123,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent to remind customers about pending credit dues or upcoming invoice due dates.',
     autoSendEmail: false,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Payment Reminder: Outstanding Due for Invoice #{invoice_number}',
     emailCc: '',
@@ -145,7 +142,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name}</strong><br/>{location_phone}</p>
 </div>`,
     smsBody: `Dear {contact_name}, gentle reminder: payment of {due_amount} for invoice #{invoice_number} is due on {due_date}. Please clear at earliest. - {business_name}`,
-    whatsappBody: `Dear *{contact_name}*,\n\n🔔 *Payment Reminder Notice*\nThis is a gentle reminder regarding Invoice *#{invoice_number}*.\n\n• *Outstanding Balance:* {due_amount}\n• *Due Date:* {due_date}\n\nPlease settle this at your earliest convenience.\n\nThank you,\n*{business_name}*`,
     availableTags: [
       '{contact_name}',
       '{invoice_number}',
@@ -165,7 +161,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification triggered when a quotation or sales estimate proposal is created.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Quotation #{invoice_number} from {business_name}',
     emailCc: '',
@@ -179,7 +174,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name}</strong><br/>{location_name} | {location_phone}</p>
 </div>`,
     smsBody: `Dear {contact_name}, quotation #{invoice_number} totaling {total_amount} is ready from {business_name}. Thank you for your inquiry.`,
-    whatsappBody: `Hello *{contact_name}*,\n\nWe have prepared quotation *#{invoice_number}* totaling *{total_amount}* for you.\n\nPlease let us know if you would like to confirm this order.\n\nBest regards,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{invoice_number}', '{total_amount}', '{business_name}', '{location_name}'],
   },
   {
@@ -190,7 +184,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent upon appointment reservation, table reservation, or service booking.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Booking Confirmation - {business_name}',
     emailCc: '',
@@ -211,7 +204,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Warm regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, your booking for {start_time} with {service_staff} is {booking_status}. Location: {location_name}. - {business_name}`,
-    whatsappBody: `Hello *{contact_name}* 👋\n\nYour appointment is confirmed:\n• *Staff/Desk:* {service_staff}\n• *Time:* {start_time} - {end_time}\n• *Status:* {booking_status}\n• *Location:* {location_name}\n\nSee you soon at *{business_name}*!`,
     availableTags: [
       '{contact_name}',
       '{service_staff}',
@@ -230,7 +222,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification triggered when a customer sales order is registered or placed into processing queue.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Order Confirmation #{invoice_number} - {business_name}',
     emailCc: '',
@@ -244,7 +235,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Warm regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, your order #{invoice_number} ({total_amount}) is confirmed. Status: {order_status}. - {business_name}`,
-    whatsappBody: `Hello *{contact_name}*,\n\nYour order *#{invoice_number}* of value *{total_amount}* has been received and is currently *{order_status}*.\n\nThank you,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{order_status}', '{invoice_number}', '{total_amount}', '{business_name}'],
   },
   {
@@ -255,7 +245,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent when order status transitions (Packed, Shipped, Delivered, or Ready for Pickup).',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Order Status Updated: #{invoice_number} is {order_status}',
     emailCc: '',
@@ -268,7 +257,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Thank you for choosing <strong>{business_name}</strong>!</p>
 </div>`,
     smsBody: `Dear {contact_name}, order #{invoice_number} status is now {order_status}. Thank you, {business_name}.`,
-    whatsappBody: `Hello *{contact_name}*,\n\nStatus update for your order *#{invoice_number}*: *{order_status}*.\n\nThank you,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{order_status}', '{invoice_number}', '{business_name}', '{location_name}'],
   },
   {
@@ -279,7 +267,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification triggered automatically when subscription or auto-renew billing invoices generate.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Recurring Subscription Invoice #{invoice_number}',
     emailCc: '',
@@ -291,7 +278,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, your subscription {subscription_no} invoice #{invoice_number} for {total_amount} is ready. - {business_name}`,
-    whatsappBody: `Dear *{contact_name}*,\n\nYour recurring subscription *{subscription_no}* invoice *#{invoice_number}* for *{total_amount}* has generated.\n\nRegards,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{subscription_no}', '{invoice_number}', '{total_amount}', '{business_name}'],
   },
   {
@@ -302,7 +288,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Direct payment gateway checkout link sent to customers for fast online settlement.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Payment link for Invoice #{invoice_number} - {business_name}',
     emailCc: '',
@@ -318,7 +303,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, pay {due_amount} for invoice #{invoice_number} via secure link: {payment_link} - {business_name}`,
-    whatsappBody: `Hello *{contact_name}*,\n\nClick here to pay *{due_amount}* for Invoice *#{invoice_number}*:\n🔗 {payment_link}\n\nThank you,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{invoice_number}', '{due_amount}', '{payment_link}', '{business_name}'],
   },
   {
@@ -329,7 +313,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Account balance summary and ledger statement dispatched to customer.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Customer Account Statement - {business_name}',
     emailCc: '',
@@ -342,7 +325,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Warm regards,<br/><strong>{business_name}</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, your account ledger statement from {business_name} has a net balance due of {balance_due}.`,
-    whatsappBody: `Dear *{contact_name}*,\n\nYour account statement with *{business_name}*:\n• *Current Balance Due:* {balance_due}\n\nPlease contact us if you need the full itemized ledger.\n\n*{business_name}*`,
     availableTags: ['{contact_name}', '{balance_due}', '{business_name}', '{location_name}'],
   },
 
@@ -357,7 +339,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification triggered when a purchase order is created and issued to a vendor/supplier.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Purchase Order #{po_number} from {business_name}',
     emailCc: '',
@@ -378,7 +359,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name} Purchasing Dept</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, PO #{po_number} totaling {total_amount} has been issued by {business_name}. Ship to: {location_name}.`,
-    whatsappBody: `Dear *{contact_name}*,\n\nWe have issued Purchase Order *#{po_number}* for total *{total_amount}*.\n\n📍 *Delivery Location:* {location_name}, {location_address}\n\nPlease confirm availability and dispatch dates.\n\n*{business_name}*`,
     availableTags: [
       '{contact_name}',
       '{po_number}',
@@ -398,7 +378,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent to vendor upon payment disbursement against supplier invoice or purchase order.',
     autoSendEmail: true,
     autoSendSms: true,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Payment Remittance Notification (Ref: {payment_ref_no}) - {business_name}',
     emailCc: '',
@@ -417,7 +396,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Thank you,<br/><strong>{business_name} Accounts Dept</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, payment of {paid_amount} disbursed for #{po_number} (Ref: {payment_ref_no}). Remaining due: {due_amount}. - {business_name}`,
-    whatsappBody: `Dear *{contact_name}*,\n\nPayment remittance of *{paid_amount}* has been sent for *#{po_number}* (Ref: {payment_ref_no}).\nRemaining Due: *{due_amount}*\n\nThank you,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{po_number}', '{paid_amount}', '{due_amount}', '{payment_ref_no}', '{business_name}', '{location_name}'],
   },
   {
@@ -428,7 +406,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Notification sent when supplier inventory shipments are received and inspected at warehouse.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Goods Receipt Confirmation for Reference #{ref_no}',
     emailCc: '',
@@ -441,7 +418,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name} Receiving Team</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, shipment for #{ref_no} ({total_amount}) received at {location_name}. Thank you, {business_name}.`,
-    whatsappBody: `Dear *{contact_name}*,\n\nGoods for Purchase Reference *#{ref_no}* (*{total_amount}*) have been received and verified at *{location_name}*.\n\nThank you,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{ref_no}', '{total_amount}', '{business_name}', '{location_name}'],
   },
   {
@@ -452,7 +428,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Vendor account reconciliation statement dispatched to supplier.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: true,
     emailSubject: 'Vendor Account Reconciliation Statement - {business_name}',
     emailCc: '',
@@ -464,7 +439,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Regards,<br/><strong>{business_name} Accounts Dept</strong></p>
 </div>`,
     smsBody: `Dear {contact_name}, your vendor account balance with {business_name} is {balance_due}.`,
-    whatsappBody: `Dear *{contact_name}*,\n\nVendor ledger summary with *{business_name}*:\n• *Balance Payable:* {balance_due}\n\nRegards,\n*{business_name}*`,
     availableTags: ['{contact_name}', '{balance_due}', '{business_name}', '{location_name}'],
   },
   {
@@ -475,7 +449,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
     description: 'Welcome message sent automatically when a new customer profile is created.',
     autoSendEmail: true,
     autoSendSms: false,
-    autoSendWhatsapp: true,
     attachPdf: false,
     emailSubject: 'Welcome to {business_name}!',
     emailCc: '',
@@ -489,7 +462,6 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: NotificationTemplate[] = [
   <p>Best regards,<br/><strong>{business_name} Team</strong></p>
 </div>`,
     smsBody: `Welcome {contact_name}! Thank you for registering with {business_name}. We look forward to serving you.`,
-    whatsappBody: `Hello *{contact_name}*! 👋\n\nWelcome to *{business_name}*! Thank you for registering with us. We are thrilled to have you as a valued customer.\n\nVisit us again soon! ✨`,
     availableTags: ['{contact_name}', '{business_name}', '{location_name}'],
   },
 ];

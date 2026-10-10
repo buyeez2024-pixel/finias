@@ -10237,11 +10237,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const renderedSubject = replaceTags(tmpl.emailSubject);
     const renderedEmailBody = replaceTags(tmpl.emailBody);
     const renderedSmsBody = replaceTags(tmpl.smsBody);
-    const renderedWhatsappBody = replaceTags(tmpl.whatsappBody);
 
-    const channel = params.channel || (tmpl.autoSendEmail ? 'email' : tmpl.autoSendWhatsapp ? 'whatsapp' : 'sms');
+    const channel = params.channel || (tmpl.autoSendEmail ? 'email' : 'sms');
     const recipientContact = channel === 'email' ? recipientEmail || 'customer@example.com' : recipientPhone || '+1 (555) 234-5678';
-    const finalBody = channel === 'email' ? renderedEmailBody : channel === 'whatsapp' ? renderedWhatsappBody : renderedSmsBody;
+    const finalBody = channel === 'email' ? renderedEmailBody : renderedSmsBody;
 
     let deliveryStatus: 'sent' | 'failed' = 'sent';
     let previewUrl: string | undefined;
@@ -10266,6 +10265,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             cc: tmpl.emailCc,
             bcc: tmpl.emailBcc,
             smtpConfig: settings.emailSettings,
+            attachPdf: tmpl.attachPdf,
           }),
         });
 
@@ -10282,33 +10282,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('Backend send-email call error, providing direct fallback:', err);
         deliveryStatus = 'sent';
         deliveryMode = 'direct_client_fallback';
-      }
-    } else if (channel === 'whatsapp') {
-      const cleanPhone = recipientContact.replace(/[^\d+]/g, '');
-      const encodedMsg = encodeURIComponent(renderedWhatsappBody);
-      directUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(cleanPhone)}&text=${encodedMsg}`;
-      deliveryMode = 'whatsapp_direct';
-
-      try {
-        const response = await fetch('/api/notifications/send-whatsapp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: cleanPhone,
-            message: renderedWhatsappBody,
-            whatsappConfig: settings.whatsappSettings,
-          }),
-        });
-        const data = await response.json();
-        if (response.ok && data.directWebUrl) {
-          directUrl = data.directWebUrl;
-          if (data.mode === 'meta_cloud_api') {
-            deliveryMode = 'meta_cloud_api';
-            serverMessage = data.message;
-          }
-        }
-      } catch (err) {
-        console.warn('Backend whatsapp proxy notice:', err);
       }
     } else if (channel === 'sms') {
       const cleanPhone = recipientContact.replace(/[^\d+]/g, '');
@@ -10366,7 +10339,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const results = await Promise.all([
       tmpl.autoSendEmail ? sendNotification({ ...params, channel: 'email', silent: true }) : Promise.resolve(null),
-      tmpl.autoSendWhatsapp ? sendNotification({ ...params, channel: 'whatsapp', silent: true }) : Promise.resolve(null)
     ]);
 
     const sentChannels = results.filter(r => r !== null && r.success).length;

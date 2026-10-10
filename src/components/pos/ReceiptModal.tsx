@@ -224,6 +224,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, onClose }) => 
               <span>Notify</span>
             </button>
 
+
             <button
               id="preview-overlay-trigger-bottom-btn"
               onClick={() => setShowPreviewOverlay(true)}

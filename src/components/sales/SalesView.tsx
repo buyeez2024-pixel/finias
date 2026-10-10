@@ -53,6 +53,7 @@ interface SalesColumnVisibility {
   paymentStatus: boolean;
   paymentMethod: boolean;
   salesRep: boolean;
+  hsnCode: boolean;
   totalAmount: boolean;
   totalPaid: boolean;
   sellDue: boolean;
@@ -67,6 +68,7 @@ const DEFAULT_SALES_COLUMNS: SalesColumnVisibility = {
   paymentStatus: true,
   paymentMethod: true,
   salesRep: true,
+  hsnCode: true,
   totalAmount: true,
   totalPaid: true,
   sellDue: true,
@@ -91,6 +93,7 @@ const SALES_COLUMN_DEFINITIONS: SalesColumnOption[] = [
   { key: 'sellDue', label: 'Sell Due', category: 'Financial Details', description: 'Outstanding credit balance left to receive' },
   { key: 'paymentStatus', label: 'Payment Status', category: 'Metadata & Action', description: 'Settlement state (e.g. Paid, Partial, Due)' },
   { key: 'paymentMethod', label: 'Payment Method', category: 'Metadata & Action', description: 'Selected mode of payment used' },
+  { key: 'hsnCode', label: 'HSN/SAC Code', category: 'General', description: 'HSN/SAC code for the items' },
   { key: 'salesRep', label: 'Sales Rep', category: 'Metadata & Action', description: 'Cashier or sales representative name' },
   { key: 'action', label: 'Action Buttons', category: 'Metadata & Action', description: 'Print, view, pay, or refund sale action buttons', locked: true },
 ];
@@ -654,6 +657,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   <>
                     {visibleColumns.paymentStatus && <th className="py-3 px-3 text-center">Payment Status</th>}
                     {visibleColumns.paymentMethod && <th className="py-3 px-3 text-center">Payment Method</th>}
+                    {visibleColumns.hsnCode && <th className="py-3 px-3">HSN/SAC Code</th>}
                     {visibleColumns.salesRep && settings.salesCommissionAgent && settings.salesCommissionAgent !== 'disable' && (
                       <th className="py-3 px-3">Sales Rep</th>
                     )}
@@ -751,6 +755,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                               </div>
                             </td>
                           )}
+                          {visibleColumns.hsnCode && (
+                            <td className="py-3 px-3 text-slate-300 font-mono text-xs text-center">
+                              {(sale.items?.[0] as any)?.hsnCode || '-'}
+                            </td>
+                          )}
                           {visibleColumns.salesRep && settings.salesCommissionAgent && settings.salesCommissionAgent !== 'disable' && (
                             <td className="py-3 px-3 text-slate-300">
                               {sale.commissionAgentName ? (
@@ -804,10 +813,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         {isDraftOrQuotation ? (
                           <button
                             onClick={() => {
-                              convertQuotationToInvoice(sale.id);
+                              openEditSalePage(sale);
                             }}
                             className="p-1.5 bg-slate-800 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-lg transition-colors"
-                            title="Convert to Final Sale (1-Click & Trigger Mail)"
+                            title="Open for Finalization"
                           >
                             <ArrowRightLeft className="w-4 h-4" />
                           </button>

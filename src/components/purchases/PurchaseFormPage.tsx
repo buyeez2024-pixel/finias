@@ -311,6 +311,7 @@ export const PurchaseFormPage: React.FC = () => {
         total: inclTax,
         marginPercent: defaultProfitMargin,
         sellingPrice: initialSellingPrice,
+        hsnCode: prod.hsnCode || '',
       };
       setItems((prev) => [...prev, newItem]);
     }
@@ -461,6 +462,14 @@ export const PurchaseFormPage: React.FC = () => {
     if (!schemaRes.isValid) {
       showFlashNotification(schemaRes.firstError || 'Please correct the purchase order form errors.', 'error');
       return;
+    }
+
+    if (settings?.enableHsnCode) {
+      const missingHsn = items.some(it => !it.hsnCode || !it.hsnCode.trim());
+      if (missingHsn) {
+        showFlashNotification('HSN / SAC code is mandatory for all purchase line items when HSN codes are enabled.', 'error');
+        return;
+      }
     }
 
     if (effectivePaidAmount > 0 && !paymentMethod) {
@@ -779,6 +788,7 @@ export const PurchaseFormPage: React.FC = () => {
                 <tr className="bg-slate-950/80 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-800">
                   <th className="py-3 px-4 w-12 text-center">#</th>
                   <th className="py-3 px-4 min-w-[220px]">Product Details</th>
+                  {settings?.enableHsnCode && <th className="py-3 px-4 min-w-[110px] text-center">HSN/SAC *</th>}
                   <th className="py-3 px-4 w-28 text-center">Qty</th>
                   <th className="py-3 px-4 min-w-[130px]">Cost (Excl. Tax)</th>
                   {showInlineTax && <th className="py-3 px-4 min-w-[150px] text-center">Tax / GST</th>}
@@ -809,6 +819,27 @@ export const PurchaseFormPage: React.FC = () => {
                           )}
                         </div>
                       </td>
+                      {settings?.enableHsnCode && (
+                        <td className="py-3 px-4 text-center">
+                          {isViewMode ? (
+                            <span className="font-mono font-bold text-white">{item.hsnCode || '-'}</span>
+                          ) : (
+                            <input
+                              type="text"
+                              required={!!settings?.enableHsnCode}
+                              value={item.hsnCode || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setItems(prev => prev.map((it, i) => i === idx ? { ...it, hsnCode: val } : it));
+                              }}
+                              placeholder="HSN Code"
+                              className={`w-24 bg-slate-950 text-center font-mono font-bold text-xs py-1 px-1 rounded-lg border ${
+                                !item.hsnCode?.trim() ? 'border-rose-500 text-rose-400' : 'border-slate-700 text-white'
+                              } focus:outline-none`}
+                            />
+                          )}
+                        </td>
+                      )}
                       <td className="py-3 px-4 text-center">
                         <input
                           disabled={isViewMode}

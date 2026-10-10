@@ -134,12 +134,7 @@ export const NotificationTemplatesView: React.FC = () => {
     customUrl: settings.smsSettings?.customUrl || 'https://api.sms-provider.com/v1/send?to={to}&msg={msg}&key={key}',
   });
 
-  const [whatsappDraft, setWhatsappDraft] = useState({
-    provider: settings.whatsappSettings?.provider || 'meta_cloud',
-    phoneNumberId: settings.whatsappSettings?.phoneNumberId || '',
-    wabaId: settings.whatsappSettings?.wabaId || '',
-    accessToken: settings.whatsappSettings?.accessToken || '',
-  });
+
 
   // SMTP Testing & Live Mailer Diagnostics
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
@@ -250,7 +245,6 @@ export const NotificationTemplatesView: React.FC = () => {
     updateSettings({
       emailSettings: smtpDraft as any,
       smsSettings: smsDraft as any,
-      whatsappSettings: whatsappDraft as any,
     });
     showFlashNotification('Gateway configuration saved successfully', 'success');
   };
@@ -285,9 +279,6 @@ export const NotificationTemplatesView: React.FC = () => {
     } else if (channel === 'sms') {
       const updated = tmpl.smsBody + ' ' + tag;
       updateNotificationTemplate(tmpl.id, { smsBody: updated });
-    } else if (channel === 'whatsapp') {
-      const updated = tmpl.whatsappBody + ' ' + tag;
-      updateNotificationTemplate(tmpl.id, { whatsappBody: updated });
     }
   };
 
@@ -623,20 +614,7 @@ export const NotificationTemplatesView: React.FC = () => {
                             <span>SMS</span>
                           </label>
 
-                          <label className="flex items-center gap-1.5 text-xs text-slate-300 font-medium cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={tmpl.autoSendWhatsapp}
-                              onChange={(e) =>
-                                updateNotificationTemplate(tmpl.id, {
-                                  autoSendWhatsapp: e.target.checked,
-                                })
-                              }
-                              className="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
-                            />
-                            <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>WhatsApp</span>
-                          </label>
+
 
                           <button
                             onClick={() => {
@@ -683,17 +661,6 @@ export const NotificationTemplatesView: React.FC = () => {
                                 >
                                   <Smartphone className="w-3.5 h-3.5" />
                                   SMS Template
-                                </button>
-                                <button
-                                  onClick={() => setTemplateChannel(tmpl.id, 'whatsapp')}
-                                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium rounded-lg transition whitespace-nowrap shrink-0 ${
-                                    channel === 'whatsapp'
-                                      ? 'bg-emerald-600 text-white shadow-sm'
-                                      : 'text-slate-400 hover:text-slate-200'
-                                  }`}
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5" />
-                                  WhatsApp Template
                                 </button>
                               </div>
                             </div>
@@ -1077,7 +1044,7 @@ export const NotificationTemplatesView: React.FC = () => {
                   <label className="text-xs font-semibold text-slate-400 block mb-1">
                     Dispatch Channel
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setSimChannel('email')}
                       className={`flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg border transition ${
@@ -1097,16 +1064,6 @@ export const NotificationTemplatesView: React.FC = () => {
                       }`}
                     >
                       <Smartphone className="w-3.5 h-3.5" /> SMS
-                    </button>
-                    <button
-                      onClick={() => setSimChannel('whatsapp')}
-                      className={`flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg border transition ${
-                        simChannel === 'whatsapp'
-                          ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500'
-                          : 'bg-slate-950 text-slate-400 border-slate-800'
-                      }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
                     </button>
                   </div>
                 </div>
@@ -1591,7 +1548,7 @@ export const NotificationTemplatesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* 1. SMTP Mail Server */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 border-b border-slate-800 pb-3 text-slate-200 font-semibold text-sm">
@@ -1770,83 +1727,7 @@ export const NotificationTemplatesView: React.FC = () => {
                 )}
               </div>
 
-              {/* 3. WhatsApp Cloud API */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-800 pb-3 text-slate-200 font-semibold text-sm">
-                  <MessageSquare className="w-4 h-4 text-emerald-400" />
-                  WhatsApp Business Gateway
-                </div>
 
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">
-                    API Provider
-                  </label>
-                  <select
-                    value={whatsappDraft.provider}
-                    onChange={(e) => setWhatsappDraft({ ...whatsappDraft, provider: e.target.value as any })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"
-                  >
-                    <option value="meta_cloud">Meta Official WhatsApp Cloud API</option>
-                    <option value="twilio_wa">Twilio WhatsApp Business</option>
-                    <option value="custom_wa">Direct WhatsApp Web / Click to Chat</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">
-                    Phone Number ID
-                  </label>
-                  <input
-                    type="text"
-                    value={whatsappDraft.phoneNumberId}
-                    onChange={(e) =>
-                      setWhatsappDraft({ ...whatsappDraft, phoneNumberId: e.target.value })
-                    }
-                    placeholder="e.g. 109283746192834"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">
-                    WhatsApp Business Account ID (WABA ID)
-                  </label>
-                  <input
-                    type="text"
-                    value={whatsappDraft.wabaId}
-                    onChange={(e) => setWhatsappDraft({ ...whatsappDraft, wabaId: e.target.value })}
-                    placeholder="e.g. 849201948271049"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-slate-400 block mb-1">
-                    Permanent Access Token
-                  </label>
-                  <input
-                    type="password"
-                    value={whatsappDraft.accessToken}
-                    onChange={(e) =>
-                      setWhatsappDraft({ ...whatsappDraft, accessToken: e.target.value })
-                    }
-                    placeholder="EAAQZCV..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <a
-                    href="https://api.whatsapp.com/send?phone=15551234567&text=Testing%20Royal%20POS%20ERP%20WhatsApp%20Integration"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2 px-3 text-xs font-bold rounded-lg bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30 flex items-center justify-center gap-2 transition"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Test WhatsApp Web Launch
-                  </a>
-                </div>
-              </div>
             </div>
           </div>
         )}

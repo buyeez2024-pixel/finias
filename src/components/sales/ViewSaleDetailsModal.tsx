@@ -14,8 +14,7 @@ import {
   User,
   MapPin,
   Truck,
-  MessageSquare,
-  ExternalLink
+  Edit
 } from 'lucide-react';
 
 interface ViewSaleDetailsModalProps {
@@ -31,7 +30,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
   onClose,
   onOpenReceipt,
 }) => {
-  const { customers, settings, locations, convertQuotationToInvoice } = useErp();
+  const { customers, settings, locations, convertQuotationToInvoice, openEditSalePage } = useErp();
 
   if (!isOpen || !sale) return null;
 
@@ -66,13 +65,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
     onOpenReceipt(sale);
   };
 
-  const handleSendWhatsAppInvoice = () => {
-    const custName = customer?.name || 'Valued Customer';
-    const cleanPhone = (customer?.phone || '').replace(/[^0-9]/g, '');
-    const textMsg = `Hello *${custName}* 👋\n\nThank you for your business with *${settings.name || 'Royal POS ERP'}*!\n\n📄 *Invoice Details:*\n• Invoice No: *#${sale.invoiceNo}*\n• Date: ${sale.date}\n• Total Amount: *${formatCurrency(sale.totalAmount, settings.currencySymbol)}*\n• Paid Amount: *${formatCurrency(sale.paidAmount, settings.currencySymbol)}*\n• Balance Due: *${formatCurrency(due, settings.currencySymbol)}*\n• Status: *${sale.status.toUpperCase()}*\n\n📍 *Store Location:* ${location?.name || settings.name || 'Main Branch'}\n📞 ${location?.mobile || settings.phone || ''}\n\nHave a wonderful day! ✨`;
-    const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(cleanPhone)}&text=${encodeURIComponent(textMsg)}`;
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -330,14 +323,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
         {/* Footer */}
         <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between sticky bottom-0 z-20">
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleSendWhatsAppInvoice}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
-              title="Open WhatsApp Web / Mobile with encoded invoice details"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Share via WhatsApp</span>
-            </button>
+
             <button
               onClick={handlePrintPackingSlip}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition"
@@ -345,17 +331,28 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
               <Package className="w-4 h-4" />
               <span>Packing Slip</span>
             </button>
+            <button
+              onClick={() => {
+                openEditSalePage(sale);
+                onClose();
+              }}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-amber-600/30 flex items-center gap-2 transition"
+              title="Edit Invoice"
+            >
+              <Edit className="w-4 h-4" />
+              <span>Edit Invoice</span>
+            </button>
             {(sale.status === 'quotation' || sale.status === 'draft') && (
               <button
                 onClick={() => {
-                  convertQuotationToInvoice(sale.id);
+                  openEditSalePage(sale);
                   onClose();
                 }}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
-                title="Convert quotation to final sale invoice and trigger email/SMS"
+                title="Open for Finalization"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Convert to Final Invoice</span>
+                <span>Open for Finalization</span>
               </button>
             )}
             <button

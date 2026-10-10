@@ -1032,14 +1032,19 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   }, [costPrice]);
 
   const handleSellingPriceIncTaxChange = useCallback((valStr: string) => {
+    // Treat the input as the absolute value the user wants, regardless of current conversion
     const sellIncVal = parseFloat(valStr) || 0;
+    
+    // Update selling price (Exclusive of Tax) derived from the Inclusive value
     const sellExcVal = sellIncVal / (1 + numericTaxRate / 100);
-    setSellingPrice(sellExcVal > 0 ? sellExcVal.toFixed(2) : '');
+    
+    // Store as string to avoid premature rounding during typing
+    setSellingPrice(sellIncVal > 0 ? (sellIncVal / (1 + numericTaxRate / 100)).toString() : '');
     
     const excTaxVal = parseFloat(costPrice) || 0;
-    if (sellExcVal > 0 && excTaxVal > 0) {
-      const calcMargin = (((sellExcVal - excTaxVal) / excTaxVal) * 100).toFixed(1);
-      setMarginInput(calcMargin);
+    if (sellIncVal > 0 && excTaxVal > 0) {
+      const calcMargin = (((sellIncVal / (1 + numericTaxRate / 100)) - excTaxVal) / excTaxVal) * 100;
+      setMarginInput(calcMargin.toFixed(1));
     }
   }, [numericTaxRate, costPrice]);
 
@@ -1191,12 +1196,6 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     setFormError(null);
     setFieldErrors({});
 
-    // HSN Validation
-    if (settings?.enableHsnCode && !hsnCode.trim()) {
-      setFormError('HSN / SAC Code is required when HSN tracking is enabled.');
-      return;
-    }
-
     // 0. Compute effective variations for Variable Products
     let activeVarValues = [...selectedVariationValues];
     if (newValueInput.trim() && !activeVarValues.includes(newValueInput.trim())) {
@@ -1285,6 +1284,8 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       taxRate,
       category,
       brand,
+      hsnCode,
+      enableHsnCode: settings?.enableHsnCode,
       variations: productType === 'variable' ? effectiveVariations.map((v) => ({
         name: v.name || v.value,
         sku: v.sku,
@@ -2014,6 +2015,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                   </div>
                   <input
                     id="prod-input-hsn"
+                    required={!!settings?.enableHsnCode}
                     type="text"
                     value={hsnCode}
                     onChange={(e) => setHsnCode(e.target.value)}
@@ -3377,7 +3379,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={sellingPrice}
+                            value={sellingPrice === '0' ? '' : sellingPrice}
                             onChange={(e) => {
                               handleSellingPriceExcTaxChange(e.target.value);
                               if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));
@@ -3399,7 +3401,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={calculatedSellingPriceIncTax > 0 ? calculatedSellingPriceIncTax.toFixed(2) : ''}
+                            value={calculatedSellingPriceIncTax > 0 ? parseFloat(calculatedSellingPriceIncTax.toFixed(2)) : ''}
                             onChange={(e) => handleSellingPriceIncTaxChange(e.target.value)}
                             placeholder="0.00"
                             className="w-full bg-transparent text-white font-mono font-semibold text-sm px-3.5 py-2.5 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -3822,7 +3824,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                                         <input
                                           type="number"
                                           step="0.01"
-                                          value={currentSellingInc.toFixed(2)}
+                                          value={currentSellingInc > 0 ? parseFloat(currentSellingInc.toFixed(2)) : ''}
                                           onChange={(e) => {
                                             const sInc = parseFloat(e.target.value) || 0;
                                             const sExc = effectiveTaxRate > 0 ? (sInc / (1 + effectiveTaxRate / 100)) : sInc;

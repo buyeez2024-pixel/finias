@@ -585,7 +585,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
   // REAL EMAIL DISPATCH ENDPOINT (SMTP / Nodemailer)
   app.post("/api/notifications/send-email", async (req, res) => {
     try {
-      const { to, subject, html, text, cc, bcc, smtpConfig } = req.body;
+      const { to, subject, html, text, cc, bcc, smtpConfig, attachPdf } = req.body;
 
       if (!to) {
         return res.status(400).json({
@@ -658,6 +658,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
         subject: subject || "Notification from POS ERP",
         text: text || html?.replace(/<[^>]*>?/gm, "") || "",
         html: html || undefined,
+        attachments: req.body.attachments || undefined,
       });
 
       const previewUrl = nodemailer.getTestMessageUrl(info);
@@ -724,85 +725,7 @@ Provide a crisp, professional, highly actionable response formatted in clean mar
     }
   });
 
-  // REAL WHATSAPP DISPATCH / PROXY ENDPOINT
-  app.post("/api/notifications/send-whatsapp", async (req, res) => {
-    try {
-      const { phone, message, whatsappConfig } = req.body;
 
-      if (!phone) {
-        return res.status(400).json({
-          success: false,
-          error: "Recipient phone number is required.",
-        });
-      }
-
-      const cleanPhone = phone.replace(/[^\d+]/g, "").replace(/^00/, "+");
-      const encodedText = encodeURIComponent(message || "");
-      const directWebUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(cleanPhone)}&text=${encodedText}`;
-      const waMeUrl = `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodedText}`;
-
-      // If Meta Cloud API credentials are provided, attempt direct dispatch
-      if (whatsappConfig?.provider === "meta_cloud" && whatsappConfig?.phoneNumberId && whatsappConfig?.accessToken) {
-        try {
-          const metaRes = await fetch(
-            `https://graph.facebook.com/v19.0/${whatsappConfig.phoneNumberId}/messages`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${whatsappConfig.accessToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: cleanPhone.replace("+", ""),
-                type: "text",
-                text: { body: message },
-              }),
-            }
-          );
-          const metaData = await metaRes.json();
-          if (metaRes.ok) {
-            return res.json({
-              success: true,
-              mode: "meta_cloud_api",
-              message: `WhatsApp message delivered via Meta Cloud API to ${cleanPhone}.`,
-              metaData,
-              directWebUrl,
-              waMeUrl,
-            });
-          } else {
-            return res.json({
-              success: false,
-              mode: "meta_cloud_api_failed",
-              error: metaData?.error?.message || "Meta Cloud API returned an error.",
-              directWebUrl,
-              waMeUrl,
-              fallbackTip: "You can click 'Open in WhatsApp Web' to send immediately.",
-            });
-          }
-        } catch (apiErr: any) {
-          console.error("Meta WhatsApp API error:", apiErr);
-        }
-      }
-
-      // Default response with direct WhatsApp Web links
-      return res.json({
-        success: true,
-        mode: "direct_link_ready",
-        phone: cleanPhone,
-        message: `WhatsApp message prepared for ${cleanPhone}. Click the WhatsApp button to open and send directly.`,
-        directWebUrl,
-        waMeUrl,
-      });
-    } catch (err: any) {
-      console.error("WhatsApp Dispatch Error:", err);
-      return res.status(500).json({
-        success: false,
-        error: err.message || "Failed to process WhatsApp dispatch",
-      });
-    }
-  });
 
   // Vite middleware for development vs Static files in production
   if (process.env.NODE_ENV !== "production") {

@@ -415,8 +415,26 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
   });
 
   // Express Cash Pay Handler
+  const handlePaymentModalTrigger = useCallback(() => {
+    if (settings?.enableHsnCode) {
+      const missingHsn = cart.some(it => !it.hsnCode || !it.hsnCode.trim());
+      if (missingHsn) {
+        showFlashNotification('HSN / SAC code is mandatory for all cart items when HSN codes are enabled.', 'error');
+        return;
+      }
+    }
+    onOpenPaymentModal();
+  }, [cart, settings?.enableHsnCode, onOpenPaymentModal, showFlashNotification]);
+
   const handleExpressCashCheckout = useCallback(() => {
     if (cart.length === 0) return;
+    if (settings?.enableHsnCode) {
+      const missingHsn = cart.some(it => !it.hsnCode || !it.hsnCode.trim());
+      if (missingHsn) {
+        showFlashNotification('HSN / SAC code is mandatory for all cart items when HSN codes are enabled.', 'error');
+        return;
+      }
+    }
     try {
       const sub = cart.reduce((acc, item) => acc + item.total, 0);
       const disc = (sub * orderDiscountPercent) / 100;
@@ -505,13 +523,13 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
           if (!settings?.disableExpressCheckout) {
             handleExpressCashCheckout();
           } else {
-            onOpenPaymentModal();
+            handlePaymentModalTrigger();
           }
         }
       } else if (keyUpper === multiplePayKey) {
         e.preventDefault();
         if (cart.length > 0 && !settings?.disableMultiplePay) {
-          onOpenPaymentModal();
+          handlePaymentModalTrigger();
         }
       } else if (keyUpper === draftKey) {
         e.preventDefault();
@@ -1424,8 +1442,15 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
                     <h5 className="text-xs font-bold text-slate-100 line-clamp-1 leading-snug">
                       {item.productName}
                     </h5>
-                    <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                    <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span>{item.sku}</span>
+                      {settings?.enableHsnCode && (
+                        <span className={`font-mono font-bold px-1.5 py-0.2 rounded text-[9px] border ${
+                          !item.hsnCode?.trim() ? 'bg-rose-950 text-rose-300 border-rose-800' : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                        }`}>
+                          HSN: {item.hsnCode || 'Missing *'}
+                        </span>
+                      )}
                       {item.variationName && (
                         <span className="text-purple-300 font-bold bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-800/40 text-[9px]">
                           Var: {item.variationName}
@@ -1648,7 +1673,7 @@ export const PosTerminal: React.FC<PosTerminalProps> = ({
             <button
               id="pos-checkout-btn"
               disabled={cart.length === 0}
-              onClick={onOpenPaymentModal}
+              onClick={handlePaymentModalTrigger}
               className={`py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-xl shadow-indigo-950/60 flex items-center justify-center gap-2 transition active:scale-95 active:opacity-80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 !settings.disableExpressCheckout ? 'flex-[1.5]' : 'w-full'
               }`}

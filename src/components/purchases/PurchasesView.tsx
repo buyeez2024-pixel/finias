@@ -54,6 +54,7 @@ interface PurchaseColumnVisibility {
   orderStatus: boolean;
   paymentStatus: boolean;
   addedBy: boolean;
+  hsnCode: boolean;
   action: boolean;
 }
 
@@ -69,6 +70,7 @@ const DEFAULT_PURCHASE_COLUMNS: PurchaseColumnVisibility = {
   orderStatus: true,
   paymentStatus: true,
   addedBy: true,
+  hsnCode: true,
   action: true,
 };
 
@@ -92,6 +94,7 @@ const PURCHASE_COLUMN_DEFINITIONS: PurchaseColumnOption[] = [
   { key: 'orderStatus', label: 'Order Status', category: 'Order Progress & Users', description: 'Order delivery status (e.g. Ordered, Received)' },
   { key: 'paymentStatus', label: 'Payment Status', category: 'Order Progress & Users', description: 'Financial settlement progress' },
   { key: 'addedBy', label: 'Added By', category: 'Order Progress & Users', description: 'User or representative who entered it' },
+  { key: 'hsnCode', label: 'HSN/SAC Code', category: 'General', description: 'HSN/SAC code for the items' },
   { key: 'action', label: 'Action Buttons', category: 'Order Progress & Users', description: 'View, edit, pay, or delete purchase order', locked: true },
 ];
 
@@ -794,6 +797,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
                 {visibleColumns.orderStatus && <th className="py-3 px-3 text-center">Order Status</th>}
                 {visibleColumns.paymentStatus && <th className="py-3 px-3 text-center">Payment Status</th>}
                 {visibleColumns.addedBy && <th className="py-3 px-3">Added By</th>}
+                {visibleColumns.hsnCode && <th className="py-3 px-3">HSN/SAC Code</th>}
                 {visibleColumns.action && <th className="py-3 px-3 text-right">Action</th>}
               </tr>
             </thead>
@@ -915,6 +919,11 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
                     {visibleColumns.addedBy && (
                       <td className="py-3 px-3 text-slate-300 font-medium whitespace-nowrap">
                         {addedByName}
+                      </td>
+                    )}
+                    {visibleColumns.hsnCode && (
+                      <td className="py-3 px-3 text-slate-300 font-medium whitespace-nowrap">
+                        {(po.items?.[0] as any)?.hsnCode || '-'}
                       </td>
                     )}
                     {visibleColumns.action && (

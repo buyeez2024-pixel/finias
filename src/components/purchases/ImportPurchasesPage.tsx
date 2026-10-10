@@ -45,6 +45,7 @@ interface ParsedPurchaseRow {
   unitCostPrice: number;
   // Optional / Advanced Fields
   invoiceNo: string;
+  hsnCode: string;
   locationName: string;
   taxRate: number;
   discountAmount: number;
@@ -129,6 +130,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       'Shipping Charges',
       'Profit Margin (%)',
       'Selling Price',
+      'HSN/SAC Code',
       'Lot / Batch Number',
       'Purchase Status (received/ordered/pending)',
       'Payment Status (paid/partial/due)',
@@ -156,6 +158,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         '25.0',
         '66.38',
         'LOT-2026-09A',
+        'HSN-1234',
         'received',
         'paid',
         '1150.00',
@@ -309,6 +312,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       const lotNumber = findVal('Lot / Batch Number', 'Lot Number', 'Batch Number', 'Lot', 'Batch');
       const marginStr = findVal('Profit Margin (%)', 'Profit Margin', 'Margin (%)', 'Margin', 'Default Margin');
       const sellingPriceStr = findVal('Selling Price', 'Selling Price*', 'Selling Price (Optional)', 'Sale Price', 'Retail Price', 'MRP', 'Default Selling Price');
+      const hsnCode = findVal('HSN Code', 'SAC Code', 'HSN/SAC Code', 'HSN');
       const statusRaw = findVal('Purchase Status (received/ordered/pending)', 'Purchase Status', 'Status', 'Order Status').toLowerCase();
       const payStatusRaw = findVal('Payment Status (paid/partial/due)', 'Payment Status', 'Pay Status').toLowerCase();
       const paidStr = findVal('Paid Amount', 'Amount Paid', 'Paid');
@@ -491,6 +495,7 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
         paidAmount,
         paymentMethod,
         notes,
+        hsnCode,
         matchedProductId: matchedProduct?.id,
         matchedProductName: matchedProduct?.name,
         matchedSupplierId: matchedSupplier?.id,

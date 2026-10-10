@@ -650,11 +650,7 @@ export const LowStockWidget: React.FC<LowStockWidgetProps> = ({
             <button
               type="button"
               onClick={handleSimulateLowStock}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${
-                isDark
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition cursor-pointer"
             >
               Simulate Stock Depletion
             </button>

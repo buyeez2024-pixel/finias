@@ -317,7 +317,7 @@ export const TaxSettingsTab: React.FC = () => {
               <span className="text-[11px] text-slate-400 shrink-0">Compliant with Indian GST & Global Regimes</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2 break-words min-w-0">
-              <span>Tax Rates, Tax Groups & Regional Compliance</span>
+              <span>Tax Configuration</span>
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl break-words">
               Configure CGST, SGST, IGST split rules for India, item HSN codes, tax calculation modes (Inclusive vs. Exclusive), or disable taxes altogether.

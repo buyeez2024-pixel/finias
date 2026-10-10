@@ -158,6 +158,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       return;
     }
 
+    if (settings?.enableHsnCode && !hsnCode.trim()) {
+      setFieldErrors(prev => ({ ...prev, hsnCode: 'HSN / SAC code is mandatory when HSN codes are enabled.' }));
+      setModalError('HSN / SAC code is mandatory when HSN codes are enabled.');
+      return;
+    }
+
     const cost = parseFloat(costPrice) || 0;
     const price = parseFloat(sellingPrice) || 0;
     const tax = parseFloat(taxRate) || 0;
@@ -326,7 +332,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <div>
                 <div className="flex items-center justify-between">
                   <label className={`${isLight ? 'text-slate-700' : 'text-slate-300'} font-semibold flex items-center gap-1`}>
-                    <span>HSN / SAC Code</span>
+                    <span>HSN / SAC Code {settings?.enableHsnCode && <span className="text-rose-500">*</span>}</span>
                     <span className="text-[9px] font-bold text-indigo-600 bg-indigo-600/10 px-1.5 py-0.2 rounded border border-indigo-500/20">
                       GST Compliant
                     </span>
@@ -338,9 +344,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   onChange={(e) => setHsnCode(e.target.value)}
                   placeholder="e.g. 8528.52, 8471, 6109"
                   className={`w-full font-mono font-bold px-3 py-2 rounded-xl border focus:outline-none focus:border-indigo-500 mt-1 ${
-                    isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
+                    settings?.enableHsnCode && !hsnCode.trim() ? 'border-rose-500' : isLight ? 'bg-slate-50 text-slate-900 border-slate-200' : 'bg-slate-950 text-white border-slate-700'
                   }`}
                 />
+                {settings?.enableHsnCode && !hsnCode.trim() && (
+                  <p className="text-[10px] text-rose-500 mt-1 font-semibold">HSN code is mandatory when HSN codes are enabled.</p>
+                )}
               </div>
 
               {/* Category */}
@@ -534,7 +543,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     <input
                       type="number"
                       step="0.01"
-                      value={sellingPrice}
+                      value={sellingPrice === '0' ? '' : sellingPrice}
                       onChange={(e) => {
                         setSellingPrice(e.target.value);
                         if (fieldErrors.sellingPrice) setFieldErrors(prev => ({ ...prev, sellingPrice: '' }));

@@ -108,7 +108,7 @@ const SUB_TAB_TITLES: Record<
     badge: '6 POS Layouts',
   },
   tax: {
-    label: 'Tax Rates, Tax Groups & GST Support',
+    label: 'Tax Configuration',
     description: 'Configure multi-tier tax rates, compound GST groups (CGST/SGST/IGST), HSN codes, and global tax presets.',
     icon: Percent,
     badge: 'GST & HSN',

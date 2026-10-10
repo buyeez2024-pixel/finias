@@ -583,6 +583,8 @@ export function validateProductData(data: {
   taxRate?: number | string;
   category?: string;
   brand?: string;
+  hsnCode?: string;
+  enableHsnCode?: boolean;
   variations?: Array<{
     name: string;
     sku: string;
@@ -600,6 +602,16 @@ export function validateProductData(data: {
     label: 'Product Name',
   });
   if (!nameRes.isValid && nameRes.error) errors.name = nameRes.error;
+
+  // HSN Code
+  if (data.enableHsnCode) {
+    const hsnRes = validateString(data.hsnCode, {
+      required: true,
+      minLength: 1,
+      label: 'HSN / SAC Code',
+    });
+    if (!hsnRes.isValid && hsnRes.error) errors.hsnCode = hsnRes.error;
+  }
 
   // SKU
   if (data.sku) {
@@ -635,7 +647,7 @@ export function validateProductData(data: {
       required: true,
       min: 0,
       allowNegative: false,
-      precision: 4,
+      precision: 2,
       label: 'Selling Price',
     });
     if (!sellRes.isValid && sellRes.error) errors.sellingPrice = sellRes.error;
