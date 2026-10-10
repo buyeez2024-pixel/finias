@@ -190,21 +190,21 @@ export const SalesView: React.FC<SalesViewProps> = ({
         next = {
           date: true, referenceNo: true, customerName: true, location: true,
           paymentStatus: true, paymentMethod: true, salesRep: true,
-          totalAmount: true, totalPaid: true, sellDue: true, action: true
+          totalAmount: true, totalPaid: true, sellDue: true, hsnCode: true, action: true
         };
         break;
       case 'standard':
         next = {
           date: true, referenceNo: true, customerName: true, location: true,
           paymentStatus: true, paymentMethod: false, salesRep: false,
-          totalAmount: true, totalPaid: true, sellDue: true, action: true
+          totalAmount: true, totalPaid: true, sellDue: true, hsnCode: false, action: true
         };
         break;
       case 'compact':
         next = {
           date: true, referenceNo: true, customerName: true, location: false,
           paymentStatus: true, paymentMethod: false, salesRep: false,
-          totalAmount: true, totalPaid: false, sellDue: false, action: true
+          totalAmount: true, totalPaid: false, sellDue: false, hsnCode: false, action: true
         };
         break;
       case 'reset':

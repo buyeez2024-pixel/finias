@@ -168,7 +168,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
           invoiceNo: true, date: true, supplierName: true, receivingBranch: true,
           globalLotNumber: true,
           itemsOrdered: true, grandTotal: true, paymentDue: true, orderStatus: true,
-          paymentStatus: true, addedBy: true, action: true
+          paymentStatus: true, addedBy: true, hsnCode: true, action: true
         };
         break;
       case 'standard':
@@ -176,7 +176,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
           invoiceNo: true, date: true, supplierName: true, receivingBranch: true,
           globalLotNumber: true,
           itemsOrdered: false, grandTotal: true, paymentDue: false, orderStatus: true,
-          paymentStatus: true, addedBy: false, action: true
+          paymentStatus: true, addedBy: false, hsnCode: false, action: true
         };
         break;
       case 'compact':
@@ -184,7 +184,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
           invoiceNo: true, date: true, supplierName: true, receivingBranch: false,
           globalLotNumber: false,
           itemsOrdered: false, grandTotal: true, paymentDue: false, orderStatus: false,
-          paymentStatus: true, addedBy: false, action: true
+          paymentStatus: true, addedBy: false, hsnCode: false, action: true
         };
         break;
       case 'reset':
