@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useErp } from '../../context/ErpContext';
+import { useErp, deduplicateUsers } from '../../context/ErpContext';
 import { validatePhoneNumber, validatePhoneWithCountry } from '../../utils/phoneValidation';
 import { validateEmail } from '../../utils/formatters';
 import { validateFullName } from '../../utils/validation';
@@ -723,7 +723,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     showToast(`Updated user credentials for ${userToEdit.name}.`);
   };
 
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = deduplicateUsers(users.filter((u) => {
     const isSystemAdminAccount = u.role === 'supreme_admin' || u.role === 'admin' || u.role === 'super_admin' || u.id === 'usr_admin';
 
     if (!isSystemAdminAccount) {
@@ -763,7 +763,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
       (filterRole === 'admin' && (u.role === 'admin' || u.role === 'super_admin')) ||
       (filterRole === 'supreme_admin' && u.role === 'supreme_admin');
     return matchesSearch && matchesRole;
-  });
+  }));
 
   const totalStaffPages = Math.ceil(filteredUsers.length / staffRowsPerPage) || 1;
   const paginatedUsers = React.useMemo(() => {

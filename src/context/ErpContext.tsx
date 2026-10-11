@@ -148,6 +148,51 @@ export const checkIsSystemInstalled = (): boolean => {
   );
 };
 
+export const deduplicateUsers = (userList: User[]): User[] => {
+  if (!Array.isArray(userList)) return [];
+  const seenIds = new Set<string>();
+  const seenEmails = new Set<string>();
+  const seenUsernames = new Set<string>();
+  const result: User[] = [];
+
+  for (const u of userList) {
+    if (!u) continue;
+    const normId = (u.id || '').trim();
+    const normEmail = (u.email || '').trim().toLowerCase();
+    const normUsername = (u.username || '').trim().toLowerCase();
+
+    // Check if we've already included this user by id, email, or username
+    const isIdDuplicate = normId && seenIds.has(normId);
+    const isEmailDuplicate = normEmail && seenEmails.has(normEmail);
+    const isUsernameDuplicate = normUsername && seenUsernames.has(normUsername);
+
+    if (isIdDuplicate || isEmailDuplicate || isUsernameDuplicate) {
+      // Find existing match and merge any richer fields into it
+      const matchIndex = result.findIndex(
+        (existing) =>
+          (normId && existing.id === normId) ||
+          (normEmail && existing.email?.toLowerCase().trim() === normEmail) ||
+          (normUsername && existing.username?.toLowerCase().trim() === normUsername)
+      );
+      if (matchIndex >= 0) {
+        result[matchIndex] = {
+          ...u,
+          ...result[matchIndex],
+          role: result[matchIndex].role === 'supreme_admin' || u.role === 'supreme_admin' ? 'supreme_admin' : (result[matchIndex].role || u.role),
+          status: result[matchIndex].status === 'active' || u.status === 'active' ? 'active' : (result[matchIndex].status || u.status),
+        };
+      }
+      continue;
+    }
+
+    if (normId) seenIds.add(normId);
+    if (normEmail) seenEmails.add(normEmail);
+    if (normUsername) seenUsernames.add(normUsername);
+    result.push(u);
+  }
+  return result;
+};
+
 export interface FinancialSummary {
   grossSales: number;
   netSales: number;
@@ -676,6 +721,7 @@ const safeJsonParse = (key: string, defaultValue: any) => {
 export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isRemoteSyncingRef = useRef(false);
   const isInitialMountRef = useRef(true);
+  const hasInitialSyncedRef = useRef(false);
 
   const isFreshInstalled = typeof window !== 'undefined' && (
     localStorage.getItem('app_fresh_installed') === 'true' ||
@@ -1089,11 +1135,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingPosExitTarget, setPendingPosExitTarget] = useState<string | null>(null);
 
   const [productsState, setProductsState] = useState<Product[]>(() => {
-    const isInstalled = typeof window !== 'undefined' && (
-      localStorage.getItem('pos_installed') === 'true' ||
-      localStorage.getItem('app_installed') === 'true' ||
-      localStorage.getItem('is_installed') === 'true'
-    );
+    const isInstalled = typeof window !== 'undefined' && checkIsSystemInstalled();
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_products`) : null;
     let raw: any[] = [];
     if (saved !== null) {
@@ -1611,7 +1653,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Migration: backfill security and system_updates if they have settings
-    return loadedUsers.map(u => {
+    return deduplicateUsers(loadedUsers).map(u => {
       if (Array.isArray(u.customAllowedModules) && u.customAllowedModules.includes('settings')) {
         const custom = [...u.customAllowedModules];
         if (!custom.includes('security')) custom.push('security');
@@ -2150,6 +2192,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    // CRITICAL: Do NOT auto-push to MySQL until the first remote pull has completed.
+    // This protects remote changes (such as clearing/deleting products directly in phpMyAdmin) from being overwritten by stale browser localStorage!
+    if (!hasInitialSyncedRef.current) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       try {
         fetch(getApiUrl('api/sync.php?action=push'), {
@@ -2327,53 +2375,35 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (Array.isArray(d.users)) {
                 const cleanRemoteUsers = d.users.filter((u: any) => {
                   const isDemo = (u.email && u.email.endsWith('@royalpos.com')) ||
-                    ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
+                    ['usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
                   return !isDemo;
                 });
 
                 setUsers((prev) => {
-                  const userMap = new Map<string, User>();
-                  cleanRemoteUsers.forEach((u: User) => {
-                    if (u.id) userMap.set(u.id, u);
-                  });
-
-                  prev.forEach((u: User) => {
-                    const isDemo = (u.email && u.email.endsWith('@royalpos.com')) ||
-                      ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance'].includes(u.id);
-                    if (!isDemo && u.id && !userMap.has(u.id)) {
-                      userMap.set(u.id, u);
-                    }
-                  });
-
+                  const combined = deduplicateUsers([...cleanRemoteUsers, ...prev]);
                   const activeAdmin = currentUser || safeJsonParse(`${STORAGE_KEY}_admin_user`, null) || safeJsonParse(`${STORAGE_KEY}_auth_user`, null);
-                  if (activeAdmin && activeAdmin.id) {
-                    const existing = userMap.get(activeAdmin.id);
-                    userMap.set(activeAdmin.id, {
-                      ...activeAdmin,
-                      ...(existing || {}),
-                      role: activeAdmin.role || existing?.role || 'supreme_admin',
-                      status: activeAdmin.status || existing?.status || 'active',
-                    });
+                  if (activeAdmin && (activeAdmin.id || activeAdmin.email || activeAdmin.username)) {
+                    const adminIdx = combined.findIndex((u) =>
+                      (activeAdmin.id && u.id === activeAdmin.id) ||
+                      (activeAdmin.email && u.email?.toLowerCase().trim() === activeAdmin.email?.toLowerCase().trim()) ||
+                      (activeAdmin.username && u.username?.toLowerCase().trim() === activeAdmin.username?.toLowerCase().trim())
+                    );
+                    if (adminIdx >= 0) {
+                      combined[adminIdx] = {
+                        ...combined[adminIdx],
+                        ...activeAdmin,
+                        role: activeAdmin.role || combined[adminIdx].role || 'supreme_admin',
+                        status: activeAdmin.status || combined[adminIdx].status || 'active',
+                      };
+                    } else {
+                      combined.unshift(activeAdmin);
+                    }
                   }
 
-                  const mergedUsers = Array.from(userMap.values());
+                  const mergedUsers = deduplicateUsers(combined);
                   try {
                     localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(mergedUsers));
                   } catch {}
-
-                  if (mergedUsers.length > 0 && cleanRemoteUsers.length === 0) {
-                    try {
-                      fetch(getApiUrl('api/sync.php?action=push'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          updates: {
-                            users: mergedUsers,
-                          },
-                        }),
-                      }).catch(() => {});
-                    } catch {}
-                  }
 
                   return mergedUsers;
                 });
@@ -2420,7 +2450,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   (u.username && u.username.toLowerCase() === sysData.adminUser.username?.toLowerCase())
               );
               if (!hasAdmin) {
-                const updated = [sysData.adminUser, ...prev];
+                const updated = deduplicateUsers([sysData.adminUser, ...prev]);
                 try {
                   localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(updated));
                   localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(sysData.adminUser));
@@ -2431,7 +2461,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
         }
-      } catch {}
+      } catch {} finally {
+        if (active) {
+          hasInitialSyncedRef.current = true;
+        }
+      }
     };
 
     syncFromRemote();
@@ -3778,10 +3812,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Persist deleted product ID so it cannot be resurrected by cache or pull
+    let deletedSet = new Set<string>();
     try {
       const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_product_ids`) : null;
-      const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+      deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
       deletedSet.add(id);
       localStorage.setItem(`${STORAGE_KEY}_deleted_product_ids`, JSON.stringify(Array.from(deletedSet)));
     } catch {}
@@ -3791,7 +3825,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(updated));
       } catch {}
-      triggerImmediateSyncPush({ products: updated, deleted_product_id: id });
+      triggerImmediateSyncPush({
+        products: updated,
+        deleted_product_id: id,
+        deleted_product_ids: Array.from(deletedSet),
+      });
       return updated;
     });
     showFlashNotification(`Product ${product?.name || ''} deleted successfully.`, 'success');
@@ -9329,6 +9367,9 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const resolvedBusinessId = userData.businessId || currentUser?.businessId;
     const resolvedLocationId = userData.locationId || currentUser?.locationId || selectedLocationId || locations[0]?.id;
 
+    const normEmail = (userData.email || '').trim().toLowerCase();
+    const normUsername = (userData.username || '').trim().toLowerCase();
+
     const newUser: User = {
       ...userData,
       id: `usr_${Date.now()}`,
@@ -9338,7 +9379,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: userData.role === 'supreme_admin' ? 'active' : (userData.status || 'active'),
       lastLogin: 'Never',
     };
-    setUsers((prev) => [newUser, ...prev]);
+
+    setUsers((prev) => {
+      const matchIdx = prev.findIndex((u) =>
+        (normEmail && u.email?.trim().toLowerCase() === normEmail) ||
+        (normUsername && u.username?.trim().toLowerCase() === normUsername)
+      );
+      if (matchIdx >= 0) {
+        const updated = [...prev];
+        updated[matchIdx] = {
+          ...updated[matchIdx],
+          ...newUser,
+          id: updated[matchIdx].id,
+        };
+        return deduplicateUsers(updated);
+      }
+      return deduplicateUsers([newUser, ...prev]);
+    });
   };
 
   const updateUser = (id: string, userData: Partial<User>) => {
@@ -10041,9 +10098,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setUsersList = (newUsers: User[]) => {
-    setUsers(newUsers);
-    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(newUsers));
-    localStorage.setItem('royal_pos_v1_users', JSON.stringify(newUsers));
+    const deduped = deduplicateUsers(newUsers);
+    setUsers(deduped);
+    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(deduped));
+    localStorage.setItem('royal_pos_v1_users', JSON.stringify(deduped));
   };
 
   const upsertSuperAdminUser = (adminData: {
@@ -10083,6 +10141,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const existing = users[existingAdminIdx];
       updatedAdmin = {
         ...existing,
+        id: existing.id || 'usr_admin',
         name: adminData.name.trim() || existing.name,
         email: adminData.email.trim() || existing.email,
         username: adminData.username.trim() || existing.username,
@@ -10103,7 +10162,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } else {
       updatedAdmin = {
-        id: `usr_admin_${Date.now()}`,
+        id: 'usr_admin',
         name: adminData.name.trim() || 'Supreme Administrator',
         email: adminData.email.trim() || 'admin@finiaspos.com',
         username: adminData.username.trim() || 'admin',
@@ -10125,14 +10184,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    setUsers(newUsersList);
+    const dedupedList = deduplicateUsers(newUsersList);
+    setUsers(dedupedList);
     if (currentUser?.role === 'admin' || currentUser?.role === 'supreme_admin' || currentUser?.role === 'super_admin' || currentUser?.id === updatedAdmin.id) {
       setCurrentUser(updatedAdmin);
     }
-    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(newUsersList));
+    localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(dedupedList));
     localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updatedAdmin));
-    localStorage.setItem('royal_pos_v1_users', JSON.stringify(newUsersList));
-
+    localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(updatedAdmin));
+    localStorage.setItem('royal_pos_v1_users', JSON.stringify(dedupedList));
     return updatedAdmin;
   };
 

@@ -972,6 +972,7 @@ SET FOREIGN_KEY_CHECKS = 1;
     updateSettings(finalSettings);
 
     const supremeAdminData = {
+      id: 'usr_admin',
       name: adminName,
       email: adminEmail,
       username: adminUsername,
@@ -979,6 +980,10 @@ SET FOREIGN_KEY_CHECKS = 1;
       pin: adminPin,
       phone: businessPhone,
       role: 'supreme_admin' as const,
+      status: 'active' as const,
+      businessName: businessName,
+      locationId: 'loc_main',
+      avatar: businessLogo || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     };
 
     // Ensure supreme admin account is stored and active

@@ -611,7 +611,7 @@ if ($action === 'pull' || $method === 'GET') {
                         }
                     }
                     if (count($items) > 0) {
-                        // Clean up demo users if real users exist
+                        // Deduplicate users and clean up duplicate records in phpMyAdmin MySQL table
                         if ($key === 'users') {
                             $hasRealUsers = false;
                             foreach ($items as $uItem) {
@@ -624,15 +624,61 @@ if ($action === 'pull' || $method === 'GET') {
                             }
                             if ($hasRealUsers) {
                                 try {
-                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance') OR `email` LIKE '%@royalpos.com'");
+                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('usr_cashier', 'usr_inventory', 'usr_finance') OR (`email` LIKE '%@royalpos.com' AND `id` != 'usr_admin')");
                                 } catch (Exception $e) {}
 
                                 $items = array_values(array_filter($items, function($uItem) {
                                     $uId = $uItem['id'] ?? '';
                                     $uEmail = strtolower($uItem['email'] ?? '');
-                                    return !in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) && !str_ends_with($uEmail, '@royalpos.com');
+                                    return !in_array($uId, ['usr_cashier', 'usr_inventory', 'usr_finance']) && (!str_ends_with($uEmail, '@royalpos.com') || $uId === 'usr_admin');
                                 }));
                             }
+
+                            // Universal Deduplication by ID, Email, and Username (prevents duplicate staff/admin rows)
+                            $seenUids = [];
+                            $seenEmails = [];
+                            $seenUsernames = [];
+                            $dedupedUsers = [];
+                            $duplicateIdsToDelete = [];
+
+                            foreach ($items as $uItem) {
+                                $uId = (string)($uItem['id'] ?? '');
+                                $uEmail = strtolower(trim($uItem['email'] ?? ''));
+                                $uUname = strtolower(trim($uItem['username'] ?? ''));
+
+                                if (empty($uId) && empty($uEmail) && empty($uUname)) continue;
+
+                                $isDup = false;
+                                if (!empty($uId) && isset($seenUids[$uId])) {
+                                    $isDup = true;
+                                } elseif (!empty($uEmail) && isset($seenEmails[$uEmail])) {
+                                    $isDup = true;
+                                } elseif (!empty($uUname) && isset($seenUsernames[$uUname])) {
+                                    $isDup = true;
+                                }
+
+                                if ($isDup) {
+                                    if (!empty($uId)) {
+                                        $duplicateIdsToDelete[] = $uId;
+                                    }
+                                } else {
+                                    if (!empty($uId)) $seenUids[$uId] = true;
+                                    if (!empty($uEmail)) $seenEmails[$uEmail] = true;
+                                    if (!empty($uUname)) $seenUsernames[$uUname] = true;
+                                    $dedupedUsers[] = $uItem;
+                                }
+                            }
+
+                            // Permanently delete duplicate records from MySQL pos_users table in phpMyAdmin
+                            if (!empty($duplicateIdsToDelete)) {
+                                try {
+                                    $inPlaceholders = implode(',', array_fill(0, count($duplicateIdsToDelete), '?'));
+                                    $delDups = $pdo->prepare("DELETE FROM `{$tableName}` WHERE `id` IN ($inPlaceholders)");
+                                    $delDups->execute($duplicateIdsToDelete);
+                                } catch (Exception $e) {}
+                            }
+
+                            $items = $dedupedUsers;
                         }
 
                         // Clean up demo mock customers if real customers exist (Preserve standard cust_walkin)
@@ -815,11 +861,21 @@ if ($action === 'push' || $method === 'POST') {
                 }
             }
 
-            // 1. Delete explicit deleted product ID if provided
+            // 1. Delete explicit deleted product IDs if provided
             if (!empty($updates['deleted_product_id'])) {
                 try {
                     $delStmt = $pdo->prepare("DELETE FROM `{$prefix}products` WHERE `id` = :id");
                     $delStmt->execute([':id' => (string)$updates['deleted_product_id']]);
+                } catch (Exception $e) {}
+            }
+            if (!empty($updates['deleted_product_ids']) && is_array($updates['deleted_product_ids'])) {
+                try {
+                    $delIds = array_values(array_filter(array_map('strval', $updates['deleted_product_ids'])));
+                    if (count($delIds) > 0) {
+                        $inP = implode(',', array_fill(0, count($delIds), '?'));
+                        $delMulti = $pdo->prepare("DELETE FROM `{$prefix}products` WHERE `id` IN ($inP)");
+                        $delMulti->execute($delIds);
+                    }
                 } catch (Exception $e) {}
             }
 
@@ -929,8 +985,35 @@ if ($action === 'push' || $method === 'POST') {
             }
             if ($hasRealUsers) {
                 try {
-                    $pdo->exec("DELETE FROM `{$prefix}users` WHERE `id` IN ('usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance') OR `email` LIKE '%@royalpos.com'");
+                    $pdo->exec("DELETE FROM `{$prefix}users` WHERE `id` IN ('usr_cashier', 'usr_inventory', 'usr_finance') OR (`email` LIKE '%@royalpos.com' AND `id` != 'usr_admin')");
                 } catch (Exception $e) {}
+            }
+
+            // Deduplicate incoming users list by ID, Email, and Username
+            $cleanUserList = [];
+            $seenPushIds = [];
+            $seenPushEmails = [];
+            $seenPushUsernames = [];
+
+            foreach ($updates['users'] as $u) {
+                if (!is_array($u)) continue;
+                $uId = (string)($u['id'] ?? '');
+                $uEmail = strtolower(trim($u['email'] ?? ''));
+                $uUname = strtolower(trim($u['username'] ?? ''));
+
+                if (empty($uId) && empty($uEmail) && empty($uUname)) continue;
+
+                $isDup = false;
+                if (!empty($uId) && isset($seenPushIds[$uId])) $isDup = true;
+                if (!empty($uEmail) && isset($seenPushEmails[$uEmail])) $isDup = true;
+                if (!empty($uUname) && isset($seenPushUsernames[$uUname])) $isDup = true;
+
+                if (!$isDup) {
+                    if (!empty($uId)) $seenPushIds[$uId] = true;
+                    if (!empty($uEmail)) $seenPushEmails[$uEmail] = true;
+                    if (!empty($uUname)) $seenPushUsernames[$uUname] = true;
+                    $cleanUserList[] = $u;
+                }
             }
 
             $usrStmt = $pdo->prepare("INSERT INTO `{$prefix}users` 
@@ -939,15 +1022,35 @@ if ($action === 'push' || $method === 'POST') {
                 ON DUPLICATE KEY UPDATE 
                 `name` = VALUES(`name`), `username` = VALUES(`username`), `email` = VALUES(`email`), `role` = VALUES(`role`), `status` = VALUES(`status`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['users'] as $u) {
-                if (!is_array($u) || empty($u['id'])) continue;
-                $uId = $u['id'] ?? '';
-                $uEmail = strtolower($u['email'] ?? '');
-                if ($hasRealUsers && (in_array($uId, ['usr_admin', 'usr_cashier', 'usr_inventory', 'usr_finance']) || str_ends_with($uEmail, '@royalpos.com'))) {
+            $savedIds = [];
+            foreach ($cleanUserList as $u) {
+                $uId = (string)($u['id'] ?? '');
+                if (empty($uId)) {
+                    $uId = 'usr_' . substr(md5(($u['email'] ?? '') . ($u['username'] ?? '')), 0, 16);
+                }
+                $uEmail = strtolower(trim($u['email'] ?? ''));
+                $uUname = strtolower(trim($u['username'] ?? ''));
+
+                if ($hasRealUsers && (in_array($uId, ['usr_cashier', 'usr_inventory', 'usr_finance']) || (str_ends_with($uEmail, '@royalpos.com') && $uId !== 'usr_admin'))) {
                     continue;
                 }
+
+                // Prevent duplicates in phpMyAdmin: delete any existing row in MySQL that shares this email or username under a different ID
+                if (!empty($uEmail)) {
+                    try {
+                        $delEm = $pdo->prepare("DELETE FROM `{$prefix}users` WHERE LOWER(`email`) = :em AND `id` != :id");
+                        $delEm->execute([':em' => $uEmail, ':id' => $uId]);
+                    } catch (Exception $e) {}
+                }
+                if (!empty($uUname)) {
+                    try {
+                        $delUn = $pdo->prepare("DELETE FROM `{$prefix}users` WHERE LOWER(`username`) = :un AND `id` != :id");
+                        $delUn->execute([':un' => $uUname, ':id' => $uId]);
+                    } catch (Exception $e) {}
+                }
+
                 $usrStmt->execute([
-                    ':id' => (string)$u['id'],
+                    ':id' => $uId,
                     ':name' => $u['name'] ?? 'User',
                     ':uname' => $u['username'] ?? null,
                     ':email' => $u['email'] ?? null,
@@ -955,7 +1058,16 @@ if ($action === 'push' || $method === 'POST') {
                     ':st' => $u['status'] ?? 'active',
                     ':json' => json_encode($u),
                 ]);
+                $savedIds[] = $uId;
             }
+
+            // Also keep sync_store updated with clean deduplicated users array
+            try {
+                $pdo->prepare("INSERT INTO `{$prefix}sync_store` (`store_key`, `store_value`, `updated_at`)
+                    VALUES ('users', :v, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE `store_value` = VALUES(`store_value`), `updated_at` = CURRENT_TIMESTAMP")
+                    ->execute([':v' => json_encode($cleanUserList)]);
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['sales_commission_agents']) && is_array($updates['sales_commission_agents'])) {
