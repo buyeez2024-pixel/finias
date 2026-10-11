@@ -253,7 +253,7 @@ interface ErpContextType {
   addProduct: (product: Omit<Product, 'id' | 'currentStock'>) => void;
   addProducts: (products: Omit<Product, 'id' | 'currentStock'>[]) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  deleteProduct: (id: string, force?: boolean) => void;
   adjustStock: (adjustment: Omit<StockAdjustment, 'id' | 'referenceNo' | 'date'>) => void;
   updateStockAdjustment: (id: string, adjustment: Partial<StockAdjustment>) => void;
   deleteStockAdjustment: (id: string) => void;
@@ -1089,9 +1089,29 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingPosExitTarget, setPendingPosExitTarget] = useState<string | null>(null);
 
   const [productsState, setProductsState] = useState<Product[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY}_products`);
-    const raw = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialProducts);
-    return (Array.isArray(raw) ? raw : []).map((p: any) => {
+    const isInstalled = typeof window !== 'undefined' && (
+      localStorage.getItem('pos_installed') === 'true' ||
+      localStorage.getItem('app_installed') === 'true' ||
+      localStorage.getItem('is_installed') === 'true'
+    );
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_products`) : null;
+    let raw: any[] = [];
+    if (saved !== null) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          raw = parsed;
+        }
+      } catch {}
+    } else {
+      raw = (isInstalled || isFreshInstalled) ? [] : initialProducts;
+    }
+
+    const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_product_ids`) : null;
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+    const filteredRaw = raw.filter((p: any) => p && p.id && !deletedSet.has(p.id));
+
+    return (Array.isArray(filteredRaw) ? filteredRaw : []).map((p: any) => {
       const sanitized = {
         ...p,
         category: getCategoryName(p.category),
@@ -2237,9 +2257,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setCustomers(cleanCustomers);
                 try { localStorage.setItem(`${STORAGE_KEY}_customers`, JSON.stringify(cleanCustomers)); } catch {}
               }
-              if (Array.isArray(d.products) && d.products.length > 0) {
-                setProducts(d.products);
-                try { localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(d.products)); } catch {}
+              if (Array.isArray(d.products)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_product_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanProducts = d.products.filter((p: any) => p && p.id && !deletedSet.has(p.id));
+                setProducts(cleanProducts);
+                try { localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(cleanProducts)); } catch {}
               }
               if (Array.isArray(d.transactions) && d.transactions.length > 0) {
                 setTransactions(d.transactions);
@@ -3748,15 +3771,27 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = (id: string, force = false) => {
     const product = products.find((p) => p.id === id);
-    if (product && product.currentStock > 0) {
+    if (!force && product && Number(product.currentStock) > 0) {
       showFlashNotification(`Cannot delete ${product.name}. Stock must be zero. Current stock: ${product.currentStock}`, 'error');
       return;
     }
+
+    // Persist deleted product ID so it cannot be resurrected by cache or pull
+    try {
+      const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_product_ids`) : null;
+      const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+      deletedSet.add(id);
+      localStorage.setItem(`${STORAGE_KEY}_deleted_product_ids`, JSON.stringify(Array.from(deletedSet)));
+    } catch {}
+
     setProducts((prev) => {
       const updated = prev.filter((p) => p.id !== id);
-      triggerImmediateSyncPush({ products: updated });
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(updated));
+      } catch {}
+      triggerImmediateSyncPush({ products: updated, deleted_product_id: id });
       return updated;
     });
     showFlashNotification(`Product ${product?.name || ''} deleted successfully.`, 'success');

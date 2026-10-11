@@ -657,7 +657,36 @@ if ($action === 'pull' || $method === 'GET') {
                             }
                         }
 
+                        // Clean up demo mock products if real products exist
+                        if ($key === 'products') {
+                            $demoProdIds = ['prod_sol_inverter', 'prod_bat_lifepo4', 'prod_sol_panel', 'prod_mppt_controller', 'prod_mc4_connectors'];
+                            $hasRealProd = false;
+                            foreach ($items as $pItem) {
+                                $pId = $pItem['id'] ?? '';
+                                if (!in_array($pId, $demoProdIds)) {
+                                    $hasRealProd = true;
+                                    break;
+                                }
+                            }
+                            if ($hasRealProd) {
+                                try {
+                                    $pdo->exec("DELETE FROM `{$tableName}` WHERE `id` IN ('prod_sol_inverter', 'prod_bat_lifepo4', 'prod_sol_panel', 'prod_mppt_controller', 'prod_mc4_connectors')");
+                                } catch (Exception $e) {}
+
+                                $items = array_values(array_filter($items, function($pItem) use ($demoProdIds) {
+                                    $pId = $pItem['id'] ?? '';
+                                    return !in_array($pId, $demoProdIds);
+                                }));
+                            }
+                        }
+
                         $data[$key] = $items;
+                    } else {
+                        // Crucial fix: Table exists in MySQL and has 0 rows (e.g. emptied in phpMyAdmin or deleted in UI)
+                        $data[$key] = [];
+                        try {
+                            $pdo->exec("DELETE FROM `{$prefix}sync_store` WHERE `store_key` = '{$key}'");
+                        } catch (Exception $e) {}
                     }
                 }
             } catch (Exception $e) {}
@@ -779,6 +808,36 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['products']) && is_array($updates['products'])) {
+            $currentIds = [];
+            foreach ($updates['products'] as $p) {
+                if (is_array($p) && !empty($p['id'])) {
+                    $currentIds[] = (string)$p['id'];
+                }
+            }
+
+            // 1. Delete explicit deleted product ID if provided
+            if (!empty($updates['deleted_product_id'])) {
+                try {
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}products` WHERE `id` = :id");
+                    $delStmt->execute([':id' => (string)$updates['deleted_product_id']]);
+                } catch (Exception $e) {}
+            }
+
+            // 2. Synchronize products table: If 0 products, wipe table completely!
+            if (count($currentIds) === 0) {
+                try {
+                    $pdo->exec("DELETE FROM `{$prefix}products`");
+                    $pdo->exec("DELETE FROM `{$prefix}sync_store` WHERE `store_key` = 'products'");
+                } catch (Exception $e) {}
+            } else {
+                // Remove any products from MySQL that are no longer present in client's list
+                try {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}products` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentIds);
+                } catch (Exception $e) {}
+            }
+
             $prodStmt = $pdo->prepare("INSERT INTO `{$prefix}products` 
                 (`id`, `sku`, `name`, `barcode`, `brand`, `category`, `unit`, `cost_price`, `selling_price`, `current_stock`, `alert_quantity`, `data_json`, `updated_at`)
                 VALUES (:id, :sku, :name, :barcode, :brand, :category, :unit, :cprice, :sprice, :stock, :alert, :json, CURRENT_TIMESTAMP)

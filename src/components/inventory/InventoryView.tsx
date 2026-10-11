@@ -2073,10 +2073,23 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                         setDeleteTargetProduct(null);
                         openEditProductPage(target);
                       }}
-                      className="px-5 py-2.5 bg-[#f97316] hover:bg-[#ea580c] text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/25 transition cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 bg-[#f97316] hover:bg-[#ea580c] text-white rounded-xl text-xs font-bold shadow-lg shadow-orange-500/25 transition cursor-pointer flex items-center gap-1.5"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       <span>Edit Quantities</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (deleteTargetProduct) {
+                          deleteProduct(deleteTargetProduct.id, true);
+                          setDeleteTargetProduct(null);
+                        }
+                      }}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Force Delete</span>
                     </button>
                   </div>
                 </>
