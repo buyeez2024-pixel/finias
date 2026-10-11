@@ -1,8 +1,8 @@
 {
-  "isInstalled": true,
-  "installationCompleted": true,
-  "installedAt": "2026-01-01T00:00:00.000Z",
-  "businessName": "Royal POS & Enterprise ERP",
-  "adminEmail": "buyeez2024@gmail.com",
-  "adminUsername": "admin"
+  "isInstalled": false,
+  "installationCompleted": false,
+  "installedAt": null,
+  "businessName": "",
+  "adminEmail": "",
+  "adminUsername": ""
 }

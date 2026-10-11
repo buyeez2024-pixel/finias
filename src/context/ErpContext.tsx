@@ -128,7 +128,7 @@ export const isUserAdmin = (userOrRole?: User | string | null): boolean => {
 };
 
 export const checkIsSystemInstalled = (): boolean => {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
 
   if (
     localStorage.getItem('app_uninstalled') === 'true' ||
@@ -137,8 +137,15 @@ export const checkIsSystemInstalled = (): boolean => {
     return false;
   }
 
-  // System is pre-configured and installed by default
-  return true;
+  // System is only installed if explicitly recorded in local storage
+  return (
+    localStorage.getItem('pos_installed') === 'true' ||
+    localStorage.getItem('app_installed') === 'true' ||
+    localStorage.getItem('app_installation_completed') === 'true' ||
+    localStorage.getItem('system_installed') === 'true' ||
+    localStorage.getItem('installation_locked') === 'true' ||
+    localStorage.getItem('installation_wizard_deleted') === 'true'
+  );
 };
 
 export interface FinancialSummary {

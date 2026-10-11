@@ -301,6 +301,17 @@ const MainAppContent: React.FC = () => {
             }
           }
         }
+      } else {
+        setSystemInstalled(false);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('pos_installed');
+          localStorage.removeItem('app_installed');
+          localStorage.removeItem('app_installation_completed');
+          localStorage.removeItem('is_installed');
+          localStorage.removeItem('system_installed');
+          localStorage.removeItem('installation_locked');
+          localStorage.removeItem('installation_wizard_deleted');
+        }
       }
       setIsVerifyingSystem(false);
     }).catch(() => {
@@ -348,14 +359,6 @@ const MainAppContent: React.FC = () => {
             localStorage.setItem('system_installed', 'true');
             localStorage.setItem('installation_locked', 'true');
             localStorage.setItem('installation_wizard_deleted', 'true');
-            window.history.replaceState(null, '', '/dashboard');
-          }
-        }}
-        onCancel={() => {
-          setSystemInstalled(true);
-          setIsInstallUrl(false);
-          setActiveTab('dashboard');
-          if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', '/dashboard');
           }
         }}

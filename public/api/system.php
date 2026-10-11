@@ -59,9 +59,9 @@ if ($method === 'POST' || $action === 'install') {
         'isInstalled' => true,
         'installationCompleted' => true,
         'installedAt' => date('c'),
-        'businessName' => $data['businessName'] ?? 'Finias Farms',
-        'adminEmail' => $data['adminEmail'] ?? 'admin@butabomma.in',
-        'adminUsername' => $data['adminUsername'] ?? 'admin',
+        'businessName' => $data['businessName'] ?? ($data['settings']['businessName'] ?? 'Enterprise ERP'),
+        'adminEmail' => $data['adminEmail'] ?? ($data['adminUser']['email'] ?? 'admin@example.com'),
+        'adminUsername' => $data['adminUsername'] ?? ($data['adminUser']['username'] ?? 'admin'),
         'settings' => $data['settings'] ?? null,
         'adminUser' => $data['adminUser'] ?? null,
         'logoUrl' => $logo ?: null
@@ -87,10 +87,12 @@ if ($method === 'POST' || $action === 'install') {
         @chmod(__DIR__ . '/db_config.json', 0666);
     }
 
-    // Save to all target locations for maximum reliability on cPanel
+    // Save to all target locations for maximum reliability on cPanel and Node
     $saved = false;
     $primaryPath = __DIR__ . '/system_status.json';
     $parentPath = __DIR__ . '/../system_status.json';
+    $serverStoragePath = __DIR__ . '/../../server_storage/system_status.json';
+    $serverStoragePath2 = __DIR__ . '/../server_storage/system_status.json';
 
     if (@file_put_contents($primaryPath, $jsonEncoded)) {
         @chmod($primaryPath, 0666);
@@ -99,6 +101,12 @@ if ($method === 'POST' || $action === 'install') {
     if (@file_put_contents($parentPath, $jsonEncoded)) {
         @chmod($parentPath, 0666);
         $saved = true;
+    }
+    if (file_exists(dirname($serverStoragePath))) {
+        @file_put_contents($serverStoragePath, $jsonEncoded);
+    }
+    if (file_exists(dirname($serverStoragePath2))) {
+        @file_put_contents($serverStoragePath2, $jsonEncoded);
     }
 
     echo json_encode([
