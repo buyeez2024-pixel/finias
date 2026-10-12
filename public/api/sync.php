@@ -825,6 +825,24 @@ if ($action === 'push' || $method === 'POST') {
                 } catch (Exception $e) {}
             }
 
+            $currentCustIds = [];
+            foreach ($updates['customers'] as $c) {
+                if (is_array($c) && !empty($c['id'])) {
+                    if (!($hasRealCust && in_array($c['id'], ['cust_prime', 'cust_vip', 'cust_global']))) {
+                        $currentCustIds[] = (string)$c['id'];
+                    }
+                }
+            }
+            if (count($currentCustIds) === 0) {
+                try { $pdo->exec("DELETE FROM `{$prefix}customers`"); } catch (Exception $e) {}
+            } else {
+                try {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentCustIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}customers` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentCustIds);
+                } catch (Exception $e) {}
+            }
+
             $custStmt = $pdo->prepare("INSERT INTO `{$prefix}customers` 
                 (`id`, `contact_id`, `name`, `business_name`, `phone`, `email`, `address`, `opening_balance`, `credit_limit`, `total_due`, `total_sales`, `loyalty_points`, `created_date`, `data_json`, `updated_at`)
                 VALUES (:id, :cid, :name, :bname, :phone, :email, :addr, :opbal, :clim, :tdue, :tsales, :lpts, :cdate, :json, CURRENT_TIMESTAMP)
@@ -920,6 +938,22 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['suppliers']) && is_array($updates['suppliers'])) {
+            $currentSupIds = [];
+            foreach ($updates['suppliers'] as $s) {
+                if (is_array($s) && !empty($s['id'])) {
+                    $currentSupIds[] = (string)$s['id'];
+                }
+            }
+            if (count($currentSupIds) === 0) {
+                try { $pdo->exec("DELETE FROM `{$prefix}suppliers`"); } catch (Exception $e) {}
+            } else {
+                try {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentSupIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}suppliers` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentSupIds);
+                } catch (Exception $e) {}
+            }
+
             $supStmt = $pdo->prepare("INSERT INTO `{$prefix}suppliers` 
                 (`id`, `contact_id`, `name`, `business_name`, `phone`, `email`, `total_payable`, `total_purchases`, `data_json`, `updated_at`)
                 VALUES (:id, :cid, :name, :bname, :phone, :email, :tpay, :tpurch, :json, CURRENT_TIMESTAMP)
@@ -943,6 +977,22 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['transactions']) && is_array($updates['transactions'])) {
+            $currentTxnIds = [];
+            foreach ($updates['transactions'] as $t) {
+                if (is_array($t) && !empty($t['id'])) {
+                    $currentTxnIds[] = (string)$t['id'];
+                }
+            }
+            if (count($currentTxnIds) === 0) {
+                try { $pdo->exec("DELETE FROM `{$prefix}transactions`"); } catch (Exception $e) {}
+            } else {
+                try {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentTxnIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}transactions` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentTxnIds);
+                } catch (Exception $e) {}
+            }
+
             $txnStmt = $pdo->prepare("INSERT INTO `{$prefix}transactions` 
                 (`id`, `type`, `sale_channel`, `invoice_no`, `date`, `customer_id`, `customer_name`, `supplier_id`, `supplier_name`, `total_amount`, `paid_amount`, `due_amount`, `status`, `payment_status`, `data_json`, `updated_at`)
                 VALUES (:id, :type, :sch, :inv, :date, :cid, :cname, :sid, :sname, :tot, :paid, :due, :st, :pst, :json, CURRENT_TIMESTAMP)
