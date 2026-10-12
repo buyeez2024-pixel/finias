@@ -7402,20 +7402,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const isReturn = txn.type === 'purchase_return';
 
-    // Quantity validation rule: cannot delete if active purchase quantity is > 0
-    if (!isReturn && txn.type === 'purchase') {
-      const netPurchaseQty = (txn.items || []).reduce(
-        (sum: number, it: any) => sum + Math.max(0, (Number(it.quantity) || 0) - (Number(it.returnedQuantity) || 0)),
-        0
-      );
-      if (netPurchaseQty > 0) {
-        showFlashNotification(
-          `Cannot delete Purchase ${txn.invoiceNo}: Purchase quantity (${netPurchaseQty} units) is not equal to zero. Please process a purchase return or reduce quantity to 0 before deleting.`,
-          'error'
-        );
-        return;
-      }
-    }
+
 
     if (txn.status === 'received' || isReturn) {
       const deletedProductIds = (txn.items || []).map((it: any) => it.productId).filter(Boolean);
