@@ -1364,10 +1364,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_customers`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_customer_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     let list: Customer[] = saved ? JSON.parse(saved) : initialCustomers;
     if (!Array.isArray(list) || list.length === 0) {
       list = initialCustomers;
     }
+    list = list.filter((c) => c && c.id && !deletedSet.has(c.id));
     // Always ensure standard Walk-in Customer is present at the beginning
     const walkInCustomer = initialCustomers.find((c) => c.id === 'cust_walkin') || {
       id: 'cust_walkin',
@@ -1401,19 +1404,24 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [customerGroups, setCustomerGroups] = useState<CustomerGroup[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_customer_groups`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_customer_group_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     let list: CustomerGroup[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCustomerGroups);
     if (!Array.isArray(list) || list.length === 0) {
       list = initialCustomerGroups;
     }
-    return list;
+    return list.filter((g) => g && g.id && !deletedSet.has(g.id));
   });
 
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_suppliers`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_supplier_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     let list: Supplier[] = saved ? JSON.parse(saved) : initialSuppliers;
     if (!Array.isArray(list) || list.length === 0) {
       list = initialSuppliers;
     }
+    list = list.filter((s) => s && s.id && !deletedSet.has(s.id));
     const seenIds = new Set<string>();
     return list.map((s, idx) => {
       let uniqueId = s.id;
@@ -1434,8 +1442,10 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_transactions`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_transaction_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     const list: Transaction[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialTransactions);
-    return list.map((t) => {
+    return list.filter((t) => t && t.id && !deletedSet.has(t.id)).map((t) => {
       const isPos = t.isPos === true || t.saleChannel === 'pos' || (t.invoiceNo && t.invoiceNo.toUpperCase().startsWith('POS'));
       const entriesPaid = t.paymentEntries && t.paymentEntries.length > 0
         ? t.paymentEntries.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
@@ -2275,10 +2285,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 });
               }
               if (Array.isArray(d.customers) && d.customers.length > 0) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_customer_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
                 const hasRealCust = d.customers.some((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
                 let cleanCustomers = hasRealCust
-                  ? d.customers.filter((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
-                  : d.customers;
+                  ? d.customers.filter((c: any) => c && c.id && !deletedSet.has(c.id) && !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
+                  : d.customers.filter((c: any) => c && c.id && !deletedSet.has(c.id));
                 
                 // Always ensure standard Walk-in Retail Customer exists
                 const walkInCustomer = initialCustomers.find((c) => c.id === 'cust_walkin') || {
@@ -2312,17 +2324,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setProducts(cleanProducts);
                 try { localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(cleanProducts)); } catch {}
               }
-              if (Array.isArray(d.transactions) && d.transactions.length > 0) {
-                setTransactions(d.transactions);
-                try { localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(d.transactions)); } catch {}
+              if (Array.isArray(d.transactions)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_transaction_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanTxns = d.transactions.filter((t: any) => t && t.id && !deletedSet.has(t.id));
+                setTransactions(cleanTxns);
+                try { localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(cleanTxns)); } catch {}
               }
-              if (Array.isArray(d.customer_groups) && d.customer_groups.length > 0) {
-                setCustomerGroups(d.customer_groups);
-                try { localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(d.customer_groups)); } catch {}
+              if (Array.isArray(d.customer_groups)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_customer_group_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanGroups = d.customer_groups.filter((g: any) => g && g.id && !deletedSet.has(g.id));
+                setCustomerGroups(cleanGroups);
+                try { localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(cleanGroups)); } catch {}
               }
-              if (Array.isArray(d.suppliers) && d.suppliers.length > 0) {
-                setSuppliers(d.suppliers);
-                try { localStorage.setItem(`${STORAGE_KEY}_suppliers`, JSON.stringify(d.suppliers)); } catch {}
+              if (Array.isArray(d.suppliers)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_supplier_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanSuppliers = d.suppliers.filter((s: any) => s && s.id && !deletedSet.has(s.id));
+                setSuppliers(cleanSuppliers);
+                try { localStorage.setItem(`${STORAGE_KEY}_suppliers`, JSON.stringify(cleanSuppliers)); } catch {}
               }
               if (Array.isArray(d.categories) && d.categories.length > 0) {
                 setCategories(d.categories);
@@ -4599,6 +4620,12 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomerGroups(updated);
     try {
       localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(updated));
+      const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_customer_group_ids`);
+      const deletedArr = savedDeleted ? JSON.parse(savedDeleted) : [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem(`${STORAGE_KEY}_deleted_customer_group_ids`, JSON.stringify(deletedArr));
+      }
       fetch(getApiUrl('api/sync.php?action=push'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4981,6 +5008,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ customers: updated });
       return updated;
     });
+    try {
+      const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_customer_ids`);
+      const deletedArr = savedDeleted ? JSON.parse(savedDeleted) : [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem(`${STORAGE_KEY}_deleted_customer_ids`, JSON.stringify(deletedArr));
+      }
+    } catch {}
+    showFlashNotification('Customer deleted successfully.', 'info');
   };
 
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'totalPayable' | 'totalPurchases' | 'createdDate'> & { id?: string; contactId?: string }) => {
@@ -5148,6 +5184,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ suppliers: updated });
       return updated;
     });
+    try {
+      const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_supplier_ids`);
+      const deletedArr = savedDeleted ? JSON.parse(savedDeleted) : [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem(`${STORAGE_KEY}_deleted_supplier_ids`, JSON.stringify(deletedArr));
+      }
+    } catch {}
+    showFlashNotification('Supplier deleted successfully.', 'info');
   };
 
   const recordCustomerPayment = (
@@ -6795,6 +6840,14 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ transactions: updatedTxns });
       return updatedTxns;
     });
+    try {
+      const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_transaction_ids`);
+      const deletedArr = savedDeleted ? JSON.parse(savedDeleted) : [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem(`${STORAGE_KEY}_deleted_transaction_ids`, JSON.stringify(deletedArr));
+      }
+    } catch {}
     showFlashNotification(`Sale invoice ${txn.invoiceNo} deleted successfully.`, 'info');
   };
 
@@ -7510,6 +7563,15 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       triggerImmediateSyncPush({ transactions: remaining, products, suppliers });
       return remaining;
     });
+
+    try {
+      const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_transaction_ids`);
+      const deletedArr = savedDeleted ? JSON.parse(savedDeleted) : [];
+      if (!deletedArr.includes(id)) {
+        deletedArr.push(id);
+        localStorage.setItem(`${STORAGE_KEY}_deleted_transaction_ids`, JSON.stringify(deletedArr));
+      }
+    } catch {}
 
     showFlashNotification(`${isReturn ? 'Purchase Return' : 'Purchase Order'} deleted and inventory updated.`, 'info');
   };

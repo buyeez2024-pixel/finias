@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useErp } from '../../context/ErpContext';
+import { useErp, isUserAdmin } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import {
   Truck,
@@ -120,7 +120,7 @@ export const PurchasesView: React.FC<PurchasesViewProps> = ({ onOpenNewPurchase,
   const [selectedNewSupplierId, setSelectedNewSupplierId] = useState<string>('');
   const [itemSupplierAssignments, setItemSupplierAssignments] = useState<Record<number, string>>({});
 
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'supreme_admin';
+  const isAdmin = isUserAdmin(currentUser);
   const isManager = currentUser?.role === 'manager';
   const isAuthorizedForColumns = !currentUser || isAdmin || isManager;
   const isLight = settings.themeMode === 'light' || (!settings.themeMode && typeof document !== 'undefined' && !document.documentElement.classList.contains('dark'));
