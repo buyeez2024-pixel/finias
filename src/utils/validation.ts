@@ -376,6 +376,7 @@ export function validateContactData(data: {
   notes?: string;
   countryCode?: string;
   altCountryCode?: string;
+  isUnlimitedCredit?: boolean;
 }): ValidationResult {
   const errors: Record<string, string> = {};
 
@@ -423,17 +424,10 @@ export function validateContactData(data: {
     if (!emailRes.isValid && emailRes.error) errors.email = emailRes.error;
   }
 
-  // 6. GST / Tax Number: MANDATORY if supplier or both; strictly validated format for all
+  // 6. GST / Tax Number: Optional for all contact types (customers, suppliers, both).
+  // If provided, validate length and alphanumeric format.
   const taxClean = (data.taxNumber || '').trim();
-  if (isSupplierOrBoth) {
-    if (!taxClean) {
-      errors.taxNumber = 'GST / TAX Number is mandatory for suppliers.';
-    } else if (taxClean.length < 5 || taxClean.length > 35) {
-      errors.taxNumber = 'GST / TAX Number must be between 5 and 35 characters.';
-    } else if (!/^[a-zA-Z0-9\-_./]+$/.test(taxClean)) {
-      errors.taxNumber = 'GST / TAX Number must be alphanumeric (letters, numbers, hyphens, slashes).';
-    }
-  } else if (taxClean) {
+  if (taxClean) {
     if (taxClean.length < 4 || taxClean.length > 35) {
       errors.taxNumber = 'GST / TAX Number must be between 4 and 35 characters.';
     } else if (!/^[a-zA-Z0-9\-_./]+$/.test(taxClean)) {
@@ -471,8 +465,8 @@ export function validateContactData(data: {
     if (!advRes.isValid && advRes.error) errors.advanceBalance = advRes.error;
   }
 
-  // 10. Credit Limit (must be valid non-negative number)
-  if (data.creditLimit !== undefined && data.creditLimit !== '') {
+  // 10. Credit Limit (must be valid non-negative number, or null/unlimited)
+  if (data.creditLimit !== undefined && data.creditLimit !== '' && data.creditLimit !== null && !(data as any).isUnlimitedCredit) {
     const creditRes = validateNumber(data.creditLimit, {
       min: 0,
       allowNegative: false,

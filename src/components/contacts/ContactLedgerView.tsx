@@ -1298,7 +1298,14 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
                   {currencySymbol}{Number(currentCustomer.totalDue || 0).toFixed(2)}
                 </div>
                 <div className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                  Credit Limit: <span className={`font-mono ${isLight ? 'text-indigo-600' : 'text-indigo-300'}`}>{currencySymbol}{Number(currentCustomer.creditLimit || 0).toFixed(2)}</span>
+                  Credit Limit:{' '}
+                  {currentCustomer.creditLimit === null || currentCustomer.creditLimit === -1 || (currentCustomer as any).isUnlimitedCredit ? (
+                    <span className="font-bold text-emerald-500 font-mono">∞ No Limit</span>
+                  ) : (
+                    <span className={`font-mono ${isLight ? 'text-indigo-600' : 'text-indigo-300'}`}>
+                      {currencySymbol}{Number(currentCustomer.creditLimit || 0).toFixed(2)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

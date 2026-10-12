@@ -51,14 +51,46 @@ export const ContactsView: React.FC = () => {
     contactsSubTab,
     navigateToContacts,
     showFlashNotification,
-    currentUser
+    currentUser,
+    customRoles = [],
   } = useErp();
+
+  const activeRoleDef = useMemo(() => {
+    return (customRoles || []).find((r: any) => r.roleKey === currentUser?.role);
+  }, [customRoles, currentUser?.role]);
 
   const isAdminOrManager = useMemo(() => {
     if (!currentUser) return true; // Default open access when no user logged in
     const role = currentUser.role;
-    return role === 'supreme_admin' || role === 'admin' || role === 'store_manager';
+    return role === 'supreme_admin' || role === 'admin' || role === 'store_manager' || role === 'super_admin';
   }, [currentUser]);
+
+  const canEditCustomers = useMemo(() => {
+    if (!currentUser) return true;
+    if (currentUser.role === 'supreme_admin' || currentUser.role === 'admin' || currentUser.role === 'super_admin') return true;
+    if (activeRoleDef?.modulePermissions?.contacts) {
+      return Boolean(activeRoleDef.modulePermissions.contacts.edit);
+    }
+    return currentUser.role === 'manager' || currentUser.role === 'store_manager';
+  }, [currentUser, activeRoleDef]);
+
+  const canDeleteCustomers = useMemo(() => {
+    if (!currentUser) return true;
+    if (currentUser.role === 'supreme_admin' || currentUser.role === 'admin' || currentUser.role === 'super_admin') return true;
+    if (activeRoleDef?.modulePermissions?.contacts) {
+      return Boolean(activeRoleDef.modulePermissions.contacts.delete);
+    }
+    return false;
+  }, [currentUser, activeRoleDef]);
+
+  const canCreateCustomers = useMemo(() => {
+    if (!currentUser) return true;
+    if (currentUser.role === 'supreme_admin' || currentUser.role === 'admin' || currentUser.role === 'super_admin') return true;
+    if (activeRoleDef?.modulePermissions?.contacts) {
+      return Boolean(activeRoleDef.modulePermissions.contacts.create);
+    }
+    return true;
+  }, [currentUser, activeRoleDef]);
 
   const isSuppliers = activeTab === 'suppliers' || contactsSubTab === 'suppliers';
   const isLight = settings.themeMode === 'light' || (!settings.themeMode && typeof document !== 'undefined' && !document.documentElement.classList.contains('dark'));
@@ -615,7 +647,13 @@ export const ContactsView: React.FC = () => {
 
                     <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                       <span className="text-[10px] text-slate-400 block mb-0.5">Credit Limit</span>
-                      <span className="font-mono font-semibold text-slate-300">{formatCurrency(cust.creditLimit || 0, settings)}</span>
+                      {cust.creditLimit === null || cust.creditLimit === -1 || cust.isUnlimitedCredit ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span>∞</span> No Limit
+                        </span>
+                      ) : (
+                        <span className="font-mono font-semibold text-slate-300">{formatCurrency(cust.creditLimit || 0, settings)}</span>
+                      )}
                     </div>
                   </div>
 
@@ -629,22 +667,26 @@ export const ContactsView: React.FC = () => {
                       <Eye className="w-3.5 h-3.5" />
                       <span>Ledger</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => openEditCustomerPage(cust)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1 transition active:scale-95"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCustomer(cust.id, cust.name)}
-                      className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 text-xs font-bold flex items-center gap-1 transition active:scale-95"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
+                    {canEditCustomers && (
+                      <button
+                        type="button"
+                        onClick={() => openEditCustomerPage(cust)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1 transition active:scale-95"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                    )}
+                    {canDeleteCustomers && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomer(cust.id, cust.name)}
+                        className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 text-xs font-bold flex items-center gap-1 transition active:scale-95"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -743,7 +785,13 @@ export const ContactsView: React.FC = () => {
                         )}
                         {visibleCustomerColumns.credit && (
                           <td className="py-3.5 px-4 text-right font-mono text-slate-300 font-medium">
-                            {formatCurrency(cust.creditLimit, settings)}
+                            {cust.creditLimit === null || cust.creditLimit === -1 || cust.isUnlimitedCredit ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                <span>∞</span> No Limit
+                              </span>
+                            ) : (
+                              formatCurrency(cust.creditLimit, settings)
+                            )}
                           </td>
                         )}
                         {visibleCustomerColumns.due && (
@@ -779,30 +827,34 @@ export const ContactsView: React.FC = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                onClick={() => openEditCustomerPage(cust)}
-                                id={`btn-edit-customer-${cust.id}`}
-                                className={`p-1.5 rounded-lg border transition ${
-                                  isLight
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
-                                    : 'bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white border-transparent'
-                                }`}
-                                title="Edit Customer Profile"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCustomer(cust.id, cust.name)}
-                                id={`btn-delete-customer-${cust.id}`}
-                                className={`p-1.5 rounded-lg border transition ${
-                                  isLight
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-rose-600 hover:text-white hover:border-rose-600'
-                                    : 'bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white border-transparent'
-                                }`}
-                                title="Delete Customer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canEditCustomers && (
+                                <button
+                                  onClick={() => openEditCustomerPage(cust)}
+                                  id={`btn-edit-customer-${cust.id}`}
+                                  className={`p-1.5 rounded-lg border transition ${
+                                    isLight
+                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600'
+                                      : 'bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white border-transparent'
+                                  }`}
+                                  title="Edit Customer Profile"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {canDeleteCustomers && (
+                                <button
+                                  onClick={() => handleDeleteCustomer(cust.id, cust.name)}
+                                  id={`btn-delete-customer-${cust.id}`}
+                                  className={`p-1.5 rounded-lg border transition ${
+                                    isLight
+                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm hover:bg-rose-600 hover:text-white hover:border-rose-600'
+                                      : 'bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white border-transparent'
+                                  }`}
+                                  title="Delete Customer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}

@@ -37,6 +37,12 @@ export type PaymentStatus = any;
 export type Unit = any;
 export type User = any;
 export type UserRole = any;
+export interface ModulePermissionRule {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+}
 export interface CustomRoleDefinition {
   id: string;
   roleKey: string;
@@ -46,6 +52,11 @@ export interface CustomRoleDefinition {
   description: string;
   allowedModules: ErpModuleId[];
   isCustom?: boolean;
+  notifyOnDelete?: boolean;
+  hideCostPrice?: boolean;
+  maxDiscountPercent?: number;
+  allowedReports?: string[];
+  modulePermissions?: Record<string, ModulePermissionRule>;
 }
 export interface UserSession {
   id: string;

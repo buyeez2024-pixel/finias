@@ -841,6 +841,56 @@ html:not(.dark) aside#main-sidebar-aside button[id^="nav-sub-"]:not([class*="bg-
   color: var(--color-indigo-600, #4f46e5) !important;
   stroke: var(--color-indigo-600, #4f46e5) !important;
 }
+
+/* ========================================================================= */
+/* SIDEBAR DARK MODE ENFORCEMENT - IMMEDIATE ZERO-LATENCY RENDERING          */
+/* ========================================================================= */
+:root[data-theme="dark"] aside#main-sidebar-aside,
+[data-theme="dark"] aside#main-sidebar-aside,
+html.dark aside#main-sidebar-aside,
+:root[data-theme="dark"] #mobile-sidebar-drawer,
+html.dark #mobile-sidebar-drawer {
+  background-color: #020617 !important; /* bg-slate-950 */
+  border-right-color: rgba(30, 41, 59, 0.9) !important; /* border-slate-800 */
+  color: #f8fafc !important; /* text-slate-100 */
+}
+
+:root[data-theme="dark"] aside#main-sidebar-aside .sidebar-search-container,
+[data-theme="dark"] aside#main-sidebar-aside .sidebar-search-container,
+html.dark aside#main-sidebar-aside .sidebar-search-container,
+:root[data-theme="dark"] #mobile-sidebar-drawer .sidebar-search-container,
+html.dark #mobile-sidebar-drawer .sidebar-search-container {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  border-bottom-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+:root[data-theme="dark"] aside#main-sidebar-aside input#sidebar-menu-search,
+html.dark aside#main-sidebar-aside input#sidebar-menu-search,
+:root[data-theme="dark"] #mobile-sidebar-drawer input#sidebar-menu-search,
+html.dark #mobile-sidebar-drawer input#sidebar-menu-search {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  color: #e2e8f0 !important;
+}
+
+:root[data-theme="dark"] aside#main-sidebar-aside input#sidebar-menu-search::placeholder,
+html.dark aside#main-sidebar-aside input#sidebar-menu-search::placeholder,
+:root[data-theme="dark"] #mobile-sidebar-drawer input#sidebar-menu-search::placeholder,
+html.dark #mobile-sidebar-drawer input#sidebar-menu-search::placeholder {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="dark"] aside#main-sidebar-aside .sidebar-nav-scroll-area,
+html.dark aside#main-sidebar-aside .sidebar-nav-scroll-area,
+:root[data-theme="dark"] #mobile-sidebar-drawer .sidebar-nav-scroll-area,
+html.dark #mobile-sidebar-drawer .sidebar-nav-scroll-area {
+  background-color: transparent !important;
+}
+
+:root[data-theme="dark"] aside#main-sidebar-aside .text-slate-400,
+html.dark aside#main-sidebar-aside .text-slate-400 {
+  color: #94a3b8 !important;
+}
 :root[data-theme="light"] #opening-stock-unit-badge,
 :root[data-theme="light"] .opening-stock-unit-badge,
 html:not(.dark) #opening-stock-unit-badge,

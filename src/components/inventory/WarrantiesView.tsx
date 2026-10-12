@@ -1239,7 +1239,7 @@ export const WarrantiesView: React.FC = () => {
               </div>
             </div>
           ) : viewMode === 'table' ? (
-            <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="overflow-x-auto scrollbar-thin touch-pan-x overscroll-x-contain">
               <table className="w-full text-left text-xs border-collapse">
                 <thead className={`${isLight ? 'bg-slate-50 border-b border-slate-200 text-slate-600 font-bold' : 'bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800'}`}>
                   <tr>

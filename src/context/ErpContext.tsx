@@ -868,6 +868,134 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'loc_main';
   });
 
+  const getComputedPageTitle = (
+    activeTab: string,
+    inventorySubTab: string,
+    settingsSubTab: string,
+    userMenuSubTab: string,
+    contactsSubTab: string,
+    businessName: string
+  ): string => {
+    let title = 'Dashboard';
+
+    if (activeTab === 'dashboard') {
+      title = 'Dashboard';
+    } else if (activeTab === 'pos') {
+      title = 'POS Terminal';
+    } else if (activeTab === 'inventory') {
+      switch (inventorySubTab) {
+        case 'matrix': title = 'All Products'; break;
+        case 'categories': title = 'Categories'; break;
+        case 'brands': title = 'Brands'; break;
+        case 'warranties': title = 'Warranty'; break;
+        case 'racks': title = 'Rack, Row & Shelf Positions'; break;
+        case 'units': title = 'Units of Measure'; break;
+        case 'adjustments': title = 'Stock Adjustments'; break;
+        case 'transfers': title = 'Branch Transfers'; break;
+        case 'add_product': title = 'Add New Product'; break;
+        case 'edit_product': title = 'Edit Product'; break;
+        case 'import_products': title = 'Import Products'; break;
+        case 'product_history': title = 'Product History'; break;
+        case 'variations': title = 'Variations & Combo Types'; break;
+        default: title = 'Products'; break;
+      }
+    } else if (activeTab === 'purchases') {
+      title = 'Purchases';
+    } else if (activeTab === 'sales') {
+      title = 'Sales';
+    } else if (activeTab === 'list_pos_sale' || activeTab === 'pos_sales') {
+      title = 'POS Transactions';
+    } else if (activeTab === 'contacts') {
+      switch (contactsSubTab) {
+        case 'customers': title = 'Customers'; break;
+        case 'suppliers': title = 'Suppliers'; break;
+        case 'customer_groups': title = 'Customer Groups'; break;
+        case 'import_contacts': title = 'Import Contacts'; break;
+        case 'customer_ledger': title = 'Customer Ledger'; break;
+        case 'supplier_ledger': title = 'Supplier Ledger'; break;
+        case 'add_customer':
+        case 'add_supplier':
+        case 'add_contact': title = 'Add Contact'; break;
+        case 'edit_customer':
+        case 'edit_supplier': title = 'Edit Contact'; break;
+        default: title = 'Contacts'; break;
+      }
+    } else if (activeTab === 'customer_ledger') {
+      title = 'Customer Ledger';
+    } else if (activeTab === 'supplier_ledger') {
+      title = 'Supplier Ledger';
+    } else if (activeTab === 'add_contact' || activeTab === 'edit_contact' || activeTab === 'add_customer' || activeTab === 'edit_customer') {
+      title = activeTab.includes('edit') ? 'Edit Contact' : 'Add Contact';
+    } else if (activeTab === 'expenses') {
+      title = 'Expenses';
+    } else if (activeTab === 'accounts') {
+      title = 'Accounts';
+    } else if (activeTab === 'reports' || activeTab === 'product_purchase_report' || activeTab === 'purchase_payment_report' || activeTab === 'sell_payment_report' || activeTab === 'product_sell_report' || activeTab === 'purchase_report' || activeTab === 'sale_report' || activeTab === 'tax_report' || activeTab === 'customer_supplier_report' || activeTab === 'stock_report' || activeTab === 'stock_adjustment_report' || activeTab === 'sales_representative_report') {
+      switch (activeTab) {
+        case 'product_purchase_report': title = 'Product Purchase Report'; break;
+        case 'purchase_payment_report': title = 'Purchase Payment Report'; break;
+        case 'product_sell_report': title = 'Product Sell Report'; break;
+        case 'sell_payment_report': title = 'Sell Payment Report'; break;
+        case 'tax_report': title = 'GST & Tax Summary Report'; break;
+        case 'customer_supplier_report': title = 'Customer & Supplier Balances'; break;
+        case 'stock_report': title = 'Stock Report'; break;
+        case 'stock_adjustment_report': title = 'Stock Adjustment Report'; break;
+        case 'sales_representative_report': title = 'Sales Representative Report'; break;
+        default: title = 'Reports & Analytics'; break;
+      }
+    } else if (activeTab === 'ai') {
+      title = 'AI Intelligence';
+    } else if (activeTab === 'user_menu' || activeTab === 'users' || activeTab === 'roles' || activeTab === 'permissions' || activeTab === 'sales_commission_agents' || activeTab === 'add_user') {
+      switch (userMenuSubTab) {
+        case 'users': title = 'Users List'; break;
+        case 'roles': title = 'Roles & Access'; break;
+        case 'permissions': title = 'Permissions'; break;
+        case 'sales_commission_agents': title = 'Sales Representative'; break;
+        default: title = 'Users & Roles'; break;
+      }
+      if (activeTab === 'add_user') title = 'Add New User';
+    } else if (activeTab === 'settings' || activeTab === 'configuration') {
+      switch (settingsSubTab) {
+        case 'business_settings': title = 'Business Settings'; break;
+        case 'product_settings': title = 'Product Settings'; break;
+        case 'contact_settings': title = 'Contact Settings'; break;
+        case 'sales_settings': title = 'Sales Settings'; break;
+        case 'pos_settings': title = 'POS Settings'; break;
+        case 'purchase_settings': title = 'Purchase Settings'; break;
+        case 'payment_settings': title = 'Payment Settings'; break;
+        case 'themes': title = 'Themes'; break;
+        case 'document_prefix': title = 'Document Prefix'; break;
+        case 'reward_settings': title = 'Reward Settings'; break;
+        case 'modules_manager': title = 'Modules Manager'; break;
+        case 'printer_configuration': title = 'Printer Configuration'; break;
+        case 'tax_configuration': title = 'Tax Configuration'; break;
+        case 'currency_configuration': title = 'Currency Configuration'; break;
+        case 'branch_outlets': title = 'Branch Outlets'; break;
+        case 'invoice_layouts': title = 'Invoice Layouts & Schemes'; break;
+        case 'receipt_layouts': title = 'Receipt Layouts'; break;
+        case 'payment_accounts': title = 'Payment Accounts'; break;
+        case 'payment_methods': title = 'Payment Methods'; break;
+        case 'signature_seal': title = 'Signature & Seal'; break;
+        case 'notification_templates': title = 'Notification Templates'; break;
+        default: title = 'Store Configurations'; break;
+      }
+    } else if (activeTab === 'system_updates') {
+      title = 'System Updates';
+    } else if (activeTab === 'security' || activeTab === 'security_guard') {
+      title = 'System Security Shield';
+    } else if (activeTab === 'laravel_arch') {
+      title = 'Laravel Architecture';
+    } else if (activeTab === 'documentation' || activeTab === 'docs' || activeTab === 'user_manual') {
+      title = 'System Manual & Docs';
+    } else if (activeTab === 'installer' || activeTab === 'installation_wizard') {
+      title = 'Setup & Installation';
+    } else {
+      title = activeTab.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    return `${title} - ${businessName || 'Royal POSfini'}`;
+  };
+
   const getInitialRouteInfo = () => {
     if (typeof window === 'undefined') return { main: '', sub: '', isAddUser: false, isAddCustomer: false, isEditProduct: false };
     let raw = '';
@@ -1213,6 +1341,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_categories`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_category_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     let list: Category[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialCategories);
     if (!Array.isArray(list) || list.length === 0) {
       list = initialCategories;
@@ -1225,11 +1355,13 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
     }
-    return list;
+    return list.filter((c) => c && c.id && !deletedSet.has(c.id));
   });
 
   const [brands, setBrands] = useState<Brand[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_brands`);
+    const savedDeleted = localStorage.getItem(`${STORAGE_KEY}_deleted_brand_ids`);
+    const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
     let list: Brand[] = saved ? JSON.parse(saved) : (isFreshInstalled ? [] : initialBrands);
     if (!Array.isArray(list) || list.length === 0) {
       list = initialBrands;
@@ -1242,7 +1374,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
     }
-    return list;
+    return list.filter((b) => b && b.id && !deletedSet.has(b.id));
   });
 
   const [warranties, setWarranties] = useState<Warranty[]>(() => {
@@ -2345,13 +2477,19 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setSuppliers(cleanSuppliers);
                 try { localStorage.setItem(`${STORAGE_KEY}_suppliers`, JSON.stringify(cleanSuppliers)); } catch {}
               }
-              if (Array.isArray(d.categories) && d.categories.length > 0) {
-                setCategories(d.categories);
-                try { localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(d.categories)); } catch {}
+              if (Array.isArray(d.categories)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_category_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanCategories = d.categories.filter((c: any) => c && c.id && !deletedSet.has(c.id));
+                setCategories(cleanCategories);
+                try { localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(cleanCategories)); } catch {}
               }
-              if (Array.isArray(d.brands) && d.brands.length > 0) {
-                setBrands(d.brands);
-                try { localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(d.brands)); } catch {}
+              if (Array.isArray(d.brands)) {
+                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_brand_ids`) : null;
+                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const cleanBrands = d.brands.filter((b: any) => b && b.id && !deletedSet.has(b.id));
+                setBrands(cleanBrands);
+                try { localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(cleanBrands)); } catch {}
               }
               if (Array.isArray(d.expenses) && d.expenses.length > 0) {
                 setExpenses(d.expenses);
@@ -2695,6 +2833,22 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   }, [activeTab, inventorySubTab, settingsSubTab, userMenuSubTab, contactsSubTab, editingProduct, isAddUserModalOpen]);
+
+  // Automatically update browser tab title with current menu/submenu and business name
+  useEffect(() => {
+    const rawBizName = (currentUser?.businessName || settings?.businessName || settings?.name || 'Royal POSfini').trim();
+    const computedTitle = getComputedPageTitle(
+      activeTab,
+      inventorySubTab,
+      settingsSubTab,
+      userMenuSubTab,
+      contactsSubTab,
+      rawBizName
+    );
+    if (typeof document !== 'undefined') {
+      document.title = computedTitle;
+    }
+  }, [activeTab, inventorySubTab, settingsSubTab, userMenuSubTab, contactsSubTab, currentUser?.businessName, settings?.businessName, settings?.name]);
 
   // Listen to browser navigation (back/forward) & URL changes
   useEffect(() => {
@@ -4146,10 +4300,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .filter((c) => c.id !== id)
       .map((c) => (c.parentId === id ? { ...c, parentId: undefined, parentName: undefined } : c));
 
+    let deletedSet = new Set<string>();
+    try {
+      const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_category_ids`) : null;
+      deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+      deletedSet.add(id);
+      localStorage.setItem(`${STORAGE_KEY}_deleted_category_ids`, JSON.stringify(Array.from(deletedSet)));
+    } catch {}
+
     setCategories(updated);
     try {
       localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(updated));
-      triggerImmediateSyncPush({ categories: updated });
+      triggerImmediateSyncPush({
+        categories: updated,
+        deleted_category_ids: Array.from(deletedSet),
+      });
     } catch {}
 
     return {
@@ -4262,10 +4427,21 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const updated = brands.filter((b) => b.id !== id);
+    let deletedSet = new Set<string>();
+    try {
+      const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_brand_ids`) : null;
+      deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+      deletedSet.add(id);
+      localStorage.setItem(`${STORAGE_KEY}_deleted_brand_ids`, JSON.stringify(Array.from(deletedSet)));
+    } catch {}
+
     setBrands(updated);
     try {
       localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(updated));
-      triggerImmediateSyncPush({ brands: updated });
+      triggerImmediateSyncPush({
+        brands: updated,
+        deleted_brand_ids: Array.from(deletedSet),
+      });
     } catch {}
 
     return {
@@ -5016,7 +5192,43 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(`${STORAGE_KEY}_deleted_customer_ids`, JSON.stringify(deletedArr));
       }
     } catch {}
-    showFlashNotification('Customer deleted successfully.', 'info');
+
+    const targetCust = customers.find((c) => c.id === id);
+    if (currentUser && currentUser.role !== 'supreme_admin' && currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+      const activeRoleDef = customRoles.find((r) => r.roleKey === currentUser.role);
+      const shouldNotify = activeRoleDef?.notifyOnDelete !== false;
+      if (shouldNotify) {
+        const adminNotification: NotificationDeliveryLog = {
+          id: `del_cust_alert_${Date.now()}`,
+          templateType: 'admin_deletion_alert',
+          recipientName: 'Supreme / Super Administrator',
+          recipientEmail: 'admin@royalpos.com',
+          channel: 'in_app',
+          subject: `🚨 [SECURITY ALERT] Customer Profile Deleted by ${currentUser.name} (${currentUser.role})`,
+          message: `User ${currentUser.name} (${currentUser.email || currentUser.role}) deleted Customer record "${targetCust?.name || id}" on ${new Date().toLocaleString()}. This action was logged under the Admin Deletion Notification policy.`,
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          metadata: {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userRole: currentUser.role,
+            recordType: 'CUSTOMER',
+            recordId: id,
+            recordName: targetCust?.name,
+            type: 'DELETION_ALERT',
+          },
+        };
+        setNotificationLogs((prev) => [adminNotification, ...prev]);
+        showFlashNotification(
+          `⚠️ Security Notice: Customer "${targetCust?.name || ''}" deleted. Supreme & Super Admin have been alerted.`,
+          'warning'
+        );
+      } else {
+        showFlashNotification('Customer deleted successfully.', 'info');
+      }
+    } else {
+      showFlashNotification('Customer deleted successfully.', 'info');
+    }
   };
 
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'totalPayable' | 'totalPurchases' | 'createdDate'> & { id?: string; contactId?: string }) => {
@@ -6848,7 +7060,43 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(`${STORAGE_KEY}_deleted_transaction_ids`, JSON.stringify(deletedArr));
       }
     } catch {}
-    showFlashNotification(`Sale invoice ${txn.invoiceNo} deleted successfully.`, 'info');
+
+    if (currentUser && currentUser.role !== 'supreme_admin' && currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+      const activeRoleDef = customRoles.find((r) => r.roleKey === currentUser.role);
+      const shouldNotify = activeRoleDef?.notifyOnDelete !== false;
+      if (shouldNotify) {
+        const adminNotification: NotificationDeliveryLog = {
+          id: `del_alert_${Date.now()}`,
+          templateType: 'admin_deletion_alert',
+          recipientName: 'Supreme / Super Administrator',
+          recipientEmail: 'admin@royalpos.com',
+          channel: 'in_app',
+          subject: `🚨 [SECURITY ALERT] Sale Invoice Deleted by ${currentUser.name} (${currentUser.role})`,
+          message: `User ${currentUser.name} (${currentUser.email || currentUser.role}) deleted Sale Invoice ${txn.invoiceNo} (Amount: ${(settings?.currencySymbol || '$')}${txn.totalAmount}) on ${new Date().toLocaleString()}. This action was logged under the Admin Deletion Notification policy.`,
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          metadata: {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userRole: currentUser.role,
+            recordType: 'SALE_INVOICE',
+            recordId: txn.id,
+            recordNo: txn.invoiceNo,
+            amount: txn.totalAmount,
+            type: 'DELETION_ALERT',
+          },
+        };
+        setNotificationLogs((prev) => [adminNotification, ...prev]);
+        showFlashNotification(
+          `⚠️ Security Notice: Sale invoice ${txn.invoiceNo} deleted. Supreme & Super Admin have been alerted.`,
+          'warning'
+        );
+      } else {
+        showFlashNotification(`Sale invoice ${txn.invoiceNo} deleted successfully.`, 'info');
+      }
+    } else {
+      showFlashNotification(`Sale invoice ${txn.invoiceNo} deleted successfully.`, 'info');
+    }
   };
 
   const openAddSalePage = () => {
@@ -7457,59 +7705,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
 
-    if (txn.status === 'received' || isReturn) {
-      const deletedProductIds = (txn.items || []).map((it: any) => it.productId).filter(Boolean);
+    const deletedProductIds = (txn.items || []).map((it: any) => it.productId).filter(Boolean);
+    const deletedProductSkus = (txn.items || []).map((it: any) => it.sku).filter(Boolean);
+    const deletedProductNames = (txn.items || []).map((it: any) => it.productName).filter(Boolean);
 
-      setProducts((prev) => {
-        const updated = prev.map((p) => {
-          const matchingItems = (txn.items || []).filter((i: any) => i.productId === p.id || (p.sku && i.sku === p.sku) || (i.productName && p.name === i.productName));
-          if (matchingItems.length === 0) return p;
-          const totalQty = matchingItems.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-          const targetLocId = txn.locationId || selectedLocationId || locations[0]?.id || 'loc_1';
-
-          const existingLocStocks = { ...(p.locationStocks || {}) };
-          if (Object.keys(existingLocStocks).length === 0) {
-            existingLocStocks[targetLocId] = Number(p.currentStock) || 0;
-          } else if (existingLocStocks[targetLocId] === undefined) {
-            existingLocStocks[targetLocId] = 0;
-          }
-          const currentLoc = existingLocStocks[targetLocId] || 0;
-          const newLoc = isReturn ? currentLoc + totalQty : Math.max(0, currentLoc - totalQty);
-          existingLocStocks[targetLocId] = newLoc;
-
-          const calculatedStock = isReturn
-            ? (Number(p.currentStock) || 0) + totalQty
-            : Math.max(0, (Number(p.currentStock) || 0) - totalQty);
-
-          let updatedLots = p.lots ? [...p.lots] : [];
-          if (txn.lotNumber) {
-            const lotIdx = updatedLots.findIndex((l: any) => l.lotNumber?.toLowerCase() === txn.lotNumber?.toLowerCase());
-            if (lotIdx >= 0) {
-              updatedLots[lotIdx] = {
-                ...updatedLots[lotIdx],
-                currentStock: isReturn ? (Number(updatedLots[lotIdx].currentStock) || 0) + totalQty : Math.max(0, (Number(updatedLots[lotIdx].currentStock) || 0) - totalQty)
-              };
-            }
-          }
-
-          return {
-            ...p,
-            locationStocks: existingLocStocks,
-            currentStock: calculatedStock,
-            lots: updatedLots,
-          };
-        });
-
-        // Clean up direct purchase products with 0 stock
-        return updated.filter((p) => {
-          const pa = p as any;
-          if (deletedProductIds.includes(p.id) && (p.currentStock <= 0 || pa.source === 'purchase' || pa.creationSource === 'direct_purchase' || pa.isDirectPurchase)) {
-            return false;
-          }
-          return true;
-        });
+    setProducts((prev) => {
+      const updated = prev.filter((p) => {
+        const pa = p as any;
+        const isMatched = deletedProductIds.includes(p.id) ||
+          (p.sku && deletedProductSkus.includes(p.sku)) ||
+          (p.name && deletedProductNames.includes(p.name)) ||
+          pa.purchaseId === txn.id;
+        
+        if (isMatched) {
+          return false; // Automatically delete related purchase products from products table
+        }
+        return true;
       });
-    }
+      triggerImmediateSyncPush({ products: updated });
+      return updated;
+    });
 
     setSuppliers((prev) =>
       prev.map((s) => {

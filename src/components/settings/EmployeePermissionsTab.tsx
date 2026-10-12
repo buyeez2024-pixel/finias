@@ -50,9 +50,12 @@ import {
   RefreshCw,
   ArrowLeft,
   ArrowRight,
+  Plus,
+  Sliders,
 } from 'lucide-react';
 import { UserDetailsModal } from '../users/UserDetailsModal';
 import { UserRolePermissionsModal, CustomRoleDefinition } from '../users/UserRolePermissionsModal';
+import { RoleBuilderModal } from '../users/RoleBuilderModal';
 
 interface ModuleMeta {
   id: ErpModuleId;
@@ -268,7 +271,20 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
   const [userToManageRole, setUserToManageRole] = useState<User | null>(null);
   const [userToLock, setUserToLock] = useState<User | null>(null);
 
-  // Custom Roles Handlers delegating to central ErpContext
+  const [isRoleBuilderOpenInTab, setIsRoleBuilderOpenInTab] = useState(false);
+  const [roleToBuildInTab, setRoleToBuildInTab] = useState<CustomRoleDefinition | null>(null);
+
+  const handleSaveBuiltRoleInTab = (role: CustomRoleDefinition) => {
+    if ((customRoles || []).some((r) => r.id === role.id || r.roleKey === role.roleKey)) {
+      updateCustomRole(role);
+      showToast(`Updated custom role "${role.title}".`);
+    } else {
+      addCustomRole(role);
+      showToast(`Created custom role "${role.title}".`);
+    }
+    setSelectedRole(role.roleKey as any);
+  };
+
   const handleAddCustomRole = (newRole: CustomRoleDefinition) => {
     addCustomRole(newRole);
     showToast(`Created custom role "${newRole.title}".`);
@@ -825,8 +841,20 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
+              type="button"
+              onClick={() => {
+                setRoleToBuildInTab(null);
+                setIsRoleBuilderOpenInTab(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Create Role in Role Builder</span>
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 resetRolePermissions();
                 showToast(`Reset permissions for all roles to default system matrix.`);
@@ -890,19 +918,50 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
             </p>
           </div>
 
-          {(selectedRole === 'supreme_admin') && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold shrink-0">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Supreme Master Access Granted</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedRole !== 'supreme_admin' && (selectedRole !== 'admin' || currentUser?.role === 'supreme_admin') && (
+              <button
+                type="button"
+                onClick={() => {
+                  const foundDef = (customRoles || []).find((c) => c.roleKey === selectedRole);
+                  if (foundDef) {
+                    setRoleToBuildInTab(foundDef);
+                  } else {
+                    setRoleToBuildInTab({
+                      id: `role_${selectedRole}`,
+                      roleKey: selectedRole as string,
+                      title: selectedRoleMeta.title,
+                      tier: selectedRoleMeta.tier,
+                      badgeColor: selectedRoleMeta.badgeColor,
+                      description: selectedRoleMeta.description,
+                      allowedModules: allowedModules,
+                      isCustom: true,
+                    });
+                  }
+                  setIsRoleBuilderOpenInTab(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 active:scale-95 cursor-pointer"
+                title="Configure this role using the visual Role Builder"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Configure in Role Builder</span>
+              </button>
+            )}
 
-          {(selectedRole === 'admin' && currentUser?.role !== 'supreme_admin') && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold shrink-0">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Super Admin Permissions Locked (Editable only by Supreme Admin)</span>
-            </div>
-          )}
+            {(selectedRole === 'supreme_admin') && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Supreme Master Access Granted</span>
+              </div>
+            )}
+
+            {(selectedRole === 'admin' && currentUser?.role !== 'supreme_admin') && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Super Admin Locked (Supreme Admin Only)</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Module Access Assignment Grid */}
@@ -1452,6 +1511,27 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                       >
                         <Shield className="w-3.5 h-3.5" />
                         <span>Manage Role</span>
+                      </button>
+                    )}
+
+                    {!isCurrent && user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'supreme_admin' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete staff account for ${user.name}?`)) {
+                            deleteUser(user.id);
+                            showToast(`Deleted staff account ${user.name}.`);
+                          }
+                        }}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                          isLight
+                            ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 shadow-2xs'
+                            : 'bg-rose-950/60 text-rose-300 border-rose-800 hover:bg-rose-900/80'
+                        }`}
+                        title="Delete staff account"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
                       </button>
                     )}
                   </div>
@@ -3195,6 +3275,17 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
           onAddCustomRole={handleAddCustomRole}
           onUpdateCustomRole={handleUpdateCustomRole}
           onDeleteCustomRole={handleDeleteCustomRole}
+        />
+      )}
+
+      {/* Role Builder & Permissions Engine Modal */}
+      {isRoleBuilderOpenInTab && (
+        <RoleBuilderModal
+          isOpen={isRoleBuilderOpenInTab}
+          onClose={() => setIsRoleBuilderOpenInTab(false)}
+          roleToEdit={roleToBuildInTab}
+          onSaveRole={handleSaveBuiltRoleInTab}
+          onToast={showToast}
         />
       )}
 

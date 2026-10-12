@@ -42,6 +42,7 @@ import {
   RefreshCw,
   UserCog,
 } from 'lucide-react';
+import { RoleBuilderModal } from './RoleBuilderModal';
 
 export interface CustomRoleDefinition {
   id: string;
@@ -276,6 +277,22 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
   const [newRoleDesc, setNewRoleDesc] = useState('');
   const [newRoleModules, setNewRoleModules] = useState<ErpModuleId[]>(['pos', 'sales', 'contacts']);
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+
+  const [isRoleBuilderOpen, setIsRoleBuilderOpen] = useState(false);
+  const [roleToBuild, setRoleToBuild] = useState<CustomRoleDefinition | null>(null);
+
+  const handleSaveBuiltRole = (role: CustomRoleDefinition) => {
+    if (activeCustomRoles.some((r) => r.id === role.id || r.roleKey === role.roleKey)) {
+      if (onUpdateCustomRole) onUpdateCustomRole(role);
+      else updateCustomRole(role);
+    } else {
+      if (onAddCustomRole) onAddCustomRole(role);
+      else addCustomRole(role);
+    }
+    setSelectedRole(role.roleKey as any);
+    setUserAllowedModules(role.allowedModules);
+    onToast?.(`Configured & assigned role "${role.title}" to ${user?.name || 'user'}!`);
+  };
 
   const activeCustomRoles = propsCustomRoles.length > 0 ? propsCustomRoles : ctxCustomRoles;
 
@@ -630,14 +647,13 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                 <button
                   type="button"
                   onClick={() => {
-                    setEditingRoleId(null);
-                    setNewRoleTitle('');
-                    setActiveSubTab('create_role');
+                    setRoleToBuild(null);
+                    setIsRoleBuilderOpen(true);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/40 text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto"
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 text-xs font-black flex items-center gap-1.5 transition self-start sm:self-auto cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Create Custom Role</span>
+                  <span>+ Open Role Builder</span>
                 </button>
               </div>
 
@@ -694,16 +710,17 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                startEditCustomRole({
+                                setRoleToBuild({
                                   ...r,
-                                  id: '',
+                                  id: `role_${r.roleKey}_custom`,
                                   title: `${r.title} (Custom)`,
                                   description: r.description,
                                   isCustom: true,
                                 });
+                                setIsRoleBuilderOpen(true);
                               }}
-                              className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 text-[10px] font-bold"
-                              title="Customize this role template"
+                              className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white transition flex items-center gap-1 text-[10px] font-bold"
+                              title="Customize this role template in Role Builder"
                             >
                               <Edit2 className="w-2.5 h-2.5" />
                               <span>Customize</span>
@@ -714,10 +731,11 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                startEditCustomRole(r);
+                                setRoleToBuild(r);
+                                setIsRoleBuilderOpen(true);
                               }}
                               className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-                              title="Edit role template"
+                              title="Edit role in Role Builder"
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
@@ -1407,6 +1425,17 @@ export const UserRolePermissionsModal: React.FC<UserRolePermissionsModalProps> =
           </div>
         </div>
       </div>
+
+      {/* Visual Role Builder Engine Modal */}
+      {isRoleBuilderOpen && (
+        <RoleBuilderModal
+          isOpen={isRoleBuilderOpen}
+          onClose={() => setIsRoleBuilderOpen(false)}
+          roleToEdit={roleToBuild}
+          onSaveRole={handleSaveBuiltRole}
+          onToast={onToast}
+        />
+      )}
     </div>
   );
 };

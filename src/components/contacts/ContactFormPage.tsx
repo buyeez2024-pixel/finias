@@ -233,7 +233,15 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
   // Financial Fields
   const [openingBalance, setOpeningBalance] = useState(editingContact?.openingBalance?.toString() || '0');
   const [advanceBalance, setAdvanceBalance] = useState(editingContact?.advanceBalance?.toString() || '0');
-  const [creditLimit, setCreditLimit] = useState((editingContact as any)?.creditLimit?.toString() || '1000.00');
+  const [isUnlimitedCredit, setIsUnlimitedCredit] = useState<boolean>(() => {
+    const rawLimit = (editingContact as any)?.creditLimit;
+    return (editingContact as any)?.isUnlimitedCredit === true || rawLimit === null || rawLimit === -1;
+  });
+  const [creditLimit, setCreditLimit] = useState(() => {
+    const rawLimit = (editingContact as any)?.creditLimit;
+    if (rawLimit === null || rawLimit === -1 || (editingContact as any)?.isUnlimitedCredit) return '';
+    return rawLimit !== undefined ? rawLimit.toString() : '1000.00';
+  });
   const [payTerm, setPayTerm] = useState(editingContact?.payTerm || 'Due on Receipt');
 
   // Address Details
@@ -399,7 +407,10 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
         setTaxNumber(getCleanFieldValue((editingContact as any)?.taxNumber));
         setOpeningBalance((editingContact as any)?.openingBalance?.toString() || '0');
         setAdvanceBalance((editingContact as any)?.advanceBalance?.toString() || '0');
-        setCreditLimit((editingContact as any)?.creditLimit?.toString() || '1000.00');
+        const rawLim = (editingContact as any)?.creditLimit;
+        const isUnlim = (editingContact as any)?.isUnlimitedCredit === true || rawLim === null || rawLim === -1;
+        setIsUnlimitedCredit(isUnlim);
+        setCreditLimit(isUnlim ? '' : (rawLim !== undefined ? rawLim.toString() : '1000.00'));
         setPayTerm((editingContact as any)?.payTerm || 'Due on Receipt');
         setAddress(getCleanFieldValue((editingContact as any)?.address));
         setCity(getCleanFieldValue((editingContact as any)?.city));
@@ -552,7 +563,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
     try {
       const parsedOpeningBal = parseFloat(openingBalance) || 0;
       const parsedAdvanceBal = parseFloat(advanceBalance) || 0;
-      const parsedCreditLimit = parseFloat(creditLimit) || 0;
+      const parsedCreditLimit = isUnlimitedCredit ? null : (parseFloat(creditLimit) || 0);
 
       const selectedGrp = customerGroups.find((g) => g.id === customerGroupId);
       const groupName = selectedGrp ? selectedGrp.name : '';
@@ -601,6 +612,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             customerGroup: groupName || undefined,
             customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
+            isUnlimitedCredit: isUnlimitedCredit,
           };
           const targetCustId = matchedCustId || (customers.some(c => c.id === contactId) ? contactId : undefined);
           if (targetCustId) {
@@ -630,6 +642,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
             customerGroup: groupName || undefined,
             customerGroupId: finalGroupId,
             creditLimit: parsedCreditLimit,
+            isUnlimitedCredit: isUnlimitedCredit,
             id: contactId
           };
           savedObj = addCustomer(customerData);
@@ -1050,20 +1063,13 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                 <span className="flex items-center gap-1">
                   <Receipt className="w-3.5 h-3.5 text-slate-400" />
                   <span>GST / TAX Number</span>
-                  {(contactType === 'supplier' || contactType === 'both') && (
-                    <span className="text-rose-500 font-bold">*</span>
-                  )}
                 </span>
-                {(contactType === 'supplier' || contactType === 'both') ? (
-                  <span className="text-[10px] text-rose-500 font-bold">Required for Supplier</span>
-                ) : (
-                  <span className="text-[10px] text-slate-400 font-normal">Optional</span>
-                )}
+                <span className="text-[10px] text-slate-400 font-normal">Optional</span>
               </label>
               <input
                 type="text"
                 id="input-customer-tax"
-                required={contactType === 'supplier' || contactType === 'both'}
+                required={false}
                 value={taxNumber}
                 onChange={(e) => {
                   const val = e.target.value.toUpperCase();
@@ -1108,7 +1114,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
                     }
                   }
                 }}
-                placeholder="e.g. GSTIN27AABCU9603R1ZM"
+                placeholder="e.g. GSTIN27AABCU9603R1ZM (Optional)"
                 className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none transition uppercase font-mono ${
                   fieldErrors.taxNumber
                     ? 'border-red-500 ring-1 ring-red-500/20'
@@ -1119,9 +1125,7 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               />
               <FormFieldError error={fieldErrors.taxNumber} />
               <p className="text-[10px] text-slate-400 mt-1">
-                {(contactType === 'supplier' || contactType === 'both')
-                  ? 'Mandatory unique government tax & GST registration identifier for suppliers'
-                  : 'Unique tax identifier for B2B company contact invoice generation'}
+                Optional government tax / GST registration number for tax invoices. Leave empty if vendor or shopkeeper does not have GST.
               </p>
             </div>
 
@@ -1202,31 +1206,64 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
 
             {/* Credit Limit */}
             <div>
-              <label className={`block text-xs font-semibold mb-1.5 flex items-center justify-between ${
-                isLight ? 'text-slate-700' : 'text-slate-300'
-              }`}>
-                <span>Credit Limit ({currencySymbol})</span>
-                <span className="text-[10px] text-indigo-500 font-bold">Max Ceiling</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                id="input-customer-credit-limit"
-                value={creditLimit}
-                onChange={(e) => {
-                  setCreditLimit(e.target.value);
-                  if (fieldErrors.creditLimit) setFieldErrors(prev => ({ ...prev, creditLimit: '' }));
-                }}
-                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
-                  fieldErrors.creditLimit
-                    ? 'border-red-500 ring-1 ring-red-500/20'
-                    : isLight
-                    ? 'bg-slate-50 border-slate-300 text-slate-900'
-                    : 'bg-slate-950 border-slate-700/80 text-slate-100'
-                }`}
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className={`text-xs font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  <span>Credit Limit ({currencySymbol})</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsUnlimitedCredit(!isUnlimitedCredit)}
+                  className="hidden md:flex items-center gap-1.5 px-2.5 py-2 text-xs font-semibold rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 cursor-pointer"
+                  title="Toggle between specific credit amount and unlimited credit"
+                >
+                  <span className="text-xs">∞</span>
+                  <span>{isUnlimitedCredit ? 'No Limit (Unlimited)' : 'Set No Limit'}</span>
+                </button>
+              </div>
+
+              {isUnlimitedCredit ? (
+                <div className={`w-full text-xs px-3.5 py-2.5 rounded-xl border flex items-center justify-between ${
+                  isLight ? 'bg-emerald-50/80 border-emerald-300 text-emerald-800' : 'bg-emerald-950/40 border-emerald-700 text-emerald-300'
+                }`}>
+                  <span className="font-extrabold flex items-center gap-1.5">
+                    <span className="text-base font-mono">∞</span>
+                    <span>No Limit (Unlimited Credit Ceiling)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsUnlimitedCredit(false)}
+                    className="text-[10px] underline font-bold hover:text-emerald-500 cursor-pointer"
+                  >
+                    Set numeric limit
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  id="input-customer-credit-limit"
+                  placeholder="e.g. 5000.00"
+                  value={creditLimit}
+                  onChange={(e) => {
+                    setCreditLimit(e.target.value);
+                    if (fieldErrors.creditLimit) setFieldErrors(prev => ({ ...prev, creditLimit: '' }));
+                  }}
+                  className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:border-indigo-500 focus:outline-none font-mono ${
+                    fieldErrors.creditLimit
+                      ? 'border-red-500 ring-1 ring-red-500/20'
+                      : isLight
+                      ? 'bg-slate-50 border-slate-300 text-slate-900'
+                      : 'bg-slate-950 border-slate-700/80 text-slate-100'
+                  }`}
+                />
+              )}
               <FormFieldError error={fieldErrors.creditLimit} />
-              <p className="text-[10px] text-slate-400 mt-1">Maximum allowed credit for deferred orders</p>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {isUnlimitedCredit
+                  ? 'This customer can place deferred credit orders without any credit limit blockage.'
+                  : 'Maximum allowed credit for deferred orders. Click "Set No Limit" for unlimited credit.'}
+              </p>
             </div>
           </div>
 
@@ -1271,8 +1308,8 @@ export const ContactFormPage: React.FC<ContactFormPageProps> = ({
               </div>
               <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 sm:bg-transparent sm:border-0 sm:border-l sm:border-slate-200 sm:dark:border-slate-800">
                 <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Credit Limit</span>
-                <span className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">
-                  {formatCurrency(parseFloat(creditLimit || '0'), settings)}
+                <span className={`text-sm font-bold font-mono ${isUnlimitedCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                  {isUnlimitedCredit ? '∞ No Limit' : formatCurrency(parseFloat(creditLimit || '0'), settings)}
                 </span>
               </div>
             </div>

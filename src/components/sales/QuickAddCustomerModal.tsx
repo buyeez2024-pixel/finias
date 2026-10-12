@@ -41,6 +41,7 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
   const [countryCode, setCountryCode] = useState('+1');
   const [email, setEmail] = useState('');
   const [customerGroupId, setCustomerGroupId] = useState('');
+  const [isUnlimitedCredit, setIsUnlimitedCredit] = useState(false);
   const [creditLimit, setCreditLimit] = useState('5000');
   const [openingBalance, setOpeningBalance] = useState('0');
   const [address, setAddress] = useState('');
@@ -62,7 +63,8 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
       email: email.trim().toUpperCase() === 'N/A' ? undefined : email,
       taxNumber,
       openingBalance,
-      creditLimit,
+      creditLimit: isUnlimitedCredit ? undefined : creditLimit,
+      isUnlimitedCredit,
       city,
       addressLine1: address,
     });
@@ -153,7 +155,8 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
         email: email.trim() && email.trim().toUpperCase() !== 'N/A' ? email.trim() : undefined,
         customerGroupId: customerGroupId || undefined,
         customerGroup: selectedGroup ? selectedGroup.name : 'Standard Retail',
-        creditLimit: parseFloat(creditLimit) || 5000,
+        creditLimit: isUnlimitedCredit ? null : (parseFloat(creditLimit) || 5000),
+        isUnlimitedCredit,
         openingBalance: parseFloat(openingBalance) || 0,
         address: address.trim() || undefined,
         city: city.trim() || undefined,
@@ -329,18 +332,49 @@ export const QuickAddCustomerModal: React.FC<QuickAddCustomerModalProps> = ({
 
             {/* Credit Limit */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-                Credit Limit ({settings?.currencySymbol || '$'})
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="50"
-                value={creditLimit}
-                onChange={(e) => setCreditLimit(e.target.value)}
-                className="w-full bg-slate-950 text-emerald-400 font-mono font-bold px-4 py-3 rounded-xl border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-xs"
-              />
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                  Credit Limit ({settings?.currencySymbol || '$'})
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsUnlimitedCredit(!isUnlimitedCredit)}
+                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
+                    isUnlimitedCredit
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                  }`}
+                >
+                  <span>∞</span>
+                  <span>{isUnlimitedCredit ? 'No Limit' : 'Set No Limit'}</span>
+                </button>
+              </div>
+
+              {isUnlimitedCredit ? (
+                <div className="w-full bg-emerald-950/40 text-emerald-300 font-bold px-4 py-2.5 rounded-xl border border-emerald-800 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-base font-mono">∞</span>
+                    <span>No Limit (Unlimited Credit)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsUnlimitedCredit(false)}
+                    className="text-[10px] underline hover:text-emerald-400 cursor-pointer"
+                  >
+                    Set Number
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={creditLimit}
+                  onChange={(e) => setCreditLimit(e.target.value)}
+                  className="w-full bg-slate-950 text-emerald-400 font-mono font-bold px-4 py-3 rounded-xl border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-xs"
+                />
+              )}
             </div>
 
             {/* Opening Balance */}

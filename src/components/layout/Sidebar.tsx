@@ -91,6 +91,7 @@ export const Sidebar: React.FC = () => {
     users = [],
     hasModuleAccess = () => true,
     settings = {},
+    customRoles = [],
     isMobileSidebarOpen = false,
     setIsMobileSidebarOpen = () => {},
   } = useErp() || {};
@@ -680,6 +681,19 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
+  const visibleReportsSubItems = useMemo(() => {
+    if (!currentUser || isUserAdmin(currentUser)) return reportsSubItems;
+    const roleDef = customRoles.find((r: any) => r.roleKey === currentUser.role);
+    if (roleDef?.allowedReports && Array.isArray(roleDef.allowedReports) && roleDef.allowedReports.length > 0) {
+      return reportsSubItems.filter((item) => roleDef.allowedReports.includes(item.id));
+    }
+    // Fallback: if role is cashier and allowedReports not explicitly saved, only grant stock_report
+    if (currentUser.role === 'cashier') {
+      return reportsSubItems.filter((item) => item.id === 'stock_report');
+    }
+    return reportsSubItems;
+  }, [reportsSubItems, currentUser, customRoles]);
+
   const configurationSubItems: SubItemMeta[] = [
     {
       id: 'locations',
@@ -976,11 +990,11 @@ export const Sidebar: React.FC = () => {
           iconBg: 'bg-teal-500/10 border-teal-500/20',
         },
         {
-          id: 'reports',
-          label: 'Reports',
+          id: visibleReportsSubItems.length === 1 ? visibleReportsSubItems[0].id : 'reports',
+          label: visibleReportsSubItems.length === 1 ? visibleReportsSubItems[0].label : 'Reports',
           icon: BarChart3,
-          isExpandable: true,
-          subItems: reportsSubItems,
+          isExpandable: visibleReportsSubItems.length > 1,
+          subItems: visibleReportsSubItems,
           iconColor: 'text-amber-400',
           iconBg: 'bg-amber-500/10 border-amber-500/20',
         },
@@ -1139,13 +1153,9 @@ export const Sidebar: React.FC = () => {
     return `${iconBg} ${iconColor}`;
   };
 
-  const isLight =
-    settings?.themeMode === 'light' ||
-    (!settings?.themeMode &&
-      typeof document !== 'undefined' &&
-      !document.documentElement.classList.contains('dark')) ||
-    (typeof document !== 'undefined' &&
-      !document.documentElement.classList.contains('dark'));
+  // Determine whether light mode is active.
+  // Prioritizes settings.themeMode explicitly ('light' vs 'dark') so dark mode takes effect instantly with zero flicker or latency.
+  const isLight = settings?.themeMode === 'light';
 
   const sidebarContent = (
     <>
@@ -1186,7 +1196,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Main Navigation Container */}
-      <div className={`flex-1 overflow-y-auto no-scrollbar p-2 space-y-2.5 min-h-0 ${isLight ? 'bg-white' : ''}`}>
+      <div className={`sidebar-nav-scroll-area flex-1 overflow-y-auto no-scrollbar p-2 space-y-2.5 min-h-0 ${isLight ? 'bg-white' : ''}`}>
         {/* If searching, render instant search results */}
         {searchQuery ? (
           <div className="space-y-1">
