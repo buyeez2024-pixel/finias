@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { getGeminiClient } from "./server/gemini";
 import helmet from "helmet";
@@ -10,10 +9,8 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import cors from "cors";
 
-// Cross-module directory resolver safe in both ESM (tsx dev server) and CJS (dist/server.cjs)
-const baseDir = typeof __dirname !== "undefined"
-  ? __dirname
-  : path.dirname(fileURLToPath(import.meta.url));
+// Cross-module directory resolver safe in Node.js CommonJS and tsx dev server
+const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
 // Auto-load environment variables from all standard production / local locations:
 // 1. Current working directory (.env or env.config)
