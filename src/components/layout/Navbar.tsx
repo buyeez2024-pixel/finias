@@ -186,7 +186,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Action Icons & Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Quick Calculator Tool - Enabled when POS is active on tablets/desktops */}
           {(() => {
             const isPosActive = activeTab === 'pos';
@@ -274,12 +274,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* System Documentation / User Manual */}
+          {/* System Documentation / User Manual - hidden on mobile portrait to prevent underlapping */}
           <button
             id="nav-documentation-btn"
             type="button"
             onClick={() => setActiveTab('documentation')}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition active:scale-95 shrink-0 cursor-pointer ${
+            className={`hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition active:scale-95 shrink-0 cursor-pointer ${
               activeTab === 'documentation'
                 ? 'bg-sky-600 text-white border-sky-500 shadow-md shadow-sky-600/30'
                 : isLight
@@ -298,7 +298,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="nav-theme-toggle-btn"
             type="button"
             onClick={() => updateSettings({ themeMode: isLight ? 'dark' : 'light' })}
-            className={`p-2 sm:px-2.5 sm:py-2 rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer flex items-center gap-1.5 ${
+            className={`p-1.5 sm:px-2.5 sm:py-2 rounded-xl border transition active:scale-95 active:opacity-80 shrink-0 cursor-pointer flex items-center gap-1.5 ${
               isLight
                 ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 shadow-amber-100/20'
                 : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border-slate-700'
@@ -329,7 +329,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
               className={`relative transition active:scale-95 active:opacity-80 cursor-pointer ${
                 isLight
-                  ? 'px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
+                  ? 'p-2 sm:px-3.5 sm:py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-indigo-100/20 rounded-xl text-xs font-bold flex items-center gap-1.5'
                   : 'p-2 rounded-xl border bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 shadow-2xs flex items-center justify-center'
               }`}
               title={
