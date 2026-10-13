@@ -726,6 +726,28 @@ if ($action === 'pull' || $method === 'GET') {
                             }
                         }
 
+                        // Filter out any items that are present in deleted_*_ids stored in sync_store
+                        $delStoreKeyMap = [
+                            'products' => 'deleted_product_ids',
+                            'customers' => 'deleted_customer_ids',
+                            'suppliers' => 'deleted_supplier_ids',
+                            'transactions' => 'deleted_transaction_ids',
+                            'categories' => 'deleted_category_ids',
+                            'brands' => 'deleted_brand_ids',
+                            'customer_groups' => 'deleted_customer_group_ids',
+                        ];
+                        if (isset($delStoreKeyMap[$key]) && isset($data[$delStoreKeyMap[$key]])) {
+                            $delArr = $data[$delStoreKeyMap[$key]];
+                            if (is_string($delArr)) $delArr = json_decode($delArr, true) ?: [];
+                            if (is_array($delArr) && count($delArr) > 0) {
+                                $delSet = array_flip(array_map('strval', $delArr));
+                                $items = array_values(array_filter($items, function($item) use ($delSet) {
+                                    $itemId = (string)($item['id'] ?? '');
+                                    return !isset($delSet[$itemId]);
+                                }));
+                            }
+                        }
+
                         $data[$key] = $items;
                     } else {
                         // Crucial fix: Table exists in MySQL and has 0 rows (e.g. emptied in phpMyAdmin or deleted in UI)

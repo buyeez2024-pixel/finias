@@ -2416,9 +2416,26 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   return merged;
                 });
               }
-              if (Array.isArray(d.customers) && d.customers.length > 0) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_customer_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+              const mergeDeletedIds = (key: string, remoteArr: any[]) => {
+                try {
+                  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_${key}`) : null;
+                  const localArr = saved ? JSON.parse(saved) : [];
+                  const merged = Array.from(new Set([...(Array.isArray(localArr) ? localArr : []), ...(Array.isArray(remoteArr) ? remoteArr : [])]));
+                  localStorage.setItem(`${STORAGE_KEY}_${key}`, JSON.stringify(merged));
+                  return merged;
+                } catch { return remoteArr || []; }
+              };
+
+              const delCust = mergeDeletedIds('deleted_customer_ids', d.deleted_customer_ids);
+              const delProd = mergeDeletedIds('deleted_product_ids', d.deleted_product_ids);
+              const delTxn = mergeDeletedIds('deleted_transaction_ids', d.deleted_transaction_ids);
+              const delGroup = mergeDeletedIds('deleted_customer_group_ids', d.deleted_customer_group_ids);
+              const delSupp = mergeDeletedIds('deleted_supplier_ids', d.deleted_supplier_ids);
+              const delCat = mergeDeletedIds('deleted_category_ids', d.deleted_category_ids);
+              const delBrand = mergeDeletedIds('deleted_brand_ids', d.deleted_brand_ids);
+
+              if (Array.isArray(d.customers)) {
+                const deletedSet = new Set(delCust);
                 const hasRealCust = d.customers.some((c: any) => !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id));
                 let cleanCustomers = hasRealCust
                   ? d.customers.filter((c: any) => c && c.id && !deletedSet.has(c.id) && !['cust_prime', 'cust_vip', 'cust_global'].includes(c.id))
@@ -2450,43 +2467,37 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 try { localStorage.setItem(`${STORAGE_KEY}_customers`, JSON.stringify(cleanCustomers)); } catch {}
               }
               if (Array.isArray(d.products)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_product_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delProd);
                 const cleanProducts = d.products.filter((p: any) => p && p.id && !deletedSet.has(p.id));
                 setProducts(cleanProducts);
                 try { localStorage.setItem(`${STORAGE_KEY}_products`, JSON.stringify(cleanProducts)); } catch {}
               }
               if (Array.isArray(d.transactions)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_transaction_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delTxn);
                 const cleanTxns = d.transactions.filter((t: any) => t && t.id && !deletedSet.has(t.id));
                 setTransactions(cleanTxns);
                 try { localStorage.setItem(`${STORAGE_KEY}_transactions`, JSON.stringify(cleanTxns)); } catch {}
               }
               if (Array.isArray(d.customer_groups)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_customer_group_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delGroup);
                 const cleanGroups = d.customer_groups.filter((g: any) => g && g.id && !deletedSet.has(g.id));
                 setCustomerGroups(cleanGroups);
                 try { localStorage.setItem(`${STORAGE_KEY}_customer_groups`, JSON.stringify(cleanGroups)); } catch {}
               }
               if (Array.isArray(d.suppliers)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_supplier_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delSupp);
                 const cleanSuppliers = d.suppliers.filter((s: any) => s && s.id && !deletedSet.has(s.id));
                 setSuppliers(cleanSuppliers);
                 try { localStorage.setItem(`${STORAGE_KEY}_suppliers`, JSON.stringify(cleanSuppliers)); } catch {}
               }
               if (Array.isArray(d.categories)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_category_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delCat);
                 const cleanCategories = d.categories.filter((c: any) => c && c.id && !deletedSet.has(c.id));
                 setCategories(cleanCategories);
                 try { localStorage.setItem(`${STORAGE_KEY}_categories`, JSON.stringify(cleanCategories)); } catch {}
               }
               if (Array.isArray(d.brands)) {
-                const savedDeleted = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_deleted_brand_ids`) : null;
-                const deletedSet = new Set(savedDeleted ? JSON.parse(savedDeleted) : []);
+                const deletedSet = new Set(delBrand);
                 const cleanBrands = d.brands.filter((b: any) => b && b.id && !deletedSet.has(b.id));
                 setBrands(cleanBrands);
                 try { localStorage.setItem(`${STORAGE_KEY}_brands`, JSON.stringify(cleanBrands)); } catch {}
@@ -4936,16 +4947,45 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const triggerImmediateSyncPush = (customUpdates?: Record<string, any>) => {
     try {
+      const getStoredDeleted = (key: string) => {
+        try {
+          const val = typeof localStorage !== 'undefined' ? localStorage.getItem(`${STORAGE_KEY}_${key}`) : null;
+          return val ? JSON.parse(val) : [];
+        } catch { return []; }
+      };
+
+      const deleted_product_ids = getStoredDeleted('deleted_product_ids');
+      const deleted_customer_ids = getStoredDeleted('deleted_customer_ids');
+      const deleted_supplier_ids = getStoredDeleted('deleted_supplier_ids');
+      const deleted_transaction_ids = getStoredDeleted('deleted_transaction_ids');
+      const deleted_category_ids = getStoredDeleted('deleted_category_ids');
+      const deleted_brand_ids = getStoredDeleted('deleted_brand_ids');
+      const deleted_customer_group_ids = getStoredDeleted('deleted_customer_group_ids');
+
+      const payload = customUpdates || {
+        customers,
+        suppliers,
+        products,
+        transactions,
+        users,
+        categories,
+        brands,
+        customerGroups,
+      };
+
       fetch(getApiUrl('api/sync.php?action=push'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          updates: customUpdates || {
-            customers,
-            suppliers,
-            products,
-            transactions,
-            users,
+          updates: {
+            ...payload,
+            deleted_product_ids,
+            deleted_customer_ids,
+            deleted_supplier_ids,
+            deleted_transaction_ids,
+            deleted_category_ids,
+            deleted_brand_ids,
+            deleted_customer_group_ids,
           },
         }),
       }).catch(() => {});
