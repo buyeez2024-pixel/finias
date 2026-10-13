@@ -8511,6 +8511,22 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanQueryNoSpaces = cleanQuery.replace(/\s+/g, '');
     const cleanDigits = cleanQuery.replace(/\D/g, '');
 
+    // Force live pull from server database sync to ensure fresh credentials across devices and browsers
+    try {
+      const syncRes = await fetch(getApiUrl('api/sync.php?action=pull&t=' + Date.now()), {
+        headers: { Accept: 'application/json' },
+      });
+      if (syncRes.ok) {
+        const syncData = await syncRes.json();
+        if (syncData.success && syncData.data && Array.isArray(syncData.data.users) && syncData.data.users.length > 0) {
+          setUsers(syncData.data.users);
+          try {
+            localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(syncData.data.users));
+          } catch {}
+        }
+      }
+    } catch {}
+
     // Universal user matcher function across email, username, phone, name, and admin aliases
     const matchUserRecord = (u: any): boolean => {
       if (!u) return false;
@@ -9742,6 +9758,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {
         console.warn('Failed to update users in localStorage:', e);
       }
+      triggerImmediateSyncPush({ users: updatedList });
       return updatedList;
     });
   };
@@ -10512,6 +10529,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updatedAdmin));
     localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(updatedAdmin));
     localStorage.setItem('royal_pos_v1_users', JSON.stringify(dedupedList));
+    triggerImmediateSyncPush({ users: dedupedList });
     return updatedAdmin;
   };
 
