@@ -167,7 +167,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         phone: formData.phone.trim(),
         address: formData.address.trim(),
         avatar: formData.avatar,
-        username: formData.username.trim(),
+        username: currentUser.username,
         language: formData.language,
       });
       showFlashNotification('Your profile details updated successfully!', 'success');
@@ -405,29 +405,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
                   <div>
                     <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                      Username
+                      Username (Immutable)
                     </label>
                     <input
                       type="text"
                       value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className={`w-full rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none transition-all ${
-                        formErrors.username ? 'border-rose-500 ring-1 ring-rose-500/20' : ''
-                      } ${
+                      disabled
+                      readOnly
+                      className={`w-full rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none opacity-75 cursor-not-allowed ${
                         isLight
-                          ? 'bg-slate-50 border border-slate-200 text-slate-800 focus:bg-white focus:border-indigo-500'
-                          : 'bg-slate-950 border border-slate-850 text-white focus:border-indigo-500'
+                          ? 'bg-slate-100 border border-slate-200 text-slate-500'
+                          : 'bg-slate-900 border border-slate-800 text-slate-400'
                       }`}
-                      placeholder="e.g. janedoe_staff#2026"
+                      placeholder="Username"
                     />
                     <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      Minimum 8 characters containing alphanumeric characters and special characters (@, _, ., -, #, !, $)
+                      Username cannot be changed from profile. Only password can be updated in Access & Security.
                     </p>
-                    {formErrors.username && (
-                      <p className="text-[11px] text-rose-400 mt-1 font-semibold flex items-center gap-1">
-                        <span>{formErrors.username}</span>
-                      </p>
-                    )}
                   </div>
                 </div>
 

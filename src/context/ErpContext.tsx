@@ -9715,8 +9715,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error(`User Phone Error: ${phoneVal.error}`);
       }
     }
-    setUsers((prev) =>
-      prev.map((u) => {
+    setUsers((prev) => {
+      const updatedList = prev.map((u) => {
         if (u.id !== id) return u;
         const finalRole = userData.role !== undefined ? userData.role : u.role;
         const finalStatus = (finalRole === 'supreme_admin' || u.role === 'supreme_admin')
@@ -9727,8 +9727,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCurrentUser(updated);
         }
         return updated;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(updatedList));
+        localStorage.setItem('royal_pos_v1_users', JSON.stringify(updatedList));
+        const targetUsr = updatedList.find(u => u.id === id);
+        if (targetUsr) {
+          if (currentUser?.id === id || targetUsr.role === 'supreme_admin' || targetUsr.id === 'usr_admin') {
+            localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(targetUsr));
+            localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(targetUsr));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to update users in localStorage:', e);
+      }
+      return updatedList;
+    });
   };
 
   const deleteUser = (id: string) => {
