@@ -82,6 +82,19 @@ export const PurchaseFormPage: React.FC = () => {
   const [shippingAddress, setShippingAddress] = useState(purchaseToUse?.shippingAddress || '');
   const [paymentNote, setPaymentNote] = useState('');
   const [paidAmountInput, setPaidAmountInput] = useState<string>('');
+  const [paidOn, setPaidOn] = useState(() => {
+    const existingDate = purchaseToUse?.paymentEntries?.[0]?.date;
+    if (existingDate) {
+      return existingDate.replace(' ', 'T');
+    }
+    return new Date().toISOString().slice(0, 16);
+  });
+
+  React.useEffect(() => {
+    if (purchaseToUse?.paymentEntries?.[0]?.date) {
+      setPaidOn(purchaseToUse.paymentEntries[0].date.replace(' ', 'T'));
+    }
+  }, [purchaseToUse]);
   
   // Additional Expenses State
   const [additionalExpenses, setAdditionalExpenses] = useState<{ name: string; amount: string }[]>([]);
@@ -508,7 +521,7 @@ export const PurchaseFormPage: React.FC = () => {
           id: `pay_${Date.now()}`,
           method: paymentMethod || 'cash',
           amount: effectivePaidAmount,
-          date: purchaseDate,
+          date: paidOn ? paidOn.replace('T', ' ') : purchaseDate,
           note: paymentNote
         }
       ] : [],
@@ -1193,7 +1206,7 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold text-slate-300">Payment Amount ({settings.currencySymbol || '$'})</label>
@@ -1232,6 +1245,19 @@ export const PurchaseFormPage: React.FC = () => {
                   <option key={m.id} value={m.code}>{m.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Paid on {parseFloat(paidAmountInput !== '' ? paidAmountInput : grandTotal.toString()) > 0 && <span className="text-indigo-400">*</span>}
+              </label>
+              <input
+                type="datetime-local"
+                value={paidOn}
+                onChange={(e) => setPaidOn(e.target.value)}
+                className="w-full h-11 bg-slate-950 font-mono text-white text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none"
+                required={parseFloat(paidAmountInput !== '' ? paidAmountInput : grandTotal.toString()) > 0}
+              />
             </div>
 
             <div>
@@ -1328,7 +1354,7 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           )}
 
-          {(['upi', 'qr', 'phonepay'].includes(paymentMethod) || 
+          {paymentMethod !== '' && (['upi', 'qr', 'phonepay'].includes(paymentMethod) || 
             paymentMethod.toString().toLowerCase().includes('terminal') ||
             (!['cash', 'card', 'bank_transfer', 'cheque', 'credit'].includes(paymentMethod) && 
              !paymentMethod.toString().toLowerCase().includes('pos'))) && (

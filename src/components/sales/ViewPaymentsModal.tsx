@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Transaction } from '../../types/erp';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
   X,
   Printer,
@@ -299,7 +299,7 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
                 Invoice No.: <span className="text-indigo-400 font-mono">#{sale.invoiceNo}</span>
               </div>
               <div className="text-slate-300">
-                Date: <span className="font-mono">{sale.date}</span>
+                Date: <span className="font-mono">{formatDate(sale.date, 'DD-MM-YYYY', settings.timeZone)}</span>
               </div>
               <div className="text-slate-300 flex items-center md:justify-end gap-1.5 mt-1">
                 <span>Payment Status:</span>
@@ -353,7 +353,7 @@ export const ViewPaymentsModal: React.FC<ViewPaymentsModalProps> = ({
                   {paymentEntries.map((entry, idx) => (
                     <tr key={entry.id || idx} className="hover:bg-slate-900/40 transition">
                       <td className="py-3.5 px-4 text-slate-300 font-mono whitespace-nowrap">
-                        {entry.date || sale.date}
+                        {formatDate(entry.date || sale.date, 'DD-MM-YYYY', settings.timeZone)}
                       </td>
                       <td className="py-3.5 px-4 font-mono font-bold text-indigo-300">
                         {entry.referenceNo || sale.invoiceNo}

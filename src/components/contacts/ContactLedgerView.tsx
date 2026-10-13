@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
 import { Customer, Supplier, Transaction, PaymentMethod } from '../../types/erp';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
   BookOpen,
   Calendar,
@@ -1912,7 +1912,7 @@ export const ContactLedgerView: React.FC<ContactLedgerViewProps> = ({ initialCon
                             {row.referenceNo}
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono block">
-                            {row.date}
+                            {formatDate(row.date, 'DD-MM-YYYY', settings.timeZone)}
                           </span>
                         </div>
                         <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${row.badgeColor}`}>

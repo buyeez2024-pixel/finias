@@ -1,7 +1,7 @@
 import React from 'react';
 import { useErp } from '../../context/ErpContext';
 import { Transaction } from '../../types/erp';
-import { formatCurrency, applyAmountRounding } from '../../utils/formatters';
+import { formatCurrency, applyAmountRounding, formatDate } from '../../utils/formatters';
 import { getDynamicDetailModalHeading } from '../../utils/invoiceHeadingHelper';
 import {
   X,
@@ -85,7 +85,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
           </div>
           <div className="flex items-center gap-4">
             <div className="text-xs text-slate-300 font-mono">
-              Date: <span className="text-white font-bold">{sale.date}</span>
+              Date: <span className="text-white font-bold">{formatDate(sale.date, 'DD-MM-YYYY', settings.timeZone)}</span>
             </div>
             <button
               onClick={onClose}
@@ -206,7 +206,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
                     {paymentEntries.map((p, idx) => (
                       <tr key={p.id || idx} className="hover:bg-slate-900/40 transition">
                         <td className="py-3 px-3 font-mono text-slate-400">{idx + 1}</td>
-                        <td className="py-3 px-3 font-mono text-slate-300 whitespace-nowrap">{p.date}</td>
+                        <td className="py-3 px-3 font-mono text-slate-300 whitespace-nowrap">{formatDate(p.date || sale.date, 'DD-MM-YYYY', settings.timeZone)}</td>
                         <td className="py-3 px-3 font-mono font-bold text-indigo-300">{p.referenceNo || sale.invoiceNo}</td>
                         <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
                           {formatCurrency(p.amount, settings)}
@@ -299,7 +299,7 @@ export const ViewSaleDetailsModal: React.FC<ViewSaleDetailsModalProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
                   <tr className="hover:bg-slate-900/40 transition">
-                    <td className="py-3 px-4 font-mono text-slate-400">{sale.date}</td>
+                    <td className="py-3 px-4 font-mono text-slate-400">{formatDate(sale.date, 'DD-MM-YYYY', settings.timeZone)}</td>
                     <td className="py-3 px-4 font-bold text-emerald-400 uppercase text-[10px]">Added</td>
                     <td className="py-3 px-4 font-medium text-slate-300">{sale.cashierName || 'Mr Syed Khajanoor'}</td>
                     <td className="py-3 px-4">

@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import React, { useState, useMemo } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
@@ -700,7 +700,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
                   return (
                     <tr key={sale.id} className="hover:bg-slate-850 transition-colors border-b border-slate-800">
-                      {visibleColumns.date && <td className="py-3 px-3 text-slate-400 whitespace-nowrap">{sale.date}</td>}
+                      {visibleColumns.date && <td className="py-3 px-3 text-slate-400 whitespace-nowrap">{formatDate(sale.date, settings.dateFormat || 'DD-MM-YYYY', settings.timeZone)}</td>}
                       {visibleColumns.referenceNo && (
                         <td className="py-3 px-3 font-mono font-bold text-white whitespace-nowrap">
                           <div className="flex items-center gap-1.5">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { ExportButtons } from '../common/ExportButtons';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import { validateExpenseData } from '../../utils/validation';
 import { FormFieldError } from '../common/FormFieldError';
 import {
@@ -899,7 +899,7 @@ export const ExpensesView: React.FC = () => {
                               )}
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 text-slate-400 font-mono">{exp.date}</td>
+                          <td className="py-3.5 px-3 text-slate-400 font-mono">{formatDate(exp.date, 'DD-MM-YYYY', settings.timeZone)}</td>
                           <td className="py-3.5 px-3">
                             <div className="font-semibold text-amber-300">
                               <span className="px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20 text-[10px]">

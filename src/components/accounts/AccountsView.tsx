@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useErp } from '../../context/ErpContext';
 import { FinancialAccount } from '../../types/erp';
+import { formatDate } from '../../utils/formatters';
 
 export const AccountsView: React.FC = () => {
   const {
@@ -406,7 +407,7 @@ export const AccountsView: React.FC = () => {
                 {(transactions || []).slice(0, 15).map((tx) => (
                   <tr key={tx.id} className="hover:bg-slate-900/45 transition">
                     <td className="py-3 px-4 font-mono font-bold text-indigo-400">{tx.invoiceNo || tx.id}</td>
-                    <td className="py-3 px-4 text-slate-300">{tx.date}</td>
+                    <td className="py-3 px-4 text-slate-300">{formatDate(tx.date, 'DD-MM-YYYY', settings.timeZone)}</td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                         tx.type === 'sale' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'

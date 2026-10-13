@@ -2464,7 +2464,7 @@ export const SaleFormPage: React.FC<SaleFormPageProps> = ({ onOpenReceiptModal, 
           </div>
         )}
 
-        {(['upi', 'qr', 'phonepay'].includes(paymentMethod) || 
+        {paymentMethod !== '' && (['upi', 'qr', 'phonepay'].includes(paymentMethod) || 
           paymentMethod.toString().toLowerCase().includes('terminal') ||
           (!['cash', 'card', 'bank_transfer', 'cheque', 'credit'].includes(paymentMethod) && 
            !paymentMethod.toString().toLowerCase().includes('pos'))) && (

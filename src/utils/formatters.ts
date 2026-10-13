@@ -179,10 +179,8 @@ export const formatDate = (
       if (p.type === 'year') year = p.value;
     });
 
-    if (fmt === 'DD-MM-YYYY') return `${day}-${month}-${year}`;
-    if (fmt === 'DD/MM/YYYY') return `${day}/${month}/${year}`;
-    if (fmt === 'MM/DD/YYYY') return `${month}/${day}/${year}`;
-    if (fmt === 'YYYY-MM-DD') return `${year}-${month}-${day}`;
+    // Always return DD-MM-YYYY format for global uniformity across the app
+    return `${day}-${month}-${year}`;
     if (fmt === 'DD MMM YYYY') {
       const monthShort = dateObj.toLocaleString('en-US', { month: 'short', timeZone: tz });
       return `${day} ${monthShort} ${year}`;
