@@ -32,6 +32,7 @@ import {
   Edit2,
   Trash2,
   Eye,
+  EyeOff,
   Camera,
   LogIn,
   AlertTriangle,
@@ -319,6 +320,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
   }, [initialSection]);
 
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [editUserTab, setEditUserTab] = useState<'basic' | 'roles' | 'commission' | 'personal' | 'bank'>('basic');
 
   const handleEditAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2817,22 +2819,46 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                   {(userToEdit.allowLogin ?? true) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-950/60 border border-slate-800/80 rounded-2xl">
                       <div>
-                        <label className="block text-slate-400 font-semibold mb-1">Username (Login ID)</label>
-                        <input
-                          type="text"
-                          value={userToEdit.username || ''}
-                          onChange={(e) => setUserToEdit({ ...userToEdit, username: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono"
-                        />
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                          Username (Immutable)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            disabled
+                            value={userToEdit.username || ''}
+                            className={`w-full px-3 py-2.5 rounded-xl border font-mono text-xs cursor-not-allowed ${
+                              isLight
+                                ? 'bg-slate-100 text-slate-500 border-slate-300'
+                                : 'bg-slate-900/60 text-slate-400 border-slate-800'
+                            }`}
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-slate-400 font-semibold bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            <Lock className="w-3 h-3" /> Locked
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Username cannot be changed for security consistency.
+                        </p>
                       </div>
                       <div>
-                        <label className="block text-slate-400 font-semibold mb-1">New Password (Optional)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-slate-400 font-semibold">New Password (Optional)</label>
+                          <button
+                            type="button"
+                            onClick={() => setShowEditPassword(!showEditPassword)}
+                            className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
+                          >
+                            {showEditPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            <span>{showEditPassword ? 'Hide' : 'Show'}</span>
+                          </button>
+                        </div>
                         <input
-                          type="password"
+                          type={showEditPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           value={userToEdit.password || ''}
                           onChange={(e) => setUserToEdit({ ...userToEdit, password: e.target.value })}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono text-xs"
                         />
                       </div>
                     </div>
