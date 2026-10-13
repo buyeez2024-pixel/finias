@@ -27,12 +27,13 @@ export const PurchaseFormPage: React.FC = () => {
     viewingPurchase,
     taxRates,
     taxGroups,
-    paymentMethods
+    paymentMethods,
+    activeTab
   } = useErp();
 
-  const isEditMode = !!editingPurchase;
-  const isViewMode = !!viewingPurchase;
-  const purchaseToUse = editingPurchase || viewingPurchase;
+  const isEditMode = activeTab === 'edit_purchase' && !!editingPurchase;
+  const isViewMode = activeTab === 'view_purchase' && !!viewingPurchase;
+  const purchaseToUse = isEditMode ? editingPurchase : isViewMode ? viewingPurchase : null;
 
   // Helper to normalize any date format (DD-MM-YYYY, YYYY-MM-DD, ISO) into HTML5 input format (YYYY-MM-DD)
   const normalizeToInputDateFormat = (d?: string): string => {
@@ -1240,7 +1241,7 @@ export const PurchaseFormPage: React.FC = () => {
                 onChange={(e) => setPaymentMethod(e.target.value as any)}
                 className="w-full h-11 bg-slate-950 text-white text-xs px-3 py-2.5 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none cursor-pointer"
               >
-                <option value="" disabled>-- Select Payment Method --</option>
+                <option value="">-- Select Payment Method --</option>
                 {paymentMethods.filter(m => m.enabled).map(m => (
                   <option key={m.id} value={m.code}>{m.name}</option>
                 ))}
@@ -1272,9 +1273,11 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Conditional Payment Fields */}
-          {(paymentMethod === 'card' || 
-            (paymentMethod.toString().toLowerCase().includes('pos') && !paymentMethod.toString().toLowerCase().includes('terminal'))) && (
+          {/* Conditional Payment Fields - Only popup when payment method is chosen and matches */}
+          {Boolean(paymentMethod) && paymentMethod.trim() !== '' && paymentMethod.toLowerCase() !== 'select' && (
+            paymentMethod === 'card' || 
+            (paymentMethod.toString().toLowerCase().includes('pos') && !paymentMethod.toString().toLowerCase().includes('terminal'))
+          ) && (
             <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <CreditCard className="w-4 h-4 text-indigo-400" />
@@ -1316,7 +1319,7 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           )}
 
-          {paymentMethod === 'bank_transfer' && (
+          {Boolean(paymentMethod) && paymentMethod.trim() !== '' && paymentMethod.toLowerCase() !== 'select' && paymentMethod === 'bank_transfer' && (
             <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/20 animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2 mb-3">
                 <Building className="w-4 h-4 text-indigo-400" />
@@ -1335,7 +1338,7 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           )}
 
-          {paymentMethod === 'cheque' && (
+          {Boolean(paymentMethod) && paymentMethod.trim() !== '' && paymentMethod.toLowerCase() !== 'select' && paymentMethod === 'cheque' && (
             <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/20 animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2 mb-3">
                 <FileCheck className="w-4 h-4 text-indigo-400" />
@@ -1354,9 +1357,9 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           )}
 
-          {paymentMethod !== '' && (
-            ['upi', 'qr', 'phonepay', 'googlepay', 'paytm'].includes(paymentMethod.toLowerCase()) ||
-            paymentMethod.toLowerCase().includes('upi')
+          {Boolean(paymentMethod) && paymentMethod.trim() !== '' && paymentMethod.toLowerCase() !== 'select' && (
+            ['upi', 'qr', 'phonepay', 'googlepay', 'paytm', 'bhim'].includes(paymentMethod.toLowerCase().trim()) ||
+            paymentMethod.toLowerCase().trim().includes('upi')
           ) && (
             <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/20 animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2 mb-3">

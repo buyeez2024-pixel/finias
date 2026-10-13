@@ -296,7 +296,23 @@ const MainAppContent: React.FC = () => {
           if (res.adminUser && typeof res.adminUser === 'object') {
             localStorage.setItem('ultimate_erp_pos_database_v1_admin_user', JSON.stringify(res.adminUser));
             const existingUsers = localStorage.getItem('ultimate_erp_pos_database_v1_users');
-            if (!existingUsers || existingUsers === '[]' || existingUsers === '{}' || existingUsers === 'null') {
+            try {
+              let parsedList = existingUsers ? JSON.parse(existingUsers) : [];
+              if (!Array.isArray(parsedList)) parsedList = [];
+              const aIdx = parsedList.findIndex((u: any) =>
+                u.id === res.adminUser.id ||
+                (u.email && u.email.toLowerCase().trim() === res.adminUser.email?.toLowerCase().trim()) ||
+                (u.username && u.username.toLowerCase().trim() === res.adminUser.username?.toLowerCase().trim()) ||
+                u.role === 'supreme_admin'
+              );
+              if (aIdx >= 0) {
+                parsedList[aIdx] = { ...parsedList[aIdx], ...res.adminUser };
+              } else {
+                parsedList.unshift(res.adminUser);
+              }
+              localStorage.setItem('ultimate_erp_pos_database_v1_users', JSON.stringify(parsedList));
+              localStorage.setItem('royal_pos_v1_users', JSON.stringify(parsedList));
+            } catch {
               localStorage.setItem('ultimate_erp_pos_database_v1_users', JSON.stringify([res.adminUser]));
             }
           }

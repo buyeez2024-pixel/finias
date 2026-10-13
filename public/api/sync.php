@@ -1046,6 +1046,49 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['users']) && is_array($updates['users'])) {
+            // Automatically synchronize admin user changes into system_status.json
+            $adminUserToSave = null;
+            foreach ($updates['users'] as $cand) {
+                if (is_array($cand)) {
+                    $r = strtolower((string)($cand['role'] ?? ''));
+                    $cId = (string)($cand['id'] ?? '');
+                    if ($r === 'supreme_admin' || $r === 'admin' || $cId === 'usr_admin') {
+                        $adminUserToSave = $cand;
+                        break;
+                    }
+                }
+            }
+            if ($adminUserToSave) {
+                $statusPaths = [
+                    __DIR__ . '/system_status.json',
+                    __DIR__ . '/../system_status.json',
+                    __DIR__ . '/../../server_storage/system_status.json',
+                    __DIR__ . '/../server_storage/system_status.json'
+                ];
+                $existingLock = null;
+                foreach ($statusPaths as $path) {
+                    if (file_exists($path)) {
+                        $c = @file_get_contents($path);
+                        if ($c) {
+                            $p = @json_decode($c, true);
+                            if (is_array($p)) { $existingLock = $p; break; }
+                        }
+                    }
+                }
+                if ($existingLock) {
+                    $existingLock['adminUser'] = array_merge($existingLock['adminUser'] ?? [], $adminUserToSave);
+                    if (!empty($adminUserToSave['email'])) $existingLock['adminEmail'] = $adminUserToSave['email'];
+                    if (!empty($adminUserToSave['username'])) $existingLock['adminUsername'] = $adminUserToSave['username'];
+                    $jsonEnc = json_encode($existingLock, JSON_PRETTY_PRINT);
+                    foreach ($statusPaths as $path) {
+                        if (file_exists(dirname($path))) {
+                            @file_put_contents($path, $jsonEnc);
+                            @chmod($path, 0666);
+                        }
+                    }
+                }
+            }
+
             $hasRealUsers = false;
             foreach ($updates['users'] as $u) {
                 $uId = $u['id'] ?? '';

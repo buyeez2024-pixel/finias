@@ -456,6 +456,42 @@ async function startServer() {
       return handleSystemReset(req, res);
     }
 
+    if (action === 'sync-status' || req.body?.adminUser) {
+      const current = getSystemStatus();
+      const updated = { ...current };
+      if (req.body?.adminUser) {
+        updated.adminUser = {
+          ...(updated.adminUser || {}),
+          ...req.body.adminUser,
+        };
+        if (req.body.adminUser.email) updated.adminEmail = req.body.adminUser.email;
+        if (req.body.adminUser.username) updated.adminUsername = req.body.adminUser.username;
+      }
+      if (req.body?.businessName) updated.businessName = req.body.businessName;
+      if (req.body?.settings) updated.settings = { ...(updated.settings || {}), ...req.body.settings };
+      saveSystemStatus(updated);
+
+      if (req.body?.adminUser) {
+        const syncData = getSyncData();
+        const existingUsers = Array.isArray(syncData.users) ? syncData.users : [];
+        const adminIdx = existingUsers.findIndex((u: any) =>
+          u.id === req.body.adminUser.id ||
+          (u.email && u.email.toLowerCase().trim() === req.body.adminUser.email?.toLowerCase().trim()) ||
+          (u.username && u.username.toLowerCase().trim() === req.body.adminUser.username?.toLowerCase().trim()) ||
+          u.role === 'supreme_admin'
+        );
+        if (adminIdx >= 0) {
+          existingUsers[adminIdx] = { ...existingUsers[adminIdx], ...req.body.adminUser };
+        } else {
+          existingUsers.unshift(req.body.adminUser);
+        }
+        syncData.users = existingUsers;
+        saveSyncData(syncData);
+      }
+
+      return res.json({ success: true, message: "Credentials updated successfully", status: getSystemStatus() });
+    }
+
     if (action === 'install' || req.method === 'POST') {
       const data = req.body || {};
       const status = {
@@ -599,10 +635,11 @@ async function startServer() {
         u.role === 'supreme_admin'
       );
       if (adminIdx >= 0) {
+        const effectivePassword = sysStatus.adminUser.password || syncData.users[adminIdx].password;
         syncData.users[adminIdx] = {
           ...syncData.users[adminIdx],
           ...sysStatus.adminUser,
-          password: sysStatus.adminUser.password || syncData.users[adminIdx].password,
+          password: effectivePassword,
         };
       } else {
         syncData.users.unshift(sysStatus.adminUser);

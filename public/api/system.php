@@ -47,6 +47,59 @@ if ($action === 'reset' || (isset($data['action']) && $data['action'] === 'reset
         'message' => 'System installation lock removed successfully. You can now start a fresh installation.'
     ]);
     exit;
+// Handle sync-status or adminUser credential update
+if ($action === 'sync-status' || isset($data['adminUser']) || (isset($data['action']) && $data['action'] === 'sync-status')) {
+    $existingLock = null;
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $content = @file_get_contents($path);
+            if ($content) {
+                $parsed = @json_decode($content, true);
+                if (is_array($parsed)) {
+                    $existingLock = $parsed;
+                    break;
+                }
+            }
+        }
+    }
+    if (!$existingLock) {
+        $existingLock = [
+            'success' => true,
+            'isInstalled' => true,
+            'installationCompleted' => true,
+            'installedAt' => date('c'),
+            'businessName' => 'Enterprise POS',
+        ];
+    }
+    if (isset($data['adminUser']) && is_array($data['adminUser'])) {
+        $currentAdmin = $existingLock['adminUser'] ?? [];
+        $existingLock['adminUser'] = array_merge($currentAdmin, $data['adminUser']);
+        if (!empty($data['adminUser']['email'])) {
+            $existingLock['adminEmail'] = $data['adminUser']['email'];
+        }
+        if (!empty($data['adminUser']['username'])) {
+            $existingLock['adminUsername'] = $data['adminUser']['username'];
+        }
+    }
+    if (!empty($data['businessName'])) {
+        $existingLock['businessName'] = $data['businessName'];
+    }
+    if (!empty($data['settings']) && is_array($data['settings'])) {
+        $existingLock['settings'] = array_merge($existingLock['settings'] ?? [], $data['settings']);
+    }
+    $jsonEncoded = json_encode($existingLock, JSON_PRETTY_PRINT);
+    foreach ($possiblePaths as $path) {
+        if (file_exists(dirname($path))) {
+            @file_put_contents($path, $jsonEncoded);
+            @chmod($path, 0666);
+        }
+    }
+    echo json_encode([
+        'success' => true,
+        'message' => 'Admin credentials updated successfully across server files.',
+        'status' => $existingLock
+    ]);
+    exit;
 }
 
 if ($method === 'POST' || $action === 'install') {

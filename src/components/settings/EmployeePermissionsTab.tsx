@@ -745,16 +745,23 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     const isCurrent = currentUser && (
       currentUser.id === user.id ||
       (currentUser.email && user.email && currentUser.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
-      (currentUser.username && user.username && currentUser.username.toLowerCase().trim() === user.username.toLowerCase().trim())
+      (currentUser.username && user.username && currentUser.username.toLowerCase().trim() === user.username.toLowerCase().trim()) ||
+      (currentUser.role === 'supreme_admin' && user.role === 'supreme_admin')
     );
     const freshUser = users.find((u) =>
       u.id === user.id ||
-      (user.email && u.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim())
+      (user.email && u.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
+      (user.username && u.username && u.username.toLowerCase().trim() === user.username.toLowerCase().trim()) ||
+      (user.role === 'supreme_admin' && u.role === 'supreme_admin')
     ) || user;
 
-    const targetUser = isCurrent
-      ? { ...freshUser, password: currentUser.password || freshUser.password || '' }
-      : { ...freshUser, password: freshUser.password || '' };
+    // Direct password lookup: prefer fresh user password or currentUser's active session password
+    const activePassword = freshUser.password || (isCurrent ? currentUser?.password : '') || user.password || '';
+
+    const targetUser: User = {
+      ...freshUser,
+      password: activePassword,
+    };
 
     setUserToEdit({ ...targetUser });
   };

@@ -2625,10 +2625,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               let nextList: User[];
               if (adminIdx >= 0) {
                 nextList = [...prev];
+                const effectivePassword = nextList[adminIdx].password || admin.password;
                 nextList[adminIdx] = {
                   ...nextList[adminIdx],
                   ...admin,
-                  password: admin.password || nextList[adminIdx].password,
+                  password: effectivePassword,
                   role: 'supreme_admin',
                   status: 'active'
                 };
@@ -2638,16 +2639,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               const deduped = deduplicateUsers(nextList);
               try {
                 localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(deduped));
-                localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(admin));
+                const admToSave = deduped.find(u => u.role === 'supreme_admin' || u.id === 'usr_admin') || admin;
+                localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(admToSave));
               } catch {}
               return deduped;
             });
             setCurrentUser((curr) => {
-              if (curr && (curr.id === admin.id || (curr.email && admin.email && curr.email.toLowerCase().trim() === admin.email.toLowerCase().trim()))) {
+              if (curr && (curr.id === admin.id || (curr.email && admin.email && curr.email.toLowerCase().trim() === admin.email.toLowerCase().trim()) || (curr.role === 'supreme_admin' && admin.role === 'supreme_admin'))) {
+                const effectivePassword = curr.password || admin.password;
                 const updated = {
                   ...curr,
                   ...admin,
-                  password: admin.password || curr.password
+                  password: effectivePassword
                 };
                 try {
                   localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updated));
@@ -9764,7 +9767,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (u.id && id && u.id === id) ||
           (userData.email && u.email && u.email.toLowerCase().trim() === userData.email.toLowerCase().trim()) ||
           (userData.username && u.username && u.username.toLowerCase().trim() === userData.username.toLowerCase().trim()) ||
-          (currentUser && currentUser.id === id && (u.id === currentUser.id || (currentUser.email && u.email && u.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim())));
+          (currentUser && currentUser.id === id && (u.id === currentUser.id || (currentUser.email && u.email && u.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()))) ||
+          (u.role === 'supreme_admin' && currentUser?.role === 'supreme_admin' && (id === currentUser?.id || id === 'usr_admin'));
 
         if (!isMatch) return u;
 
@@ -9774,7 +9778,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : (userData.status !== undefined ? userData.status : u.status);
         const updated = { ...u, ...userData, role: finalRole, status: finalStatus };
         
-        if (currentUser && (currentUser.id === u.id || (currentUser.email && u.email && currentUser.email.toLowerCase().trim() === u.email.toLowerCase().trim()) || u.id === id)) {
+        if (currentUser && (currentUser.id === u.id || (currentUser.email && u.email && currentUser.email.toLowerCase().trim() === u.email.toLowerCase().trim()) || u.id === id || (u.role === 'supreme_admin' && currentUser.role === 'supreme_admin'))) {
           setCurrentUser(updated);
           try {
             localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updated));
@@ -9790,7 +9794,8 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const targetUsr = updatedList.find(u => 
           (u.id && id && u.id === id) || 
           (userData.email && u.email && u.email.toLowerCase().trim() === userData.email.toLowerCase().trim()) ||
-          (currentUser && currentUser.id === id && u.id === currentUser.id)
+          (currentUser && currentUser.id === id && u.id === currentUser.id) ||
+          (u.role === 'supreme_admin' && (userData.role === 'supreme_admin' || currentUser?.role === 'supreme_admin'))
         );
         if (targetUsr) {
           if (currentUser?.id === id || currentUser?.id === targetUsr.id || targetUsr.role === 'supreme_admin' || targetUsr.id === 'usr_admin') {
@@ -9800,6 +9805,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           if (targetUsr.role === 'supreme_admin' || targetUsr.role === 'admin' || targetUsr.id === 'usr_admin') {
             fetch(getApiUrl('api/system/sync-status'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ adminUser: targetUsr }),
+            }).catch(() => {});
+            fetch(getApiUrl('api/system.php?action=sync-status'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ adminUser: targetUsr }),
