@@ -274,24 +274,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* System Documentation / User Manual - hidden on mobile portrait to prevent underlapping */}
-          <button
-            id="nav-documentation-btn"
-            type="button"
-            onClick={() => setActiveTab('documentation')}
-            className={`hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border transition active:scale-95 shrink-0 cursor-pointer ${
-              activeTab === 'documentation'
-                ? 'bg-sky-600 text-white border-sky-500 shadow-md shadow-sky-600/30'
-                : isLight
-                ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-200'
-                : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border-slate-700'
-            }`}
-            title="System Documentation & User Manual"
-            aria-label="System Documentation"
-          >
-            <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-sky-400" />
-            <span className="hidden lg:inline text-xs font-bold">Manual</span>
-          </button>
 
           {/* Theme Mode Toggle (Light & Dark) */}
           <button
