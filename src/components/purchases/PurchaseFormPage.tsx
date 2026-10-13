@@ -1354,10 +1354,10 @@ export const PurchaseFormPage: React.FC = () => {
             </div>
           )}
 
-          {paymentMethod !== '' && (['upi', 'qr', 'phonepay'].includes(paymentMethod) || 
-            paymentMethod.toString().toLowerCase().includes('terminal') ||
-            (!['cash', 'card', 'bank_transfer', 'cheque', 'credit'].includes(paymentMethod) && 
-             !paymentMethod.toString().toLowerCase().includes('pos'))) && (
+          {paymentMethod !== '' && (
+            ['upi', 'qr', 'phonepay', 'googlepay', 'paytm'].includes(paymentMethod.toLowerCase()) ||
+            paymentMethod.toLowerCase().includes('upi')
+          ) && (
             <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/20 animate-in slide-in-from-top-2 duration-200">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-indigo-400" />

@@ -181,18 +181,12 @@ export const formatDate = (
 
     // Always return DD-MM-YYYY format for global uniformity across the app
     return `${day}-${month}-${year}`;
-    if (fmt === 'DD MMM YYYY') {
-      const monthShort = dateObj.toLocaleString('en-US', { month: 'short', timeZone: tz });
-      return `${day} ${monthShort} ${year}`;
-    }
-    if (fmt === 'MMM DD, YYYY') {
-      const monthShort = dateObj.toLocaleString('en-US', { month: 'short', timeZone: tz });
-      return `${monthShort} ${day}, ${year}`;
-    }
-    return `${day}-${month}-${year}`;
   } catch (err) {
-    // Fallback if invalid timezone or formatting error
-    return dateObj.toISOString().split('T')[0];
+    // Fallback if invalid timezone or formatting error: ensure DD-MM-YYYY
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const y = dateObj.getFullYear();
+    return `${d}-${m}-${y}`;
   }
 };
 

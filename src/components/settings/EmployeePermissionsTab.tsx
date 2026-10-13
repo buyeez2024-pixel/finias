@@ -741,6 +741,24 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
     showToast(`Updated user credentials for ${userToEdit.name}.`);
   };
 
+  const handleOpenEditUser = (user: User) => {
+    const isCurrent = currentUser && (
+      currentUser.id === user.id ||
+      (currentUser.email && user.email && currentUser.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
+      (currentUser.username && user.username && currentUser.username.toLowerCase().trim() === user.username.toLowerCase().trim())
+    );
+    const freshUser = users.find((u) =>
+      u.id === user.id ||
+      (user.email && u.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim())
+    ) || user;
+
+    const targetUser = isCurrent
+      ? { ...freshUser, password: currentUser.password || freshUser.password || '' }
+      : { ...freshUser, password: freshUser.password || '' };
+
+    setUserToEdit({ ...targetUser });
+  };
+
   const filteredUsers = deduplicateUsers(users.filter((u) => {
     const isSystemAdminAccount = u.role === 'supreme_admin' || u.role === 'admin' || u.role === 'super_admin' || u.id === 'usr_admin';
 
@@ -1491,7 +1509,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                     {(!(currentUser?.role !== 'supreme_admin' && user.role === 'supreme_admin')) ? (
                       <button
                         type="button"
-                        onClick={() => setUserToEdit(user)}
+                        onClick={() => handleOpenEditUser(user)}
                         className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
                           isLight
                             ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
@@ -1830,7 +1848,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
                         {/* EDIT ACTION */}
                         {(!(currentUser?.role !== 'supreme_admin' && user.role === 'supreme_admin')) && (
                           <button
-                            onClick={() => setUserToEdit(user)}
+                            onClick={() => handleOpenEditUser(user)}
                             className={`p-1.5 rounded-lg border transition ${
                               isLight
                                 ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs active:scale-95'
@@ -3285,7 +3303,7 @@ export const EmployeePermissionsTab: React.FC<EmployeePermissionsTabProps> = ({ 
           onClose={() => setUserToView(null)}
           onEdit={(u) => {
             setUserToView(null);
-            setUserToEdit(u);
+            handleOpenEditUser(u);
           }}
         />
       )}

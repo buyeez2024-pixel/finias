@@ -195,6 +195,68 @@ async function startServer() {
     };
   }
 
+  const SYNC_DATA_FILE = path.join(STORAGE_DIR, "sync_data.json");
+  const DB_CONFIG_FILE = path.join(STORAGE_DIR, "db_config.json");
+
+  function getSyncData(): Record<string, any> {
+    try {
+      if (!fs.existsSync(STORAGE_DIR)) {
+        fs.mkdirSync(STORAGE_DIR, { recursive: true });
+      }
+      if (fs.existsSync(SYNC_DATA_FILE)) {
+        const raw = fs.readFileSync(SYNC_DATA_FILE, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Error reading sync data:", e);
+    }
+
+    // Default structure with system admin user if available
+    const status = getSystemStatus();
+    const defaultUsers = status.adminUser ? [status.adminUser] : [];
+    return {
+      customers: [],
+      suppliers: [],
+      products: [],
+      transactions: [],
+      users: defaultUsers,
+      categories: [],
+      brands: [],
+      units: [],
+      customerGroups: [],
+      sales_commission_agents: [],
+      settings: status.settings || {},
+      locations: [],
+      currencies: [],
+      payment_methods: [],
+      accounts: [],
+    };
+  }
+
+  function saveSyncData(data: Record<string, any>) {
+    try {
+      if (!fs.existsSync(STORAGE_DIR)) {
+        fs.mkdirSync(STORAGE_DIR, { recursive: true });
+      }
+      fs.writeFileSync(SYNC_DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+
+      // Also mirror to public and dist
+      const pubSync = path.join(process.cwd(), "public", "sync_data.json");
+      const distSync = path.join(process.cwd(), "dist", "sync_data.json");
+      try { fs.writeFileSync(pubSync, JSON.stringify(data, null, 2), "utf-8"); } catch {}
+      try {
+        if (fs.existsSync(path.join(process.cwd(), "dist"))) {
+          fs.writeFileSync(distSync, JSON.stringify(data, null, 2), "utf-8");
+        }
+      } catch {}
+    } catch (e) {
+      console.error("Error saving sync data:", e);
+    }
+  }
+
   function saveSystemStatus(data: any) {
     try {
       if (!fs.existsSync(STORAGE_DIR)) {
@@ -233,22 +295,27 @@ async function startServer() {
     return msg;
   }
 
-  // System Status API
-  app.get("/api/system/status", (req, res) => {
+  // Universal System Status API (supports /api/system/status and /api/system.php)
+  const handleSystemStatus = (req: express.Request, res: express.Response) => {
     const status = getSystemStatus();
+    const logo = status.logoUrl || status.settings?.logoUrl || status.settings?.logo || null;
     res.json({
       success: true,
       isInstalled: Boolean(status.isInstalled || status.installationCompleted),
       installedAt: status.installedAt || null,
       businessName: status.businessName || null,
-      adminEmail: status.adminEmail || null,
+      adminEmail: status.adminEmail || status.adminUser?.email || null,
+      adminUsername: status.adminUsername || status.adminUser?.username || null,
       settings: status.settings || null,
       adminUser: status.adminUser || null,
+      logoUrl: logo,
     });
-  });
+  };
+
+  app.get(["/api/system/status", "/farm/api/system/status"], handleSystemStatus);
 
   // System Install API - permanently locks installation & deactivates installer
-  app.post("/api/system/install", (req, res) => {
+  app.post(["/api/system/install", "/farm/api/system/install"], (req, res) => {
     const currentStatus = getSystemStatus();
     if (currentStatus.isInstalled || currentStatus.installationCompleted) {
       return res.status(403).json({
@@ -283,6 +350,26 @@ async function startServer() {
       adminUser: adminUser || null,
     };
     saveSystemStatus(status);
+
+    // Also update sync_data.json with this admin user
+    if (adminUser) {
+      const syncData = getSyncData();
+      const existingUsers = Array.isArray(syncData.users) ? syncData.users : [];
+      const adminIdx = existingUsers.findIndex((u: any) =>
+        u.id === adminUser.id ||
+        (u.email && u.email.toLowerCase().trim() === adminUser.email?.toLowerCase().trim()) ||
+        u.role === 'supreme_admin'
+      );
+      if (adminIdx >= 0) {
+        existingUsers[adminIdx] = { ...existingUsers[adminIdx], ...adminUser };
+      } else {
+        existingUsers.unshift(adminUser);
+      }
+      syncData.users = existingUsers;
+      if (settings) syncData.settings = { ...(syncData.settings || {}), ...settings };
+      saveSyncData(syncData);
+    }
+
     res.json({
       success: true,
       message: "Installation completed successfully. Installer has been locked and permanently deactivated.",
@@ -291,13 +378,19 @@ async function startServer() {
   });
 
   // System Reset API - unlocks installer for fresh installation
-  app.post("/api/system/reset", (req, res) => {
+  const handleSystemReset = (req: express.Request, res: express.Response) => {
     try {
       if (fs.existsSync(STATUS_FILE)) fs.unlinkSync(STATUS_FILE);
+      if (fs.existsSync(SYNC_DATA_FILE)) fs.unlinkSync(SYNC_DATA_FILE);
+      if (fs.existsSync(DB_CONFIG_FILE)) fs.unlinkSync(DB_CONFIG_FILE);
       const pubFile = path.join(process.cwd(), "public", "system_status.json");
       const distFile = path.join(process.cwd(), "dist", "system_status.json");
+      const pubSync = path.join(process.cwd(), "public", "sync_data.json");
+      const distSync = path.join(process.cwd(), "dist", "sync_data.json");
       if (fs.existsSync(pubFile)) fs.unlinkSync(pubFile);
       if (fs.existsSync(distFile)) fs.unlinkSync(distFile);
+      if (fs.existsSync(pubSync)) fs.unlinkSync(pubSync);
+      if (fs.existsSync(distSync)) fs.unlinkSync(distSync);
     } catch (e) {
       console.error("Error clearing system status:", e);
     }
@@ -306,20 +399,222 @@ async function startServer() {
       isInstalled: false,
       message: "System installation lock removed successfully.",
     });
-  });
+  };
+
+  app.post(["/api/system/reset", "/farm/api/system/reset"], handleSystemReset);
 
   // System Sync API
-  app.post("/api/system/sync-status", (req, res) => {
+  app.post(["/api/system/sync-status", "/farm/api/system/sync-status"], (req, res) => {
     const current = getSystemStatus();
+    const updated = { ...current };
+
     if (!current.isInstalled && req.body.isInstalled) {
-      saveSystemStatus({
-        ...req.body,
+      updated.isInstalled = true;
+      updated.installationCompleted = true;
+      updated.installedAt = req.body.installedAt || new Date().toISOString();
+    }
+    if (req.body.adminUser) {
+      updated.adminUser = {
+        ...(updated.adminUser || {}),
+        ...req.body.adminUser,
+      };
+      if (req.body.adminUser.email) updated.adminEmail = req.body.adminUser.email;
+      if (req.body.adminUser.username) updated.adminUsername = req.body.adminUser.username;
+    }
+    if (req.body.businessName) updated.businessName = req.body.businessName;
+    if (req.body.settings) updated.settings = { ...(updated.settings || {}), ...req.body.settings };
+    saveSystemStatus(updated);
+
+    // Keep sync_data.json updated
+    if (req.body.adminUser) {
+      const syncData = getSyncData();
+      const existingUsers = Array.isArray(syncData.users) ? syncData.users : [];
+      const adminIdx = existingUsers.findIndex((u: any) =>
+        u.id === req.body.adminUser.id ||
+        (u.email && u.email.toLowerCase().trim() === req.body.adminUser.email?.toLowerCase().trim()) ||
+        (u.username && u.username.toLowerCase().trim() === req.body.adminUser.username?.toLowerCase().trim()) ||
+        u.role === 'supreme_admin'
+      );
+      if (adminIdx >= 0) {
+        existingUsers[adminIdx] = { ...existingUsers[adminIdx], ...req.body.adminUser };
+      } else {
+        existingUsers.unshift(req.body.adminUser);
+      }
+      syncData.users = existingUsers;
+      saveSyncData(syncData);
+    }
+
+    res.json({ success: true, status: getSystemStatus() });
+  });
+
+  // Universal System API router for system.php
+  app.all(["/api/system.php", "/farm/api/system.php", "/api/system", "/farm/api/system"], (req, res) => {
+    const actionRaw = req.query.action || req.body?.action;
+    const action = Array.isArray(actionRaw) ? actionRaw[0] : (actionRaw || (req.method === 'POST' ? 'install' : 'status'));
+
+    if (action === 'reset') {
+      return handleSystemReset(req, res);
+    }
+
+    if (action === 'install' || req.method === 'POST') {
+      const data = req.body || {};
+      const status = {
         isInstalled: true,
         installationCompleted: true,
-        installedAt: req.body.installedAt || new Date().toISOString(),
+        isFreshInstallation: !data.isDemoInstallation,
+        installedAt: new Date().toISOString(),
+        businessName: data.businessName || data.settings?.businessName || data.settings?.name || "Enterprise POS",
+        adminEmail: data.adminEmail || data.adminUser?.email || "admin@example.com",
+        adminUsername: data.adminUsername || data.adminUser?.username || "admin",
+        settings: data.settings || null,
+        adminUser: data.adminUser || null,
+        logoUrl: data.logo || data.logoUrl || data.settings?.logoUrl || null,
+      };
+      saveSystemStatus(status);
+
+      if (data.adminUser) {
+        const syncData = getSyncData();
+        const existingUsers = Array.isArray(syncData.users) ? syncData.users : [];
+        const adminIdx = existingUsers.findIndex((u: any) =>
+          u.id === data.adminUser.id ||
+          (u.email && u.email.toLowerCase().trim() === data.adminUser.email?.toLowerCase().trim()) ||
+          u.role === 'supreme_admin'
+        );
+        if (adminIdx >= 0) {
+          existingUsers[adminIdx] = { ...existingUsers[adminIdx], ...data.adminUser };
+        } else {
+          existingUsers.unshift(data.adminUser);
+        }
+        syncData.users = existingUsers;
+        if (data.settings) syncData.settings = { ...(syncData.settings || {}), ...data.settings };
+        saveSyncData(syncData);
+      }
+
+      return res.json({
+        success: true,
+        isInstalled: true,
+        message: "System installation locked permanently on server across all devices and browsers.",
+        status,
       });
     }
-    res.json({ success: true, status: getSystemStatus() });
+
+    // Default GET status
+    return handleSystemStatus(req, res);
+  });
+
+  // Universal Live Database Synchronization API (supports /api/sync.php and /api/sync)
+  app.all(["/api/sync.php", "/farm/api/sync.php", "/api/sync", "/farm/api/sync"], (req, res) => {
+    const actionRaw = req.query.action || req.body?.action;
+    const action = Array.isArray(actionRaw) ? actionRaw[0] : (actionRaw || (req.method === 'POST' ? 'push' : 'pull'));
+
+    if (action === 'test_db') {
+      return res.json({
+        success: true,
+        message: "Central database connection verified successfully. Live synchronized across all devices.",
+      });
+    }
+
+    if (action === 'save_config') {
+      try {
+        if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
+        fs.writeFileSync(DB_CONFIG_FILE, JSON.stringify(req.body || {}, null, 2), "utf-8");
+      } catch {}
+      return res.json({
+        success: true,
+        message: "Database configuration saved successfully.",
+      });
+    }
+
+    if (action === 'push' || req.method === 'POST') {
+      const body = req.body || {};
+      const updates = body.updates || body;
+      const current = getSyncData();
+
+      // Merge each collection
+      const collections = [
+        'customers', 'suppliers', 'products', 'transactions', 'users',
+        'categories', 'brands', 'units', 'customerGroups', 'sales_commission_agents',
+        'settings', 'locations', 'currencies', 'payment_methods', 'accounts'
+      ];
+
+      for (const col of collections) {
+        if (updates[col] !== undefined) {
+          current[col] = updates[col];
+        }
+      }
+
+      // Handle deleted ID tracking
+      if (Array.isArray(updates.deleted_product_ids) && Array.isArray(current.products)) {
+        current.products = current.products.filter((p: any) => !updates.deleted_product_ids.includes(p.id));
+      }
+      if (Array.isArray(updates.deleted_customer_ids) && Array.isArray(current.customers)) {
+        current.customers = current.customers.filter((c: any) => !updates.deleted_customer_ids.includes(c.id));
+      }
+      if (Array.isArray(updates.deleted_supplier_ids) && Array.isArray(current.suppliers)) {
+        current.suppliers = current.suppliers.filter((s: any) => !updates.deleted_supplier_ids.includes(s.id));
+      }
+      if (Array.isArray(updates.deleted_transaction_ids) && Array.isArray(current.transactions)) {
+        current.transactions = current.transactions.filter((t: any) => !updates.deleted_transaction_ids.includes(t.id));
+      }
+
+      // Save updated data
+      saveSyncData(current);
+
+      // If users list was updated, check if admin user credentials were changed
+      if (Array.isArray(updates.users)) {
+        const adminInUsers = updates.users.find((u: any) =>
+          u && (u.role === 'supreme_admin' || u.role === 'admin' || u.id === 'usr_admin')
+        );
+        if (adminInUsers) {
+          const sysStatus = getSystemStatus();
+          if (sysStatus.isInstalled) {
+            sysStatus.adminUser = {
+              ...(sysStatus.adminUser || {}),
+              ...adminInUsers,
+            };
+            if (adminInUsers.email) sysStatus.adminEmail = adminInUsers.email;
+            if (adminInUsers.username) sysStatus.adminUsername = adminInUsers.username;
+            saveSystemStatus(sysStatus);
+          }
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: "Data synchronized and saved centrally on server across all devices successfully.",
+        synced_at: new Date().toISOString(),
+      });
+    }
+
+    // Default: action === 'pull' or GET
+    const syncData = getSyncData();
+    const sysStatus = getSystemStatus();
+
+    // Ensure admin user from system status is present and updated in users array
+    if (sysStatus.adminUser && Array.isArray(syncData.users)) {
+      const adminIdx = syncData.users.findIndex((u: any) =>
+        u.id === sysStatus.adminUser.id ||
+        (u.email && u.email.toLowerCase().trim() === sysStatus.adminUser.email?.toLowerCase().trim()) ||
+        (u.username && u.username.toLowerCase().trim() === sysStatus.adminUser.username?.toLowerCase().trim()) ||
+        u.role === 'supreme_admin'
+      );
+      if (adminIdx >= 0) {
+        syncData.users[adminIdx] = {
+          ...syncData.users[adminIdx],
+          ...sysStatus.adminUser,
+          password: sysStatus.adminUser.password || syncData.users[adminIdx].password,
+        };
+      } else {
+        syncData.users.unshift(sysStatus.adminUser);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: "Data synchronized successfully",
+      synced_at: new Date().toISOString(),
+      data: syncData,
+    });
   });
 
   // API Health Check

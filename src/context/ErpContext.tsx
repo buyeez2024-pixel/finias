@@ -176,10 +176,11 @@ export const deduplicateUsers = (userList: User[]): User[] => {
       );
       if (matchIndex >= 0) {
         result[matchIndex] = {
-          ...u,
           ...result[matchIndex],
-          role: result[matchIndex].role === 'supreme_admin' || u.role === 'supreme_admin' ? 'supreme_admin' : (result[matchIndex].role || u.role),
-          status: result[matchIndex].status === 'active' || u.status === 'active' ? 'active' : (result[matchIndex].status || u.status),
+          ...u,
+          password: u.password || result[matchIndex].password,
+          role: result[matchIndex].role === 'supreme_admin' || u.role === 'supreme_admin' ? 'supreme_admin' : (u.role || result[matchIndex].role),
+          status: result[matchIndex].status === 'active' || u.status === 'active' ? 'active' : (u.status || result[matchIndex].status),
         };
       }
       continue;
@@ -2562,6 +2563,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                       combined[adminIdx] = {
                         ...combined[adminIdx],
                         ...activeAdmin,
+                        password: activeAdmin.password || combined[adminIdx].password,
                         role: activeAdmin.role || combined[adminIdx].role || 'supreme_admin',
                         status: activeAdmin.status || combined[adminIdx].status || 'active',
                       };
@@ -2583,7 +2585,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch {}
 
-      // 2. Also ensure server adminUser from system.php is present if users list is empty
+      // 2. Also ensure server adminUser from system.php is present and credentials updated
       try {
         const sysRes = await fetch(getApiUrl('api/system.php?action=status&t=' + Date.now()), {
           headers: { Accept: 'application/json' },
@@ -2612,22 +2614,47 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
           if (sysData.success && sysData.adminUser && active) {
+            const admin = sysData.adminUser;
             setUsers((prev) => {
-              const hasAdmin = prev.some(
+              const adminIdx = prev.findIndex(
                 (u) =>
-                  u.id === sysData.adminUser.id ||
-                  (u.email && u.email.toLowerCase() === sysData.adminUser.email?.toLowerCase()) ||
-                  (u.username && u.username.toLowerCase() === sysData.adminUser.username?.toLowerCase())
+                  u.id === admin.id ||
+                  (u.email && admin.email && u.email.toLowerCase().trim() === admin.email.toLowerCase().trim()) ||
+                  (u.username && admin.username && u.username.toLowerCase().trim() === admin.username.toLowerCase().trim())
               );
-              if (!hasAdmin) {
-                const updated = deduplicateUsers([sysData.adminUser, ...prev]);
+              let nextList: User[];
+              if (adminIdx >= 0) {
+                nextList = [...prev];
+                nextList[adminIdx] = {
+                  ...nextList[adminIdx],
+                  ...admin,
+                  password: admin.password || nextList[adminIdx].password,
+                  role: 'supreme_admin',
+                  status: 'active'
+                };
+              } else {
+                nextList = [admin, ...prev];
+              }
+              const deduped = deduplicateUsers(nextList);
+              try {
+                localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(deduped));
+                localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(admin));
+              } catch {}
+              return deduped;
+            });
+            setCurrentUser((curr) => {
+              if (curr && (curr.id === admin.id || (curr.email && admin.email && curr.email.toLowerCase().trim() === admin.email.toLowerCase().trim()))) {
+                const updated = {
+                  ...curr,
+                  ...admin,
+                  password: admin.password || curr.password
+                };
                 try {
-                  localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(updated));
-                  localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(sysData.adminUser));
+                  localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updated));
                 } catch {}
                 return updated;
               }
-              return prev;
+              return curr;
             });
           }
         }
@@ -9733,10 +9760,11 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setUsers((prev) => {
       const updatedList = prev.map((u) => {
-        const isMatch = u.id === id || 
-          (userData.email && u.email?.toLowerCase().trim() === userData.email?.toLowerCase().trim()) ||
-          (userData.username && u.username?.toLowerCase().trim() === userData.username?.toLowerCase().trim()) ||
-          (currentUser && (currentUser.id === u.id || currentUser.email === u.email));
+        const isMatch =
+          (u.id && id && u.id === id) ||
+          (userData.email && u.email && u.email.toLowerCase().trim() === userData.email.toLowerCase().trim()) ||
+          (userData.username && u.username && u.username.toLowerCase().trim() === userData.username.toLowerCase().trim()) ||
+          (currentUser && currentUser.id === id && (u.id === currentUser.id || (currentUser.email && u.email && u.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim())));
 
         if (!isMatch) return u;
 
@@ -9746,7 +9774,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : (userData.status !== undefined ? userData.status : u.status);
         const updated = { ...u, ...userData, role: finalRole, status: finalStatus };
         
-        if (currentUser && (currentUser.id === u.id || currentUser.email === u.email || u.id === id)) {
+        if (currentUser && (currentUser.id === u.id || (currentUser.email && u.email && currentUser.email.toLowerCase().trim() === u.email.toLowerCase().trim()) || u.id === id)) {
           setCurrentUser(updated);
           try {
             localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(updated));
@@ -9759,12 +9787,23 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         localStorage.setItem(`${STORAGE_KEY}_users`, JSON.stringify(updatedList));
         localStorage.setItem('royal_pos_v1_users', JSON.stringify(updatedList));
-        const targetUsr = updatedList.find(u => u.id === id || (userData.email && u.email?.toLowerCase().trim() === u.email?.toLowerCase().trim()));
+        const targetUsr = updatedList.find(u => 
+          (u.id && id && u.id === id) || 
+          (userData.email && u.email && u.email.toLowerCase().trim() === userData.email.toLowerCase().trim()) ||
+          (currentUser && currentUser.id === id && u.id === currentUser.id)
+        );
         if (targetUsr) {
           if (currentUser?.id === id || currentUser?.id === targetUsr.id || targetUsr.role === 'supreme_admin' || targetUsr.id === 'usr_admin') {
             localStorage.setItem(`${STORAGE_KEY}_auth_user`, JSON.stringify(targetUsr));
             localStorage.setItem(`${STORAGE_KEY}_admin_user`, JSON.stringify(targetUsr));
             setCurrentUser(targetUsr);
+          }
+          if (targetUsr.role === 'supreme_admin' || targetUsr.role === 'admin' || targetUsr.id === 'usr_admin') {
+            fetch(getApiUrl('api/system/sync-status'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ adminUser: targetUsr }),
+            }).catch(() => {});
           }
         }
       } catch (e) {

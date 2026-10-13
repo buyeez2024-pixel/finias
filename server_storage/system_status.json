@@ -1,8 +1,30 @@
 {
-  "isInstalled": false,
-  "installationCompleted": false,
-  "installedAt": null,
-  "businessName": "",
-  "adminEmail": "",
-  "adminUsername": ""
+  "isInstalled": true,
+  "installationCompleted": true,
+  "isFreshInstallation": true,
+  "installedAt": "2026-10-13T15:59:35.273Z",
+  "businessName": "Royal Electricals",
+  "adminEmail": "syed518.ds@gmail.com",
+  "adminUsername": "syed518.ds",
+  "settings": {
+    "isInstalled": true,
+    "installationCompleted": true,
+    "isFreshInstallation": true,
+    "installationType": "fresh",
+    "installedAt": "2026-10-13T15:58:40.077Z"
+  },
+  "adminUser": {
+    "id": "usr_admin",
+    "name": "Syed Khajanoor",
+    "email": "syed518.ds@gmail.com",
+    "username": "syed518.ds",
+    "password": "Gousia@143",
+    "pin": "",
+    "phone": "8220038825",
+    "role": "supreme_admin",
+    "status": "active",
+    "businessName": "Royal Electricals",
+    "locationId": "loc_main",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"
+  }
 }
