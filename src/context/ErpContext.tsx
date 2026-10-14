@@ -2518,13 +2518,31 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setRacks(d.racks);
                 try { localStorage.setItem(`${STORAGE_KEY}_racks`, JSON.stringify(d.racks)); } catch {}
               }
-              if (Array.isArray(d.tax_rates) && d.tax_rates.length > 0) {
-                setTaxRates(d.tax_rates);
-                try { localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(d.tax_rates)); } catch {}
+              if (Array.isArray(d.tax_rates)) {
+                const saved = localStorage.getItem(`${STORAGE_KEY}_tax_rates`);
+                const localRates = saved ? JSON.parse(saved) : [];
+                const rateMap = new Map();
+                for (const r of [...localRates, ...d.tax_rates]) {
+                  if (r && r.id) rateMap.set(r.id, r);
+                }
+                const mergedRates = Array.from(rateMap.values());
+                if (mergedRates.length > 0) {
+                  setTaxRates(mergedRates);
+                  try { localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(mergedRates)); } catch {}
+                }
               }
-              if (Array.isArray(d.tax_groups) && d.tax_groups.length > 0) {
-                setTaxGroups(d.tax_groups);
-                try { localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(d.tax_groups)); } catch {}
+              if (Array.isArray(d.tax_groups)) {
+                const saved = localStorage.getItem(`${STORAGE_KEY}_tax_groups`);
+                const localGroups = saved ? JSON.parse(saved) : [];
+                const groupMap = new Map();
+                for (const g of [...localGroups, ...d.tax_groups]) {
+                  if (g && g.id) groupMap.set(g.id, g);
+                }
+                const mergedGroups = Array.from(groupMap.values());
+                if (mergedGroups.length > 0) {
+                  setTaxGroups(mergedGroups);
+                  try { localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(mergedGroups)); } catch {}
+                }
               }
               if (Array.isArray(d.currencies) && d.currencies.length > 0) {
                 setCurrencies(d.currencies);

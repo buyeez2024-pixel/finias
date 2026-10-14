@@ -2,369 +2,626 @@
   "customers": [
     {
       "id": "cust_walkin",
-      "contactId": "CUST-0001",
       "name": "Walk-in Retail Customer",
-      "businessName": "Walk-in Customer",
-      "customerGroup": "Retail Customer",
-      "phone": "+1 555-019-2834",
-      "countryCode": "+1",
+      "phone": "+1 555 000 0000",
       "email": "walkin@store.local",
-      "address": "100 Main Street",
-      "city": "Metropolis",
-      "state": "NY",
-      "province": "Metropolis Metro",
-      "zipcode": "10001",
-      "country": "United States",
-      "taxNumber": "TAX-001",
-      "creditLimit": 500,
+      "customerGroup": "Standard",
+      "creditLimit": 0,
+      "totalPurchases": 0,
       "totalDue": 0,
-      "totalSales": 1200,
-      "loyaltyPoints": 120,
-      "createdDate": "2026-01-10"
+      "contactId": "CUST-0001",
+      "totalSales": 0
     },
     {
-      "id": "cust_prime",
-      "contactId": "CUST-0002",
+      "id": "cust_vip",
       "name": "Prime Retail Shopper",
-      "businessName": "Apex Retail",
-      "customerGroup": "VIP Customer",
-      "phone": "+1 555-019-9182",
-      "countryCode": "+1",
-      "email": "prime@shopper.com",
-      "address": "450 Commercial Ave",
-      "city": "New York",
-      "state": "NY",
-      "province": "Manhattan",
-      "zipcode": "10002",
-      "country": "United States",
-      "taxNumber": "TAX-002",
+      "phone": "+1 555 987 6543",
+      "email": "vip.shopper@gmail.com",
+      "customerGroup": "VIP Tier",
       "creditLimit": 2500,
-      "totalDue": 150,
-      "totalSales": 3400,
-      "loyaltyPoints": 350,
-      "createdDate": "2026-01-15"
-    },
-    {
-      "id": "cust_global",
-      "contactId": "CUST-0003",
-      "name": "Global Tech Solutions",
-      "businessName": "Global Tech Corp",
-      "customerGroup": "Wholesale B2B",
-      "phone": "+1 555-024-4901",
-      "countryCode": "+1",
-      "email": "procurement@globaltech.com",
-      "address": "800 Innovation Blvd",
-      "city": "Chicago",
-      "state": "IL",
-      "province": "Cook County",
-      "zipcode": "60601",
-      "country": "United States",
-      "taxNumber": "US-TAX-88912",
-      "creditLimit": 10000,
-      "totalDue": 450,
-      "totalSales": 15800,
-      "loyaltyPoints": 1250,
-      "createdDate": "2026-02-01"
+      "totalPurchases": 1450,
+      "totalDue": 0,
+      "contactId": "CUST-0002",
+      "totalSales": 0
     }
   ],
   "suppliers": [
     {
+      "name": "Bharat Traders",
+      "contactId": "SUP-0003",
+      "phone": "+91 8220038836",
+      "countryCode": "+91",
+      "altCountryCode": "+91",
+      "email": "",
+      "openingBalance": 0,
+      "advanceBalance": 0,
+      "payTerm": "Due on Receipt",
+      "address": "Naidu Nagar",
+      "city": "Madanapalle",
+      "state": "Andhra Pradesh",
+      "province": "Annamayya",
+      "zipcode": "517325",
+      "country": "India",
+      "id": "contact_1791955283805",
+      "totalPayable": 0,
+      "totalPurchases": 357,
+      "createdDate": "2026-10-14"
+    },
+    {
       "id": "sup_metro",
-      "contactId": "SUP-0001",
       "name": "Metro Wholesale Distributors",
-      "businessName": "Metro Wholesale Ltd",
       "contactPerson": "John Metro",
-      "phone": "+1 800-555-0122",
-      "countryCode": "+1",
+      "phone": "+1 800 555 0122",
       "email": "orders@metrowholesale.com",
       "address": "400 Industrial Way, Suite 10",
       "city": "Chicago",
-      "state": "IL",
-      "province": "Cook County",
-      "zipcode": "60602",
       "country": "United States",
-      "taxNumber": "US-SUP-44120",
-      "payTerm": "Net 30 Days",
-      "totalPurchases": 18500,
-      "totalPayable": 0,
-      "createdDate": "2026-01-10"
+      "totalPurchases": 18735,
+      "totalDue": 0,
+      "contactId": "SUP-0001",
+      "totalPayable": 0
     },
     {
       "id": "sup_fresh",
-      "contactId": "SUP-0002",
       "name": "FreshFarm Direct Supply",
-      "businessName": "FreshFarm Organics",
       "contactPerson": "Sarah Farm",
-      "phone": "+1 800-555-0188",
-      "countryCode": "+1",
+      "phone": "+1 800 555 0188",
       "email": "supplies@freshfarmdirect.com",
       "address": "120 Harvest Valley Road",
       "city": "Sacramento",
-      "state": "CA",
-      "province": "Central Valley",
-      "zipcode": "95814",
       "country": "United States",
-      "taxNumber": "US-SUP-99120",
-      "payTerm": "Net 15 Days",
-      "totalPurchases": 9400,
-      "totalPayable": 320,
-      "createdDate": "2026-01-12"
-    },
-    {
-      "id": "sup_apex",
-      "contactId": "SUP-0003",
-      "name": "Apex Electronics & Logistics",
-      "businessName": "Apex Global Logistics",
-      "contactPerson": "David Chen",
-      "phone": "+1 800-555-0300",
-      "countryCode": "+1",
-      "email": "sales@apexelectronics.com",
-      "address": "950 Tech Park Way",
-      "city": "Dallas",
-      "state": "TX",
-      "province": "Dallas County",
-      "zipcode": "75201",
-      "country": "United States",
-      "taxNumber": "US-SUP-33100",
-      "payTerm": "Net 45 Days",
-      "totalPurchases": 24000,
-      "totalPayable": 1200,
-      "createdDate": "2026-01-20"
+      "totalPurchases": 9620,
+      "totalDue": 0,
+      "contactId": "SUP-0002",
+      "totalPayable": 0
     }
   ],
   "products": [
     {
-      "id": "prod_sol_inverter",
-      "name": "Solar Hybrid Inverter 5kW",
-      "sku": "INV-5KW",
-      "barcode": "8901234567890",
-      "type": "variable",
-      "unit": "Pc",
-      "category": "Electronics",
+      "name": "test prod",
+      "sku": "PROD-483721",
+      "barcode": "",
+      "type": "single",
+      "hsnCode": "",
+      "taxGroupId": "",
+      "taxType": "exclusive",
+      "category": "General",
       "brand": "Standard",
-      "costPrice": 450,
-      "sellingPrice": 650,
+      "expiryPeriodType": "Months",
+      "unit": "pc",
+      "costPrice": 152,
+      "sellingPrice": 190,
       "taxRate": 0,
       "alertQuantity": 5,
-      "currentStock": 25,
-      "stock": 25,
-      "locationStocks": {
-        "loc_main": 25
-      },
       "image": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80",
-      "description": "High-efficiency pure sine wave solar hybrid inverter with multi-phase variants",
-      "attributes": [
-        {
-          "id": "attr_1",
-          "name": "Phase Type",
-          "values": [
-            "Single Phase",
-            "Three Phase"
-          ]
-        }
+      "description": "",
+      "locationId": "loc_main",
+      "branchId": "loc_main",
+      "locationIds": [
+        "loc_main"
       ],
-      "variations": [
+      "branchIds": [
+        "loc_main"
+      ],
+      "locationStocks": {
+        "loc_main": 21
+      },
+      "currentStock": 21,
+      "stock": 21,
+      "lots": [
         {
-          "id": "var_inv_1ph",
-          "name": "Phase Type: Single Phase",
-          "value": "Single Phase",
-          "attributeName": "Phase Type",
-          "sku": "INV-5KW-1PH",
-          "costPrice": 450,
-          "costPriceIncTax": 450,
-          "margin": 44.44,
-          "sellingPrice": 650,
-          "sellingPriceIncTax": 650,
-          "openingStock": 15,
-          "currentStock": 15,
-          "alertQuantity": 3,
-          "locationStocks": {
-            "loc_main": 15
-          }
+          "id": "lot_1791955346730",
+          "lotNumber": "PUR-2026-1697",
+          "costPrice": 152,
+          "sellingPrice": 190,
+          "currentStock": 11,
+          "createdDate": "2026-10-14",
+          "source": "opening_stock",
+          "initialStock": 10
         },
         {
-          "id": "var_inv_3ph",
-          "name": "Phase Type: Three Phase",
-          "value": "Three Phase",
-          "attributeName": "Phase Type",
-          "sku": "INV-5KW-3PH",
-          "costPrice": 550,
-          "costPriceIncTax": 550,
-          "margin": 45.45,
-          "sellingPrice": 800,
-          "sellingPriceIncTax": 800,
-          "openingStock": 10,
+          "id": "lot_op_1791955414174_0",
+          "lotNumber": "LOT-2026-002",
+          "costPrice": 152,
+          "sellingPrice": 190,
           "currentStock": 10,
-          "alertQuantity": 2,
-          "locationStocks": {
-            "loc_main": 10
-          }
+          "createdDate": "2026-10-14T05:23:34.174Z"
         }
       ],
-      "lots": []
+      "openingStock": 10,
+      "source": "manual",
+      "creationSource": "add_product_screen",
+      "id": "prod_1791955346730"
     },
     {
-      "id": "prod_bat_lifepo4",
-      "name": "Lithium Battery 48V 100Ah",
-      "sku": "BAT-48V-100",
-      "barcode": "8901234567891",
+      "name": "test pro",
+      "sku": "PROD-374421",
+      "barcode": "",
       "type": "single",
-      "unit": "Pc",
-      "category": "Batteries",
+      "hsnCode": "",
+      "taxGroupId": "",
+      "taxType": "exclusive",
+      "category": "General",
       "brand": "Standard",
-      "costPrice": 850,
-      "costPriceIncTax": 850,
-      "sellingPrice": 1200,
-      "sellingPriceIncTax": 1200,
+      "expiryPeriodType": "Months",
+      "unit": "pc",
+      "costPrice": 105,
+      "sellingPrice": 131.25,
       "taxRate": 0,
-      "alertQuantity": 8,
-      "currentStock": 2,
-      "stock": 2,
+      "alertQuantity": 5,
+      "image": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80",
+      "description": "",
+      "locationId": "loc_main",
+      "branchId": "loc_main",
+      "locationIds": [
+        "loc_main"
+      ],
+      "branchIds": [
+        "loc_main"
+      ],
       "locationStocks": {
-        "loc_main": 2
+        "loc_main": 11
       },
-      "image": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=300&q=80",
-      "description": "Deep-cycle LiFePO4 energy storage battery with built-in smart BMS",
-      "lots": []
+      "currentStock": 11,
+      "stock": 11,
+      "lots": [
+        {
+          "id": "lot_1791955320244",
+          "lotNumber": "PUR-2026-1697",
+          "costPrice": 105,
+          "sellingPrice": 131.25,
+          "currentStock": 11,
+          "createdDate": "2026-10-14",
+          "source": "opening_stock",
+          "initialStock": 10
+        }
+      ],
+      "openingStock": 10,
+      "manualLotNumber": "PUR-2026-1697",
+      "initialLotStock": 10,
+      "source": "manual",
+      "creationSource": "add_product_screen",
+      "id": "prod_1791955320244"
     },
     {
-      "id": "prod_sol_panel",
-      "name": "Mono Solar Panel 450W",
-      "sku": "PNL-450W-MONO",
-      "barcode": "8901234567892",
+      "name": "testr",
+      "sku": "PROD-460901",
+      "barcode": "",
       "type": "single",
-      "unit": "Pc",
-      "category": "Solar Panels",
+      "hsnCode": "",
+      "taxGroupId": "",
+      "taxType": "exclusive",
+      "category": "General",
       "brand": "Standard",
-      "costPrice": 120,
-      "costPriceIncTax": 120,
-      "sellingPrice": 180,
-      "sellingPriceIncTax": 180,
+      "expiryPeriodType": "Months",
+      "unit": "pc",
+      "costPrice": 100,
+      "sellingPrice": 125,
       "taxRate": 0,
-      "alertQuantity": 15,
-      "currentStock": 0,
-      "stock": 0,
+      "alertQuantity": 5,
+      "image": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80",
+      "description": "",
+      "locationId": "loc_main",
+      "branchId": "loc_main",
+      "locationIds": [
+        "loc_main"
+      ],
+      "branchIds": [
+        "loc_main"
+      ],
       "locationStocks": {
-        "loc_main": 0
+        "loc_main": 6
       },
-      "image": "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=300&q=80",
-      "description": "High-efficiency half-cut monocrystalline photovoltaic module",
-      "lots": []
+      "currentStock": 6,
+      "stock": 6,
+      "lots": [
+        {
+          "id": "lot_1791954771360",
+          "lotNumber": "PUR-2026-11",
+          "costPrice": 100,
+          "sellingPrice": 125,
+          "currentStock": 6,
+          "createdDate": "2026-10-14",
+          "source": "opening_stock",
+          "initialStock": 5
+        }
+      ],
+      "openingStock": 5,
+      "manualLotNumber": "PUR-2026-11",
+      "initialLotStock": 5,
+      "source": "manual",
+      "creationSource": "add_product_screen",
+      "id": "prod_1791954771361"
     },
     {
-      "id": "prod_mppt_controller",
-      "name": "MPPT Charge Controller 60A",
-      "sku": "MPPT-60A-PRO",
-      "barcode": "8901234567893",
+      "name": "test product 1",
+      "sku": "PROD-227173",
+      "barcode": "",
       "type": "single",
-      "unit": "Pc",
-      "category": "Electronics",
+      "hsnCode": "",
+      "taxGroupId": "grp_gst_18",
+      "taxType": "exclusive",
+      "category": "General",
       "brand": "Standard",
-      "costPrice": 95,
-      "costPriceIncTax": 95,
-      "sellingPrice": 150,
-      "sellingPriceIncTax": 150,
-      "taxRate": 0,
-      "alertQuantity": 6,
-      "currentStock": 3,
-      "stock": 3,
+      "expiryPeriodType": "Months",
+      "unit": "pc",
+      "costPrice": 100,
+      "sellingPrice": 125,
+      "taxRate": 18,
+      "alertQuantity": 5,
+      "image": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80",
+      "description": "",
+      "locationId": "loc_main",
+      "branchId": "loc_main",
+      "locationIds": [
+        "loc_main"
+      ],
+      "branchIds": [
+        "loc_main"
+      ],
       "locationStocks": {
-        "loc_main": 3
+        "loc_main": 12
       },
-      "image": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=80",
-      "description": "Intelligent solar maximum power point tracker with LCD screen",
-      "lots": []
+      "currentStock": 12,
+      "stock": 12,
+      "lots": [
+        {
+          "id": "lot_1791953953313",
+          "lotNumber": "PUR-2025-01",
+          "costPrice": 100,
+          "sellingPrice": 125,
+          "currentStock": 11,
+          "createdDate": "2026-10-14",
+          "source": "opening_stock",
+          "initialStock": 10
+        },
+        {
+          "id": "lot_pur_1791955366283_prod_1791953953313_hikz",
+          "lotNumber": "PUR-2026-1697",
+          "costPrice": 100,
+          "sellingPrice": 125,
+          "currentStock": 1,
+          "initialStock": 1,
+          "source": "purchase",
+          "purchaseId": "txn_pur_1791955366282_5571",
+          "createdDate": "2026-10-14"
+        }
+      ],
+      "openingStock": 10,
+      "manualLotNumber": "PUR-2025-01",
+      "initialLotStock": 10,
+      "source": "manual",
+      "creationSource": "add_product_screen",
+      "id": "prod_1791953953313"
     },
     {
-      "id": "prod_mc4_connectors",
-      "name": "MC4 Solar Connectors 10-Pair",
-      "sku": "MC4-10PAIR",
-      "barcode": "8901234567894",
+      "name": "Tank 1000L",
+      "sku": "PROD-923373",
+      "barcode": "",
       "type": "single",
-      "unit": "Set",
-      "category": "Accessories",
+      "hsnCode": "",
+      "taxGroupId": "",
+      "taxType": "exclusive",
+      "category": "General",
       "brand": "Standard",
-      "costPrice": 12,
-      "costPriceIncTax": 12,
-      "sellingPrice": 25,
-      "sellingPriceIncTax": 25,
+      "expiryPeriodType": "Months",
+      "unit": "pc",
+      "costPrice": 1200,
+      "sellingPrice": 1500,
       "taxRate": 0,
-      "alertQuantity": 10,
-      "currentStock": 45,
-      "stock": 45,
+      "alertQuantity": 5,
+      "image": "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80",
+      "description": "",
+      "locationId": "loc_main",
+      "branchId": "loc_main",
+      "locationIds": [
+        "loc_main"
+      ],
+      "branchIds": [
+        "loc_main"
+      ],
       "locationStocks": {
-        "loc_main": 45
+        "loc_main": 10
       },
-      "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&q=80",
-      "description": "Weatherproof IP67 male and female solar cable connectors",
-      "lots": []
+      "currentStock": 10,
+      "stock": 10,
+      "lots": [
+        {
+          "id": "lot_1791953595501",
+          "lotNumber": "PUR-2026-1126",
+          "costPrice": 1200,
+          "sellingPrice": 1500,
+          "currentStock": 10,
+          "createdDate": "2026-10-14",
+          "source": "opening_stock"
+        }
+      ],
+      "openingStock": 10,
+      "manualLotNumber": "PUR-2026-1126",
+      "initialLotStock": 10,
+      "source": "manual",
+      "creationSource": "add_product_screen",
+      "id": "prod_1791953595501"
     }
   ],
-  "transactions": [],
+  "transactions": [
+    {
+      "id": "txn_pur_1791955366282_5571",
+      "invoiceNo": "PO-2026-37310",
+      "type": "purchase",
+      "date": "2026-10-14",
+      "locationId": "loc_main",
+      "supplierId": "contact_1791955283805",
+      "supplierName": "Bharat Traders",
+      "items": [
+        {
+          "productId": "prod_1791953953313",
+          "productName": "test product 1",
+          "sku": "PROD-227173",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 100,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 100,
+          "discount": 0,
+          "total": 100,
+          "marginPercent": 25,
+          "sellingPrice": 125,
+          "hsnCode": ""
+        },
+        {
+          "productId": "prod_1791955320246",
+          "productName": "test pro",
+          "sku": "PROD-374421",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 105,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 105,
+          "discount": 0,
+          "total": 105,
+          "marginPercent": 25,
+          "sellingPrice": 131.25,
+          "hsnCode": ""
+        },
+        {
+          "productId": "prod_1791955346732",
+          "productName": "test prod",
+          "sku": "PROD-483721",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 152,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 152,
+          "discount": 0,
+          "total": 152,
+          "marginPercent": 25,
+          "sellingPrice": 190,
+          "hsnCode": ""
+        }
+      ],
+      "subtotal": 357,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "shippingCharges": 0,
+      "totalAmount": 357,
+      "paidAmount": 357,
+      "paymentStatus": "paid",
+      "paymentEntries": [
+        {
+          "id": "pay_pur_1791955366282",
+          "method": "cash",
+          "amount": 357,
+          "date": "2026-10-14 05:22"
+        }
+      ],
+      "status": "received",
+      "notes": "",
+      "lotNumber": "PUR-2026-1697",
+      "additionalExpenses": [],
+      "isPos": false,
+      "saleChannel": "standard"
+    },
+    {
+      "id": "txn_pur_1791954811195_8386",
+      "invoiceNo": "PO-2026-52906",
+      "type": "purchase",
+      "date": "2026-10-14",
+      "locationId": "loc_main",
+      "supplierId": "sup_fresh",
+      "supplierName": "FreshFarm Direct Supply",
+      "items": [
+        {
+          "productId": "prod_1791954771365",
+          "productName": "testr",
+          "sku": "PROD-460901",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 100,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 100,
+          "discount": 0,
+          "total": 100,
+          "marginPercent": 25,
+          "sellingPrice": 125,
+          "hsnCode": ""
+        },
+        {
+          "productId": "prod_1791954794758",
+          "productName": "testrer",
+          "sku": "PROD-286674",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 120,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 120,
+          "discount": 0,
+          "total": 120,
+          "marginPercent": 25,
+          "sellingPrice": 150,
+          "hsnCode": ""
+        }
+      ],
+      "subtotal": 220,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "shippingCharges": 0,
+      "totalAmount": 220,
+      "paidAmount": 220,
+      "paymentStatus": "paid",
+      "paymentEntries": [
+        {
+          "id": "pay_pur_1791954811195",
+          "method": "cash",
+          "amount": 220,
+          "date": "2026-10-14 05:13"
+        }
+      ],
+      "status": "received",
+      "notes": "",
+      "lotNumber": "PUR-2026-11",
+      "additionalExpenses": [],
+      "isPos": false,
+      "saleChannel": "standard"
+    },
+    {
+      "id": "txn_pur_1791954045286_2498",
+      "invoiceNo": "PO-2026-34343",
+      "type": "purchase",
+      "date": "2026-10-14",
+      "locationId": "loc_main",
+      "supplierId": "sup_metro",
+      "supplierName": "Metro Wholesale Distributors",
+      "items": [
+        {
+          "productId": "prod_1791953953315",
+          "productName": "test product 1",
+          "sku": "PROD-227173",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 100,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 100,
+          "discount": 0,
+          "total": 100,
+          "marginPercent": 25,
+          "sellingPrice": 125,
+          "hsnCode": ""
+        },
+        {
+          "productId": "prod_1791953980402",
+          "productName": "test product 2",
+          "sku": "PROD-917882",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 125,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 125,
+          "discount": 0,
+          "total": 125,
+          "marginPercent": 25,
+          "sellingPrice": 156.25,
+          "hsnCode": ""
+        },
+        {
+          "productId": "prod_1791954017341",
+          "productName": "test product 3",
+          "sku": "PROD-919272",
+          "unit": "pc",
+          "quantity": 1,
+          "costPrice": 10,
+          "taxRate": 0,
+          "taxAmount": 0,
+          "unitPrice": 10,
+          "discount": 0,
+          "total": 10,
+          "marginPercent": 25,
+          "sellingPrice": 12.5,
+          "hsnCode": ""
+        }
+      ],
+      "subtotal": 235,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "shippingCharges": 0,
+      "totalAmount": 235,
+      "paidAmount": 235,
+      "paymentStatus": "paid",
+      "paymentEntries": [
+        {
+          "id": "pay_pur_1791954045287",
+          "method": "cash",
+          "amount": 235,
+          "date": "2026-10-14 05:00"
+        }
+      ],
+      "status": "received",
+      "notes": "",
+      "lotNumber": "PUR-2025-01",
+      "additionalExpenses": [],
+      "isPos": false,
+      "saleChannel": "standard"
+    }
+  ],
   "users": [
     {
       "id": "usr_admin",
-      "name": "Syed Khajanoor",
-      "email": "buyeez2024@gmail.com",
+      "name": "syed",
+      "email": "syed518.ds@gmail.com",
       "username": "syed518.ds",
       "password": "Royal@517325",
+      "pin": "1234",
+      "phone": "+91 8220038825",
       "role": "supreme_admin",
-      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-      "locationId": "loc_main",
-      "businessName": "Royal Electricals",
       "status": "active",
+      "businessName": "Royal Electricals",
+      "locationId": "loc_main",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
       "failedLogins": 0,
-      "lastLogin": "10:16 pm",
-      "pin": "",
-      "phone": "8220038825",
+      "lastLogin": "12:02 pm",
       "unlockRequested": false,
       "isUnlockedByAdmin": false,
       "requireOtpOnNextLogin": false
-    },
-    {
-      "id": "usr_cashier",
-      "name": "Alex Rivera",
-      "email": "cashier@royalpos.com",
-      "username": "cashier",
-      "password": "password123",
-      "role": "cashier",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      "locationId": "loc_main",
-      "businessName": "Royal POSfini",
-      "status": "active",
-      "failedLogins": 0,
-      "lastLogin": "Today, 08:30 AM"
-    },
-    {
-      "id": "usr_inventory",
-      "name": "Marcus Vance",
-      "email": "inventory@royalpos.com",
-      "username": "inventory",
-      "password": "password123",
-      "role": "inventory_manager",
-      "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
-      "locationId": "loc_main",
-      "businessName": "Royal POSfini",
-      "status": "active",
-      "failedLogins": 0,
-      "lastLogin": "Yesterday"
-    },
-    {
-      "id": "usr_finance",
-      "name": "Elena Rostova",
-      "email": "finance@royalpos.com",
-      "username": "finance",
-      "password": "password123",
-      "role": "accountant",
-      "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
-      "locationId": "loc_main",
-      "businessName": "Royal POSfini",
-      "status": "active",
-      "failedLogins": 0,
-      "lastLogin": "Today, 10:15 AM"
     }
   ],
   "categories": [
+    {
+      "id": "cat_bev",
+      "name": "Beverages & Drinks",
+      "code": "BEV",
+      "description": "Fresh juices, artisan coffee, soda and bottled spring water"
+    },
+    {
+      "id": "cat_snack",
+      "name": "Snacks & Confectionery",
+      "code": "SNK",
+      "description": "Chocolates, roasted nuts, organic chips and treats"
+    },
+    {
+      "id": "cat_dairy",
+      "name": "Dairy & Bakery",
+      "code": "DB",
+      "description": "Farm fresh milk, artisan bread, cheeses and butter"
+    },
+    {
+      "id": "cat_pantry",
+      "name": "Grains & Pantry Staples",
+      "code": "PNT",
+      "description": "Rice, pasta, olive oil, spices and organic flours"
+    },
+    {
+      "id": "cat_care",
+      "name": "Health & Personal Care",
+      "code": "HPC",
+      "description": "Soaps, hand wash, paper goods and organic essentials"
+    },
     {
       "id": "cat_electronics",
       "name": "Electronics",
@@ -438,75 +695,148 @@
       "name": "Apple",
       "code": "BRD-APPL",
       "shortCode": "AAPL",
-      "description": "Consumer electronics, laptops, and smartphones",
       "originCountry": "United States",
       "website": "https://apple.com",
       "color": "#6366f1",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Consumer electronics, laptops, and smartphones"
     },
     {
       "id": "brd_samsung",
       "name": "Samsung",
       "code": "BRD-SAMS",
       "shortCode": "SMSNG",
-      "description": "Displays, smartphones, appliances, and memory",
       "originCountry": "South Korea",
       "website": "https://samsung.com",
       "color": "#0ea5e9",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Displays, smartphones, appliances, and memory"
     },
     {
       "id": "brd_sony",
       "name": "Sony",
       "code": "BRD-SONY",
       "shortCode": "SONY",
-      "description": "Audio, cameras, gaming, and entertainment electronics",
       "originCountry": "Japan",
       "website": "https://sony.com",
       "color": "#8b5cf6",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Audio, cameras, gaming, and entertainment electronics"
     },
     {
       "id": "brd_logitech",
       "name": "Logitech",
       "code": "BRD-LOGI",
       "shortCode": "LOGI",
-      "description": "Computer peripherals, keyboards, mice, and webcams",
       "originCountry": "Switzerland",
       "website": "https://logitech.com",
       "color": "#10b981",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Computer peripherals, keyboards, mice, and webcams"
     },
     {
       "id": "brd_apex",
       "name": "Apex Tech",
       "code": "BRD-APEX",
       "shortCode": "APEX",
-      "description": "Premium electronics, gadgets, smart devices, and accessories",
       "originCountry": "United States",
       "website": "https://apextech.io",
       "color": "#f59e0b",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Premium electronics, gadgets, smart devices, and accessories"
     },
     {
       "id": "brd_nike",
       "name": "Nike",
       "code": "BRD-NIKE",
       "shortCode": "NIKE",
-      "description": "Athletic footwear, sportswear, apparel, and lifestyle accessories",
       "originCountry": "United States",
       "website": "https://nike.com",
       "color": "#f43f5e",
       "status": "active",
-      "createdDate": "2026-01-01"
+      "createdDate": "2026-01-01",
+      "description": "Athletic footwear, sportswear, apparel, and lifestyle accessories"
+    },
+    {
+      "id": "br_nestle",
+      "name": "Nestlé",
+      "code": "BRD-NSTL",
+      "shortCode": "NSTL",
+      "originCountry": "Switzerland",
+      "website": "https://nestle.com",
+      "color": "#6366f1",
+      "status": "active",
+      "createdDate": "2026-01-01",
+      "description": "Global nutrition, food and premium coffee"
+    },
+    {
+      "id": "br_pepsi",
+      "name": "PepsiCo",
+      "code": "BRD-PEPS",
+      "shortCode": "PEPS",
+      "originCountry": "United States",
+      "website": "https://pepsico.com",
+      "color": "#0ea5e9",
+      "status": "active",
+      "createdDate": "2026-01-01",
+      "description": "Artisan beverages and refreshments"
+    },
+    {
+      "id": "br_unilever",
+      "name": "Unilever",
+      "code": "BRD-UNLV",
+      "shortCode": "UNLV",
+      "originCountry": "United Kingdom",
+      "website": "https://unilever.com",
+      "color": "#10b981",
+      "status": "active",
+      "createdDate": "2026-01-01",
+      "description": "Sustainable dairy and personal care staples"
+    },
+    {
+      "id": "br_kraft",
+      "name": "Kraft Heinz",
+      "code": "BRD-KRFT",
+      "shortCode": "KRFT",
+      "originCountry": "United States",
+      "website": "https://kraftheinz.com",
+      "color": "#f59e0b",
+      "status": "active",
+      "createdDate": "2026-01-01",
+      "description": "Specialty condiments, grains and pantry goods"
     }
   ],
-  "units": [],
+  "units": [
+    {
+      "id": "unit_pc",
+      "name": "Pieces",
+      "shortName": "pc",
+      "allowDecimal": false
+    },
+    {
+      "id": "unit_kg",
+      "name": "Kilogram",
+      "shortName": "kg",
+      "allowDecimal": true
+    },
+    {
+      "id": "unit_ltr",
+      "name": "Liter",
+      "shortName": "ltr",
+      "allowDecimal": true
+    },
+    {
+      "id": "unit_box",
+      "name": "Box Pack",
+      "shortName": "box",
+      "allowDecimal": false
+    }
+  ],
   "customerGroups": [
     {
       "id": "cg_retail",
@@ -546,11 +876,11 @@
     "themeMode": "light",
     "logoUrl": "",
     "darkLogoUrl": "",
-    "isInstalled": false,
-    "installationCompleted": false,
-    "isFreshInstallation": false,
-    "installationType": "demo",
-    "defaultTaxRate": 0,
+    "isInstalled": true,
+    "installationCompleted": true,
+    "isFreshInstallation": true,
+    "installationType": "fresh",
+    "defaultTaxRate": 18,
     "enableTax": true,
     "taxSystem": "gst_india",
     "enableInlineTax": true,
@@ -584,7 +914,7 @@
     "businessName": "Royal Electricals",
     "currency": "INR",
     "currencyCode": "INR",
-    "currencySymbol": "\u20b9",
+    "currencySymbol": "₹",
     "currencyPlacement": "prefix",
     "currencyDecimalPlaces": 2,
     "amountRoundingMethod": "round_to_nearest_integer",
@@ -645,11 +975,39 @@
       "proprietorSignatureUrl": ""
     },
     "defaultInvoiceLayout": "classic",
-    "appVersion": "v2.5.4",
-    "buildNumber": "2026.09.30-STABLE",
+    "appVersion": "v2.5.8",
+    "buildNumber": "2026.10.14-BUILD",
     "autoIncrementVersionOnUpdate": true,
-    "lastUpdatedDate": "2026-09-30 09:10",
+    "lastUpdatedDate": "2026-10-14 04:52",
     "appReleaseNotes": [
+      {
+        "version": "v2.5.8",
+        "releaseDate": "2026-10-14 04:52",
+        "updatedBy": "Admin (Settings Auto-Increment)",
+        "type": "patch",
+        "description": "Automated patch version update on system settings change."
+      },
+      {
+        "version": "v2.5.7",
+        "releaseDate": "2026-10-14 04:51",
+        "updatedBy": "Admin (Settings Auto-Increment)",
+        "type": "patch",
+        "description": "Automated patch version update on system settings change."
+      },
+      {
+        "version": "v2.5.6",
+        "releaseDate": "2026-10-14 04:51",
+        "updatedBy": "syed (Installer Setup)",
+        "type": "patch",
+        "description": "Updated Installation Wizard Step 3 store profile & address sections to start blank/empty; added strict email validation (name@domain.com) with helper hints and Super Admin avatar image upload in Step 4."
+      },
+      {
+        "version": "v2.5.5",
+        "releaseDate": "2026-10-14 04:51",
+        "updatedBy": "Admin (Settings Auto-Increment)",
+        "type": "patch",
+        "description": "Automated patch version update on system settings change."
+      },
       {
         "version": "v2.5.4",
         "releaseDate": "2026-09-30 09:10",
@@ -679,21 +1037,68 @@
         "description": "Created Supreme Admin user role with absolute unrestricted access across the entire app ecosystem, system settings, and staff role hierarchies."
       }
     ],
-    "logo": ""
+    "logo": "",
+    "timezone": "Asia/Kolkata",
+    "address": "Naidu Nagar",
+    "city": "Madanapalle",
+    "province": "Chittoor",
+    "district": "Chittoor",
+    "state": "Andhra Pradesh",
+    "zip": "517325",
+    "country": "India",
+    "phone": "+91 8220038825",
+    "installedAt": "2026-10-14T04:52:06.594Z",
+    "enabledModules": {
+      "purchases": true,
+      "stockAdjustments": true,
+      "stockTransfers": true,
+      "expenses": true,
+      "crmContacts": true,
+      "aiIntelligence": true,
+      "barcodeStudio": true,
+      "multiLocations": true
+    },
+    "enableAccounts": true,
+    "enableAccounting": true,
+    "doubleEntryEnabled": true,
+    "autoJournalPosting": true,
+    "accountingBasis": "accrual",
+    "financialYearStartMonth": 1,
+    "enableBarcodeStudio": true,
+    "barcodeStudioConfigured": true,
+    "defaultBarcodeSymbology": "CODE128",
+    "defaultStickerFormat": "50x25_thermal",
+    "barcodePaperSize": "50x25mm",
+    "barcodeAutoGenerateOnCreate": true,
+    "barcodeShowPrice": true,
+    "barcodeShowProductName": true,
+    "barcodeShowBusinessName": true,
+    "enableAiAssistant": true,
+    "enableAi": true,
+    "aiDemandForecasting": true,
+    "aiSmartStockAlerts": true,
+    "aiAutomatedReorder": true,
+    "aiDailySalesInsight": true,
+    "aiSmartSearchAssistant": true,
+    "taxType": "gst",
+    "requireRegisterOpen": true,
+    "enforceRegisterFloat": true,
+    "autoRegisterShiftSummary": true,
+    "companyName": "Royal Electricals"
   },
   "locations": [
     {
       "id": "loc_main",
       "name": "Royal Electricals",
       "code": "HQ01",
-      "address": "123 Business Rd, Suite 100",
-      "city": "New York",
-      "district": "",
-      "province": "",
-      "state": "New York",
-      "zip": "10001",
-      "country": "United States",
-      "phone": "+1 (555) 010-0199",
+      "address": "Naidu Nagar",
+      "city": "Madanapalle",
+      "district": "Chittoor",
+      "province": "Chittoor",
+      "state": "Andhra Pradesh",
+      "zip": "517325",
+      "country": "India",
+      "phone": "+91 8220038825",
       "isDefault": true,
       "businessName": "Royal Electricals"
     }
@@ -703,7 +1108,7 @@
       "id": "curr_inr",
       "name": "Indian Rupee",
       "code": "INR",
-      "symbol": "\u20b9",
+      "symbol": "₹",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": true
@@ -721,7 +1126,7 @@
       "id": "curr_eur",
       "name": "Euro",
       "code": "EUR",
-      "symbol": "\u20ac",
+      "symbol": "€",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -730,7 +1135,7 @@
       "id": "curr_gbp",
       "name": "British Pound",
       "code": "GBP",
-      "symbol": "\u00a3",
+      "symbol": "£",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -739,7 +1144,7 @@
       "id": "curr_aed",
       "name": "UAE Dirham",
       "code": "AED",
-      "symbol": "\u062f.\u0625",
+      "symbol": "د.إ",
       "placement": "suffix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -748,7 +1153,7 @@
       "id": "curr_sar",
       "name": "Saudi Riyal",
       "code": "SAR",
-      "symbol": "\ufdfc",
+      "symbol": "﷼",
       "placement": "suffix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -814,5 +1219,40 @@
       "isDefault": false
     }
   ],
-  "accounts": []
+  "accounts": [
+    {
+      "id": "acc_cash_1010",
+      "name": "Cash in Hand (Store Till)",
+      "accountNumber": "1010",
+      "type": "Cash",
+      "balance": 1500,
+      "note": "Primary store counter cash float and physical till currency"
+    },
+    {
+      "id": "acc_bank_1020",
+      "name": "Primary Corporate Bank Checking",
+      "accountNumber": "1020",
+      "type": "Bank",
+      "bankName": "Enterprise Commercial Bank",
+      "balance": 25000,
+      "note": "Operating checking account for merchant payouts & vendor payments"
+    },
+    {
+      "id": "acc_pos_gateway",
+      "name": "Digital POS Card & UPI Clearing",
+      "accountNumber": "1030",
+      "type": "Card",
+      "bankName": "POS Merchant Payment Gateway",
+      "balance": 4850,
+      "note": "Digital credit card, debit card & UPI settlements clearing account"
+    },
+    {
+      "id": "acc_petty_cash",
+      "name": "Petty Cash Operations Reserve",
+      "accountNumber": "1040",
+      "type": "Cash",
+      "balance": 500,
+      "note": "Daily operational incidentals and store supplies"
+    }
+  ]
 }

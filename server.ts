@@ -227,12 +227,24 @@ async function startServer() {
       brands: [],
       units: [],
       customerGroups: [],
+      customer_groups: [],
       sales_commission_agents: [],
       settings: status.settings || {},
       locations: [],
       currencies: [],
       payment_methods: [],
       accounts: [],
+      tax_rates: [],
+      tax_groups: [],
+      taxRates: [],
+      taxGroups: [],
+      warranties: [],
+      racks: [],
+      expenses: [],
+      stockAdjustments: [],
+      stock_adjustments: [],
+      stockTransfers: [],
+      stock_transfers: [],
     };
   }
 
@@ -569,8 +581,11 @@ async function startServer() {
       // Merge each collection
       const collections = [
         'customers', 'suppliers', 'products', 'transactions', 'users',
-        'categories', 'brands', 'units', 'customerGroups', 'sales_commission_agents',
-        'settings', 'locations', 'currencies', 'payment_methods', 'accounts'
+        'categories', 'brands', 'units', 'customerGroups', 'customer_groups', 'sales_commission_agents',
+        'settings', 'locations', 'currencies', 'payment_methods', 'accounts',
+        'tax_rates', 'tax_groups', 'taxRates', 'taxGroups',
+        'warranties', 'racks', 'expenses', 'stockAdjustments', 'stock_adjustments',
+        'stockTransfers', 'stock_transfers'
       ];
 
       for (const col of collections) {
