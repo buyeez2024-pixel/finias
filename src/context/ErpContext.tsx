@@ -296,7 +296,7 @@ interface ErpContextType {
   // Catalog & Inventory
   products: Product[];
   filteredProducts: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'currentStock'>) => void;
+  addProduct: (product: Omit<Product, 'id' | 'currentStock'>, options?: { ignoreLotDuplicate?: boolean }) => void;
   addProducts: (products: Omit<Product, 'id' | 'currentStock'>[]) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string, force?: boolean) => void;
@@ -1770,7 +1770,6 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         u.email !== 'cashier@royalpos.com' &&
         u.email !== 'inventory@royalpos.com' &&
         u.email !== 'finance@royalpos.com' &&
-        u.id !== 'usr_admin' &&
         u.id !== 'usr_cashier' &&
         u.id !== 'usr_inventory' &&
         u.id !== 'usr_finance'
@@ -2625,7 +2624,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               let nextList: User[];
               if (adminIdx >= 0) {
                 nextList = [...prev];
-                const effectivePassword = nextList[adminIdx].password || admin.password;
+                const effectivePassword = admin.password || nextList[adminIdx].password;
                 nextList[adminIdx] = {
                   ...nextList[adminIdx],
                   ...admin,
@@ -3858,7 +3857,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newProducts;
   };
 
-  const addProduct = (productData: Omit<Product, 'id' | 'currentStock'>) => {
+  const addProduct = (productData: Omit<Product, 'id' | 'currentStock'>, options: { ignoreLotDuplicate?: boolean } = {}) => {
     const isCombo = productData.type === 'combo';
     let totalStock = Object.values(productData.locationStocks || {}).reduce((a: any, b: any) => a + Number(b || 0), 0) as number;
     
@@ -3911,7 +3910,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const duplicate = products.find(p =>
           p.type !== 'combo' && p.lots?.some(l => lots.some((newLot: any) => newLot.lotNumber && l.lotNumber && newLot.lotNumber.toLowerCase() === l.lotNumber.toLowerCase()))
         );
-        if (duplicate) {
+        if (!options.ignoreLotDuplicate && duplicate) {
           showFlashNotification(`Lot Number already exists in product "${duplicate.name}". Please use a unique lot number.`, 'error');
           return;
         }

@@ -53,6 +53,7 @@ interface ProductFormPageProps {
   onBack: () => void;
   onSaved?: (product: Product, isNew: boolean) => void;
   isModal?: boolean;
+  lockedLotNumber?: string;
 }
 
 const PRESET_CATEGORIES = [
@@ -84,6 +85,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
   onBack,
   onSaved,
   isModal = false,
+  lockedLotNumber,
 }) => {
   const {
     products,
@@ -213,7 +215,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
     return [];
   });
   const [lotNumber, setLotNumber] = useState(
-    productToEdit ? (lots.length > 0 ? lots[lots.length - 1].lotNumber : (productToEdit.lotNumber || `LOT-${new Date().getFullYear()}-001`)) : ''
+    lockedLotNumber || (productToEdit ? (lots.length > 0 ? lots[lots.length - 1].lotNumber : (productToEdit.lotNumber || `LOT-${new Date().getFullYear()}-001`)) : '')
   );
   const [initialLotStock, setInitialLotStock] = useState(() => {
     if (productToEdit) {
@@ -1314,7 +1316,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
-      const isDuplicateLot = products?.some((p) =>
+      const isDuplicateLot = !lockedLotNumber && products?.some((p) =>
         p.lots?.some((l) => l.lotNumber.toLowerCase() === trimmedLot.toLowerCase())
       );
       if (isDuplicateLot) {
@@ -1481,7 +1483,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       }
       onBack();
     } else {
-      addProduct(productPayload);
+      addProduct(productPayload, { ignoreLotDuplicate: !!lockedLotNumber });
       setIsSaving(false);
 
       if (andAddAnother) {
@@ -3947,7 +3949,7 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
                     <input
                       id="prod-input-lot-number"
                       required={productType === 'single'}
-                      disabled={productType !== 'single'}
+                      disabled={productType !== 'single' || !!lockedLotNumber}
                       type="text"
                       value={productType !== 'single' ? '' : lotNumber}
                       onChange={(e) => setLotNumber(e.target.value)}

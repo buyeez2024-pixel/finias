@@ -1418,6 +1418,7 @@ export const PurchaseFormPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
               <ProductFormPage 
                 isModal={true}
+                lockedLotNumber={lotNumber}
                 onBack={() => setShowFullProductModal(false)}
                 onSaved={(newProd) => {
                   addProductToItems(newProd);
