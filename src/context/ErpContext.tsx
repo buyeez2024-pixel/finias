@@ -2518,12 +2518,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setRacks(d.racks);
                 try { localStorage.setItem(`${STORAGE_KEY}_racks`, JSON.stringify(d.racks)); } catch {}
               }
-              if (Array.isArray(d.tax_rates)) {
+              const remoteRates = Array.isArray(d.tax_rates) ? d.tax_rates : (Array.isArray(d.taxRates) ? d.taxRates : null);
+              if (remoteRates) {
                 const saved = localStorage.getItem(`${STORAGE_KEY}_tax_rates`);
                 const localRates = saved ? JSON.parse(saved) : [];
                 const rateMap = new Map();
-                for (const r of [...localRates, ...d.tax_rates]) {
+                for (const r of remoteRates) {
                   if (r && r.id) rateMap.set(r.id, r);
+                }
+                for (const r of localRates) {
+                  if (r && r.id && !rateMap.has(r.id)) {
+                    rateMap.set(r.id, r);
+                  }
                 }
                 const mergedRates = Array.from(rateMap.values());
                 if (mergedRates.length > 0) {
@@ -2531,12 +2537,18 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   try { localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(mergedRates)); } catch {}
                 }
               }
-              if (Array.isArray(d.tax_groups)) {
+              const remoteGroups = Array.isArray(d.tax_groups) ? d.tax_groups : (Array.isArray(d.taxGroups) ? d.taxGroups : null);
+              if (remoteGroups) {
                 const saved = localStorage.getItem(`${STORAGE_KEY}_tax_groups`);
                 const localGroups = saved ? JSON.parse(saved) : [];
                 const groupMap = new Map();
-                for (const g of [...localGroups, ...d.tax_groups]) {
+                for (const g of remoteGroups) {
                   if (g && g.id) groupMap.set(g.id, g);
+                }
+                for (const g of localGroups) {
+                  if (g && g.id && !groupMap.has(g.id)) {
+                    groupMap.set(g.id, g);
+                  }
                 }
                 const mergedGroups = Array.from(groupMap.values());
                 if (mergedGroups.length > 0) {
@@ -3582,82 +3594,185 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return `${symbol}${formattedNum}`;
   };
 
-  // Tax Rates & Tax Groups CRUD
+  // Tax Rates & Tax Groups CRUD with Instant Central Database Sync
+  const pushTaxSync = (rates: TaxRate[], groups: TaxGroup[]) => {
+    try {
+      fetch(getApiUrl('api/sync.php?action=push'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: {
+            tax_rates: rates,
+            taxRates: rates,
+            tax_groups: groups,
+            taxGroups: groups,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
+  };
+
   const addTaxRate = (rateData: Omit<TaxRate, 'id'>) => {
+    const rateVal = Number(rateData.rate) || 0;
     const newRate: TaxRate = {
       ...rateData,
+      rate: rateVal,
+      amount: rateVal,
+      code: (rateData.code || '').trim().toUpperCase(),
+      type: rateData.type || 'cgst',
+      description: rateData.description || '',
+      isActive: rateData.isActive !== false,
       id: `tr_${Date.now()}`,
     };
-    setTaxRates((prev) => [...prev, newRate]);
+    setTaxRates((prev) => {
+      const next = [...prev.filter((r) => r.id !== newRate.id), newRate];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(next, taxGroups);
+      return next;
+    });
   };
 
   const updateTaxRate = (id: string, updateData: Partial<TaxRate>) => {
-    setTaxRates((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updateData } : r))
-    );
+    let updatedRates: TaxRate[] = [];
+    setTaxRates((prev) => {
+      const rateVal = updateData.rate !== undefined ? Number(updateData.rate) : undefined;
+      const cleanUpdate = { ...updateData };
+      if (rateVal !== undefined) {
+        cleanUpdate.rate = rateVal;
+        cleanUpdate.amount = rateVal;
+      }
+      const next = prev.map((r) => (r.id === id ? { ...r, ...cleanUpdate } : r));
+      updatedRates = next;
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
     // Recalculate any groups that contain this tax rate
-    setTaxGroups((prev) =>
-      prev.map((group) => {
-        if (!group.subTaxIds.includes(id)) return group;
-        const currentRates = taxRates.map((r) => (r.id === id ? { ...r, ...updateData } : r));
-        const totalRate = group.subTaxIds.reduce((sum, tid) => {
-          const found = currentRates.find((r) => r.id === tid);
+    setTaxGroups((prev) => {
+      const next = prev.map((group) => {
+        if (!group.subTaxIds || !group.subTaxIds.includes(id)) return group;
+        const totalRate = group.subTaxIds.reduce((sum: number, tid: string) => {
+          const found = updatedRates.find((r) => r.id === tid);
           return sum + (found?.rate || 0);
         }, 0);
-        return { ...group, totalRate: +totalRate.toFixed(2) };
-      })
-    );
+        const rounded = +totalRate.toFixed(2);
+        return { ...group, totalRate: rounded, rate: rounded, amount: rounded };
+      });
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(updatedRates, next);
+      return next;
+    });
   };
 
   const deleteTaxRate = (id: string) => {
-    setTaxRates((prev) => prev.filter((r) => r.id !== id));
-    // Remove from groups
-    setTaxGroups((prev) =>
-      prev.map((group) => {
-        if (!group.subTaxIds.includes(id)) return group;
-        const remainingSubIds = group.subTaxIds.filter((tid) => tid !== id);
-        const totalRate = remainingSubIds.reduce((sum, tid) => {
-          const found = taxRates.find((r) => r.id === tid);
+    let updatedRates: TaxRate[] = [];
+    setTaxRates((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      updatedRates = next;
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_rates`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    // Remove from groups and recalculate
+    setTaxGroups((prev) => {
+      const next = prev.map((group) => {
+        if (!group.subTaxIds || !group.subTaxIds.includes(id)) return group;
+        const remainingSubIds = group.subTaxIds.filter((tid: string) => tid !== id);
+        const totalRate = remainingSubIds.reduce((sum: number, tid: string) => {
+          const found = updatedRates.find((r) => r.id === tid);
           return sum + (found?.rate || 0);
         }, 0);
-        return { ...group, subTaxIds: remainingSubIds, totalRate: +totalRate.toFixed(2) };
-      })
-    );
+        const rounded = +totalRate.toFixed(2);
+        return {
+          ...group,
+          subTaxIds: remainingSubIds,
+          rateIds: remainingSubIds,
+          totalRate: rounded,
+          rate: rounded,
+          amount: rounded,
+        };
+      });
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(updatedRates, next);
+      return next;
+    });
   };
 
   const addTaxGroup = (groupData: Omit<TaxGroup, 'id'>) => {
-    const calculatedTotal = groupData.subTaxIds.reduce((sum, tid) => {
+    const subIds = groupData.subTaxIds || groupData.rateIds || [];
+    const calculatedTotal = subIds.reduce((sum: number, tid: string) => {
       const found = taxRates.find((r) => r.id === tid);
       return sum + (found?.rate || 0);
     }, 0);
+    const finalRate = groupData.totalRate || +calculatedTotal.toFixed(2);
 
     const newGroup: TaxGroup = {
       ...groupData,
       id: `tg_${Date.now()}`,
-      totalRate: groupData.totalRate || +calculatedTotal.toFixed(2),
+      totalRate: finalRate,
+      rate: finalRate,
+      amount: finalRate,
+      subTaxIds: subIds,
+      rateIds: subIds,
+      isDefault: Boolean(groupData.isDefault),
     };
-    setTaxGroups((prev) => [...prev, newGroup]);
+    setTaxGroups((prev) => {
+      const next = [...prev.filter((g) => g.id !== newGroup.id), newGroup];
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(taxRates, next);
+      return next;
+    });
   };
 
   const updateTaxGroup = (id: string, updateData: Partial<TaxGroup>) => {
-    setTaxGroups((prev) =>
-      prev.map((g) => {
+    setTaxGroups((prev) => {
+      const next = prev.map((g) => {
         if (g.id !== id) return g;
         const merged = { ...g, ...updateData };
-        if (updateData.subTaxIds) {
-          const calculatedTotal = updateData.subTaxIds.reduce((sum, tid) => {
+        if (updateData.subTaxIds || updateData.rateIds) {
+          const subIds = updateData.subTaxIds || updateData.rateIds || [];
+          const calculatedTotal = subIds.reduce((sum: number, tid: string) => {
             const found = taxRates.find((r) => r.id === tid);
             return sum + (found?.rate || 0);
           }, 0);
-          merged.totalRate = +calculatedTotal.toFixed(2);
+          const finalRate = +calculatedTotal.toFixed(2);
+          merged.totalRate = finalRate;
+          merged.rate = finalRate;
+          merged.amount = finalRate;
+          merged.subTaxIds = subIds;
+          merged.rateIds = subIds;
         }
         return merged;
-      })
-    );
+      });
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(taxRates, next);
+      return next;
+    });
   };
 
   const deleteTaxGroup = (id: string) => {
-    setTaxGroups((prev) => prev.filter((g) => g.id !== id));
+    setTaxGroups((prev) => {
+      const next = prev.filter((g) => g.id !== id);
+      try {
+        localStorage.setItem(`${STORAGE_KEY}_tax_groups`, JSON.stringify(next));
+      } catch {}
+      pushTaxSync(taxRates, next);
+      return next;
+    });
   };
 
   // Country & Regional Tax Presets

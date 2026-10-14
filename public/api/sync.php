@@ -365,6 +365,16 @@ function ensureAllSchemaTables($pdo, $prefix) {
             `data_json` LONGTEXT DEFAULT NULL,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Schema Migrations & Backward Compatibility for live databases
+        try { $pdo->exec("ALTER TABLE `{$prefix}units` ADD COLUMN `multiplier` DECIMAL(15,4) DEFAULT 1.0000"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}units` ADD COLUMN `base_unit_multiplier` DECIMAL(15,4) DEFAULT 1.0000"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}expenses` ADD COLUMN `ref_no` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}expenses` ADD COLUMN `expense_ref` VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}expenses` ADD COLUMN `payment_status` VARCHAR(50) DEFAULT 'paid'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}expenses` ADD COLUMN `payment_method` VARCHAR(50) DEFAULT 'cash'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}tax_rates` ADD COLUMN `data_json` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `{$prefix}tax_groups` ADD COLUMN `data_json` LONGTEXT DEFAULT NULL"); } catch (Exception $e) {}
     } catch (Exception $e) {
         // Ignore table setup warnings if already created
     }
@@ -600,6 +610,28 @@ if ($action === 'pull' || $method === 'GET') {
                             $item['calculationPercentage'] = $pct;
                             if (isset($r['amount'])) $item['amount'] = (float)$r['amount'];
                             if (isset($r['description'])) $item['description'] = (string)$r['description'];
+                        } elseif ($key === 'tax_rates') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            $item['name'] = (string)($r['name'] ?? $item['name'] ?? 'Tax');
+                            $rateVal = (float)($item['rate'] ?? $r['amount'] ?? 0);
+                            $item['rate'] = $rateVal;
+                            $item['amount'] = $rateVal;
+                            if (!isset($item['code'])) $item['code'] = '';
+                            if (!isset($item['type'])) $item['type'] = 'cgst';
+                            if (!isset($item['description'])) $item['description'] = '';
+                            if (!isset($item['isActive'])) $item['isActive'] = true;
+                        } elseif ($key === 'tax_groups') {
+                            $item['id'] = (string)($r['id'] ?? $item['id'] ?? '');
+                            $item['name'] = (string)($r['name'] ?? $item['name'] ?? 'Tax Group');
+                            $totRate = (float)($item['totalRate'] ?? $item['rate'] ?? $r['amount'] ?? 0);
+                            $item['totalRate'] = $totRate;
+                            $item['rate'] = $totRate;
+                            $item['amount'] = $totRate;
+                            $subTaxIds = is_array($item['subTaxIds'] ?? null) ? $item['subTaxIds'] : (is_array($item['rateIds'] ?? null) ? $item['rateIds'] : []);
+                            $item['subTaxIds'] = $subTaxIds;
+                            $item['rateIds'] = $subTaxIds;
+                            if (!isset($item['isDefault'])) $item['isDefault'] = false;
+                            if (!isset($item['description'])) $item['description'] = '';
                         } else {
                             if (empty($item)) {
                                 $item = $r;
@@ -773,6 +805,13 @@ if ($action === 'pull' || $method === 'GET') {
                 $data['settings'] = json_decode($data['settings'], true);
             }
         } catch (Exception $e) {}
+
+        if (isset($data['tax_rates'])) {
+            $data['taxRates'] = $data['tax_rates'];
+        }
+        if (isset($data['tax_groups'])) {
+            $data['taxGroups'] = $data['tax_groups'];
+        }
 
         $pdo = null;
 
@@ -1244,229 +1283,293 @@ if ($action === 'push' || $method === 'POST') {
         }
 
         if (isset($updates['units']) && is_array($updates['units'])) {
-            $uStmt = $pdo->prepare("INSERT INTO `{$prefix}units` 
-                (`id`, `name`, `short_name`, `allow_decimal`, `base_unit_id`, `multiplier`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :sname, :dec, :buid, :mult, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `short_name` = VALUES(`short_name`), `allow_decimal` = VALUES(`allow_decimal`), `base_unit_id` = VALUES(`base_unit_id`), `multiplier` = VALUES(`multiplier`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $uStmt = $pdo->prepare("INSERT INTO `{$prefix}units` 
+                    (`id`, `name`, `short_name`, `allow_decimal`, `is_base_unit`, `base_unit_id`, `base_unit_multiplier`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :sname, :dec, :isbase, :buid, :mult, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `short_name` = VALUES(`short_name`), `allow_decimal` = VALUES(`allow_decimal`), `is_base_unit` = VALUES(`is_base_unit`), `base_unit_id` = VALUES(`base_unit_id`), `base_unit_multiplier` = VALUES(`base_unit_multiplier`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['units'] as $u) {
-                if (!is_array($u) || empty($u['id'])) continue;
-                $uStmt->execute([
-                    ':id' => (string)$u['id'],
-                    ':name' => $u['name'] ?? 'Unit',
-                    ':sname' => $u['shortName'] ?? $u['short_name'] ?? 'Pc',
-                    ':dec' => !empty($u['allowDecimal']) ? 1 : 0,
-                    ':buid' => $u['baseUnitId'] ?? $u['base_unit_id'] ?? null,
-                    ':mult' => (float)($u['multiplier'] ?? 1),
-                    ':json' => json_encode($u),
-                ]);
-            }
+                foreach ($updates['units'] as $u) {
+                    if (!is_array($u) || empty($u['id'])) continue;
+                    $mult = (float)($u['multiplier'] ?? $u['base_unit_multiplier'] ?? $u['baseUnitMultiplier'] ?? 1);
+                    $uStmt->execute([
+                        ':id' => (string)$u['id'],
+                        ':name' => $u['name'] ?? 'Unit',
+                        ':sname' => $u['shortName'] ?? $u['short_name'] ?? 'Pc',
+                        ':dec' => !empty($u['allowDecimal']) ? 1 : 0,
+                        ':isbase' => !empty($u['isBaseUnit'] ?? $u['is_base_unit'] ?? 1) ? 1 : 0,
+                        ':buid' => $u['baseUnitId'] ?? $u['base_unit_id'] ?? null,
+                        ':mult' => $mult,
+                        ':json' => json_encode($u),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['expenses']) && is_array($updates['expenses'])) {
-            $expStmt = $pdo->prepare("INSERT INTO `{$prefix}expenses` 
-                (`id`, `expense_ref`, `category`, `amount`, `date`, `payment_status`, `payment_method`, `data_json`, `updated_at`)
-                VALUES (:id, :ref, :cat, :amt, :dt, :pstat, :pmeth, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `expense_ref` = VALUES(`expense_ref`), `category` = VALUES(`category`), `amount` = VALUES(`amount`), `date` = VALUES(`date`), `payment_status` = VALUES(`payment_status`), `payment_method` = VALUES(`payment_method`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $expStmt = $pdo->prepare("INSERT INTO `{$prefix}expenses` 
+                    (`id`, `ref_no`, `category`, `amount`, `date`, `note`, `data_json`, `updated_at`)
+                    VALUES (:id, :ref, :cat, :amt, :dt, :note, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `ref_no` = VALUES(`ref_no`), `category` = VALUES(`category`), `amount` = VALUES(`amount`), `date` = VALUES(`date`), `note` = VALUES(`note`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['expenses'] as $exp) {
-                if (!is_array($exp) || empty($exp['id'])) continue;
-                $expStmt->execute([
-                    ':id' => (string)$exp['id'],
-                    ':ref' => $exp['expenseRef'] ?? $exp['referenceNo'] ?? $exp['ref_no'] ?? null,
-                    ':cat' => $exp['category'] ?? 'General',
-                    ':amt' => (float)($exp['amount'] ?? 0),
-                    ':dt' => $exp['date'] ?? date('Y-m-d'),
-                    ':pstat' => $exp['paymentStatus'] ?? 'paid',
-                    ':pmeth' => $exp['paymentMethod'] ?? 'cash',
-                    ':json' => json_encode($exp),
-                ]);
-            }
+                foreach ($updates['expenses'] as $exp) {
+                    if (!is_array($exp) || empty($exp['id'])) continue;
+                    $expStmt->execute([
+                        ':id' => (string)$exp['id'],
+                        ':ref' => $exp['expenseRef'] ?? $exp['referenceNo'] ?? $exp['ref_no'] ?? null,
+                        ':cat' => $exp['category'] ?? 'General',
+                        ':amt' => (float)($exp['amount'] ?? 0),
+                        ':dt' => $exp['date'] ?? date('Y-m-d'),
+                        ':note' => $exp['note'] ?? $exp['description'] ?? null,
+                        ':json' => json_encode($exp),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         $cgUpdates = $updates['customer_groups'] ?? $updates['customerGroups'] ?? null;
         if (isset($cgUpdates) && is_array($cgUpdates)) {
-            $cgStmt = $pdo->prepare("INSERT INTO `{$prefix}customer_groups` 
-                (`id`, `name`, `amount`, `percentage`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :amt, :pct, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `percentage` = VALUES(`percentage`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $cgStmt = $pdo->prepare("INSERT INTO `{$prefix}customer_groups` 
+                    (`id`, `name`, `amount`, `percentage`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :amt, :pct, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `amount` = VALUES(`amount`), `percentage` = VALUES(`percentage`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($cgUpdates as $cg) {
-                if (!is_array($cg) || empty($cg['id'])) continue;
-                $pct = (float)($cg['calculationPercentage'] ?? $cg['percentage'] ?? 0);
-                $cg['percentage'] = $pct;
-                $cg['calculationPercentage'] = $pct;
-                $cgStmt->execute([
-                    ':id' => (string)$cg['id'],
-                    ':name' => $cg['name'] ?? 'Group',
-                    ':amt' => (float)($cg['amount'] ?? 0),
-                    ':pct' => $pct,
-                    ':json' => json_encode($cg),
-                ]);
-            }
+                foreach ($cgUpdates as $cg) {
+                    if (!is_array($cg) || empty($cg['id'])) continue;
+                    $pct = (float)($cg['calculationPercentage'] ?? $cg['percentage'] ?? 0);
+                    $cg['percentage'] = $pct;
+                    $cg['calculationPercentage'] = $pct;
+                    $cgStmt->execute([
+                        ':id' => (string)$cg['id'],
+                        ':name' => $cg['name'] ?? 'Group',
+                        ':amt' => (float)($cg['amount'] ?? 0),
+                        ':pct' => $pct,
+                        ':json' => json_encode($cg),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['warranties']) && is_array($updates['warranties'])) {
-            $wStmt = $pdo->prepare("INSERT INTO `{$prefix}warranties` 
-                (`id`, `name`, `duration`, `duration_type`, `description`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :dur, :dtype, :desc, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `duration` = VALUES(`duration`), `duration_type` = VALUES(`duration_type`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $wStmt = $pdo->prepare("INSERT INTO `{$prefix}warranties` 
+                    (`id`, `name`, `duration`, `duration_type`, `description`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :dur, :dtype, :desc, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `duration` = VALUES(`duration`), `duration_type` = VALUES(`duration_type`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['warranties'] as $w) {
-                if (!is_array($w) || empty($w['id'])) continue;
-                $wStmt->execute([
-                    ':id' => (string)$w['id'],
-                    ':name' => $w['name'] ?? 'Warranty',
-                    ':dur' => (int)($w['duration'] ?? 0),
-                    ':dtype' => $w['durationType'] ?? 'months',
-                    ':desc' => $w['description'] ?? null,
-                    ':json' => json_encode($w),
-                ]);
-            }
+                foreach ($updates['warranties'] as $w) {
+                    if (!is_array($w) || empty($w['id'])) continue;
+                    $wStmt->execute([
+                        ':id' => (string)$w['id'],
+                        ':name' => $w['name'] ?? 'Warranty',
+                        ':dur' => (int)($w['duration'] ?? 0),
+                        ':dtype' => $w['durationType'] ?? 'months',
+                        ':desc' => $w['description'] ?? null,
+                        ':json' => json_encode($w),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['racks']) && is_array($updates['racks'])) {
-            $rStmt = $pdo->prepare("INSERT INTO `{$prefix}racks` 
-                (`id`, `name`, `location_id`, `row`, `position`, `description`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :lid, :row, :pos, :desc, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `location_id` = VALUES(`location_id`), `row` = VALUES(`row`), `position` = VALUES(`position`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $rStmt = $pdo->prepare("INSERT INTO `{$prefix}racks` 
+                    (`id`, `name`, `location_id`, `row`, `position`, `description`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :lid, :row, :pos, :desc, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `location_id` = VALUES(`location_id`), `row` = VALUES(`row`), `position` = VALUES(`position`), `description` = VALUES(`description`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['racks'] as $r) {
-                if (!is_array($r) || empty($r['id'])) continue;
-                $rStmt->execute([
-                    ':id' => (string)$r['id'],
-                    ':name' => $r['name'] ?? 'Rack',
-                    ':lid' => $r['locationId'] ?? null,
-                    ':row' => $r['row'] ?? null,
-                    ':pos' => $r['position'] ?? null,
-                    ':desc' => $r['description'] ?? null,
-                    ':json' => json_encode($r),
-                ]);
-            }
+                foreach ($updates['racks'] as $r) {
+                    if (!is_array($r) || empty($r['id'])) continue;
+                    $rStmt->execute([
+                        ':id' => (string)$r['id'],
+                        ':name' => $r['name'] ?? 'Rack',
+                        ':lid' => $r['locationId'] ?? null,
+                        ':row' => $r['row'] ?? null,
+                        ':pos' => $r['position'] ?? null,
+                        ':desc' => $r['description'] ?? null,
+                        ':json' => json_encode($r),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
-        if (isset($updates['tax_rates']) && is_array($updates['tax_rates'])) {
-            $trStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_rates` 
-                (`id`, `name`, `amount`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+        $allTaxRates = $updates['tax_rates'] ?? $updates['taxRates'] ?? null;
+        if (isset($allTaxRates) && is_array($allTaxRates)) {
+            try {
+                $currentTaxIds = [];
+                foreach ($allTaxRates as $tr) {
+                    if (is_array($tr) && !empty($tr['id'])) {
+                        $currentTaxIds[] = (string)$tr['id'];
+                    }
+                }
+                if (count($currentTaxIds) > 0) {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentTaxIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}tax_rates` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentTaxIds);
+                }
 
-            foreach ($updates['tax_rates'] as $tr) {
-                if (!is_array($tr) || empty($tr['id'])) continue;
-                $trStmt->execute([
-                    ':id' => (string)$tr['id'],
-                    ':name' => $tr['name'] ?? 'Tax',
-                    ':amt' => (float)($tr['amount'] ?? 0),
-                    ':json' => json_encode($tr),
-                ]);
-            }
+                $trStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_rates` 
+                    (`id`, `name`, `amount`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+                foreach ($allTaxRates as $tr) {
+                    if (!is_array($tr) || empty($tr['id'])) continue;
+                    $rateVal = (float)($tr['rate'] ?? $tr['amount'] ?? 0);
+                    $tr['rate'] = $rateVal;
+                    $tr['amount'] = $rateVal;
+                    $tr['code'] = (string)($tr['code'] ?? $tr['tax_code'] ?? '');
+                    $tr['type'] = (string)($tr['type'] ?? $tr['tax_type'] ?? 'standard');
+                    $tr['description'] = (string)($tr['description'] ?? '');
+                    $tr['isActive'] = !empty($tr['isActive'] ?? true);
+                    $trStmt->execute([
+                        ':id' => (string)$tr['id'],
+                        ':name' => $tr['name'] ?? 'Tax',
+                        ':amt' => $rateVal,
+                        ':json' => json_encode($tr),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
-        if (isset($updates['tax_groups']) && is_array($updates['tax_groups'])) {
-            $tgStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_groups` 
-                (`id`, `name`, `amount`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+        $allTaxGroups = $updates['tax_groups'] ?? $updates['taxGroups'] ?? null;
+        if (isset($allTaxGroups) && is_array($allTaxGroups)) {
+            try {
+                $currentGroupIds = [];
+                foreach ($allTaxGroups as $tg) {
+                    if (is_array($tg) && !empty($tg['id'])) {
+                        $currentGroupIds[] = (string)$tg['id'];
+                    }
+                }
+                if (count($currentGroupIds) > 0) {
+                    $inPlaceholders = implode(',', array_fill(0, count($currentGroupIds), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM `{$prefix}tax_groups` WHERE `id` NOT IN ($inPlaceholders)");
+                    $delStmt->execute($currentGroupIds);
+                }
 
-            foreach ($updates['tax_groups'] as $tg) {
-                if (!is_array($tg) || empty($tg['id'])) continue;
-                $tgStmt->execute([
-                    ':id' => (string)$tg['id'],
-                    ':name' => $tg['name'] ?? 'Tax Group',
-                    ':amt' => (float)($tg['amount'] ?? 0),
-                    ':json' => json_encode($tg),
-                ]);
-            }
+                $tgStmt = $pdo->prepare("INSERT INTO `{$prefix}tax_groups` 
+                    (`id`, `name`, `amount`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :amt, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `amount` = VALUES(`amount`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+
+                foreach ($allTaxGroups as $tg) {
+                    if (!is_array($tg) || empty($tg['id'])) continue;
+                    $totalRateVal = (float)($tg['totalRate'] ?? $tg['rate'] ?? $tg['amount'] ?? 0);
+                    $tg['totalRate'] = $totalRateVal;
+                    $tg['rate'] = $totalRateVal;
+                    $tg['amount'] = $totalRateVal;
+                    $subIds = is_array($tg['subTaxIds'] ?? null) ? $tg['subTaxIds'] : (is_array($tg['rateIds'] ?? null) ? $tg['rateIds'] : []);
+                    $tg['subTaxIds'] = $subIds;
+                    $tg['rateIds'] = $subIds;
+                    $tg['isDefault'] = !empty($tg['isDefault']);
+                    $tgStmt->execute([
+                        ':id' => (string)$tg['id'],
+                        ':name' => $tg['name'] ?? 'Tax Group',
+                        ':amt' => $totalRateVal,
+                        ':json' => json_encode($tg),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['currencies']) && is_array($updates['currencies'])) {
-            $curStmt = $pdo->prepare("INSERT INTO `{$prefix}currencies` 
-                (`id`, `country`, `currency`, `code`, `symbol`, `data_json`, `updated_at`)
-                VALUES (:id, :country, :curr, :code, :sym, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `country` = VALUES(`country`), `currency` = VALUES(`currency`), `code` = VALUES(`code`), `symbol` = VALUES(`symbol`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $curStmt = $pdo->prepare("INSERT INTO `{$prefix}currencies` 
+                    (`id`, `country`, `currency`, `code`, `symbol`, `data_json`, `updated_at`)
+                    VALUES (:id, :country, :curr, :code, :sym, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `country` = VALUES(`country`), `currency` = VALUES(`currency`), `code` = VALUES(`code`), `symbol` = VALUES(`symbol`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['currencies'] as $cur) {
-                if (!is_array($cur) || empty($cur['id'])) continue;
-                $curStmt->execute([
-                    ':id' => (string)$cur['id'],
-                    ':country' => $cur['country'] ?? null,
-                    ':curr' => $cur['currency'] ?? null,
-                    ':code' => $cur['code'] ?? null,
-                    ':sym' => $cur['symbol'] ?? null,
-                    ':json' => json_encode($cur),
-                ]);
-            }
+                foreach ($updates['currencies'] as $cur) {
+                    if (!is_array($cur) || empty($cur['id'])) continue;
+                    $curStmt->execute([
+                        ':id' => (string)$cur['id'],
+                        ':country' => $cur['country'] ?? null,
+                        ':curr' => $cur['currency'] ?? null,
+                        ':code' => $cur['code'] ?? null,
+                        ':sym' => $cur['symbol'] ?? null,
+                        ':json' => json_encode($cur),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['accounts']) && is_array($updates['accounts'])) {
-            $accStmt = $pdo->prepare("INSERT INTO `{$prefix}accounts` 
-                (`id`, `name`, `account_number`, `account_type`, `opening_balance`, `balance`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :accnum, :acctype, :opbal, :bal, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `account_number` = VALUES(`account_number`), `account_type` = VALUES(`account_type`), `opening_balance` = VALUES(`opening_balance`), `balance` = VALUES(`balance`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $accStmt = $pdo->prepare("INSERT INTO `{$prefix}accounts` 
+                    (`id`, `name`, `account_number`, `account_type`, `opening_balance`, `balance`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :accnum, :acctype, :opbal, :bal, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `account_number` = VALUES(`account_number`), `account_type` = VALUES(`account_type`), `opening_balance` = VALUES(`opening_balance`), `balance` = VALUES(`balance`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['accounts'] as $acc) {
-                if (!is_array($acc) || empty($acc['id'])) continue;
-                $accStmt->execute([
-                    ':id' => (string)$acc['id'],
-                    ':name' => $acc['name'] ?? 'Account',
-                    ':accnum' => $acc['accountNumber'] ?? null,
-                    ':acctype' => $acc['accountType'] ?? null,
-                    ':opbal' => (float)($acc['openingBalance'] ?? 0),
-                    ':bal' => (float)($acc['balance'] ?? 0),
-                    ':json' => json_encode($acc),
-                ]);
-            }
+                foreach ($updates['accounts'] as $acc) {
+                    if (!is_array($acc) || empty($acc['id'])) continue;
+                    $accStmt->execute([
+                        ':id' => (string)$acc['id'],
+                        ':name' => $acc['name'] ?? 'Account',
+                        ':accnum' => $acc['accountNumber'] ?? null,
+                        ':acctype' => $acc['accountType'] ?? null,
+                        ':opbal' => (float)($acc['openingBalance'] ?? 0),
+                        ':bal' => (float)($acc['balance'] ?? 0),
+                        ':json' => json_encode($acc),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['payment_methods']) && is_array($updates['payment_methods'])) {
-            $pmStmt = $pdo->prepare("INSERT INTO `{$prefix}payment_methods` 
-                (`id`, `name`, `is_default`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :isdef, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `is_default` = VALUES(`is_default`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $pmStmt = $pdo->prepare("INSERT INTO `{$prefix}payment_methods` 
+                    (`id`, `name`, `is_default`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :isdef, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `is_default` = VALUES(`is_default`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['payment_methods'] as $pm) {
-                if (!is_array($pm) || empty($pm['id'])) continue;
-                $pmStmt->execute([
-                    ':id' => (string)$pm['id'],
-                    ':name' => $pm['name'] ?? 'Method',
-                    ':isdef' => !empty($pm['isDefault']) ? 1 : 0,
-                    ':json' => json_encode($pm),
-                ]);
-            }
+                foreach ($updates['payment_methods'] as $pm) {
+                    if (!is_array($pm) || empty($pm['id'])) continue;
+                    $pmStmt->execute([
+                        ':id' => (string)$pm['id'],
+                        ':name' => $pm['name'] ?? 'Method',
+                        ':isdef' => !empty($pm['isDefault']) ? 1 : 0,
+                        ':json' => json_encode($pm),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['locations']) && is_array($updates['locations'])) {
-            $locStmt = $pdo->prepare("INSERT INTO `{$prefix}locations` 
-                (`id`, `name`, `code`, `city`, `state`, `country`, `zip_code`, `mobile`, `email`, `data_json`, `updated_at`)
-                VALUES (:id, :name, :code, :city, :state, :country, :zip, :mobile, :email, :json, CURRENT_TIMESTAMP)
-                ON DUPLICATE KEY UPDATE 
-                `name` = VALUES(`name`), `code` = VALUES(`code`), `city` = VALUES(`city`), `state` = VALUES(`state`), `country` = VALUES(`country`), `zip_code` = VALUES(`zip_code`), `mobile` = VALUES(`mobile`), `email` = VALUES(`email`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
+            try {
+                $locStmt = $pdo->prepare("INSERT INTO `{$prefix}locations` 
+                    (`id`, `name`, `code`, `city`, `state`, `country`, `zip_code`, `mobile`, `email`, `data_json`, `updated_at`)
+                    VALUES (:id, :name, :code, :city, :state, :country, :zip, :mobile, :email, :json, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    `name` = VALUES(`name`), `code` = VALUES(`code`), `city` = VALUES(`city`), `state` = VALUES(`state`), `country` = VALUES(`country`), `zip_code` = VALUES(`zip_code`), `mobile` = VALUES(`mobile`), `email` = VALUES(`email`), `data_json` = VALUES(`data_json`), `updated_at` = CURRENT_TIMESTAMP");
 
-            foreach ($updates['locations'] as $loc) {
-                if (!is_array($loc) || empty($loc['id'])) continue;
-                $locStmt->execute([
-                    ':id' => (string)$loc['id'],
-                    ':name' => $loc['name'] ?? 'Branch',
-                    ':code' => $loc['code'] ?? null,
-                    ':city' => $loc['city'] ?? null,
-                    ':state' => $loc['state'] ?? null,
-                    ':country' => $loc['country'] ?? null,
-                    ':zip' => $loc['zipCode'] ?? null,
-                    ':mobile' => $loc['mobile'] ?? null,
-                    ':email' => $loc['email'] ?? null,
-                    ':json' => json_encode($loc),
-                ]);
-            }
+                foreach ($updates['locations'] as $loc) {
+                    if (!is_array($loc) || empty($loc['id'])) continue;
+                    $locStmt->execute([
+                        ':id' => (string)$loc['id'],
+                        ':name' => $loc['name'] ?? 'Branch',
+                        ':code' => $loc['code'] ?? null,
+                        ':city' => $loc['city'] ?? null,
+                        ':state' => $loc['state'] ?? null,
+                        ':country' => $loc['country'] ?? null,
+                        ':zip' => $loc['zipCode'] ?? null,
+                        ':mobile' => $loc['mobile'] ?? null,
+                        ':email' => $loc['email'] ?? null,
+                        ':json' => json_encode($loc),
+                    ]);
+                }
+            } catch (Exception $e) {}
         }
 
         if (isset($updates['registers']) && is_array($updates['registers'])) {

@@ -304,8 +304,8 @@
   "users": [
     {
       "id": "usr_admin",
-      "name": "Syed Khajanoor",
-      "email": "buyeez2024@gmail.com",
+      "name": "syed",
+      "email": "syed518.ds@gmail.com",
       "username": "syed518.ds",
       "password": "Royal@517325",
       "role": "supreme_admin",
@@ -314,9 +314,9 @@
       "businessName": "Royal Electricals",
       "status": "active",
       "failedLogins": 0,
-      "lastLogin": "10:16 pm",
-      "pin": "",
-      "phone": "8220038825",
+      "lastLogin": "12:02 pm",
+      "pin": "1234",
+      "phone": "+91 8220038825",
       "unlockRequested": false,
       "isUnlockedByAdmin": false,
       "requireOtpOnNextLogin": false
@@ -584,7 +584,7 @@
     "businessName": "Royal Electricals",
     "currency": "INR",
     "currencyCode": "INR",
-    "currencySymbol": "\u20b9",
+    "currencySymbol": "₹",
     "currencyPlacement": "prefix",
     "currencyDecimalPlaces": 2,
     "amountRoundingMethod": "round_to_nearest_integer",
@@ -703,7 +703,7 @@
       "id": "curr_inr",
       "name": "Indian Rupee",
       "code": "INR",
-      "symbol": "\u20b9",
+      "symbol": "₹",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": true
@@ -721,7 +721,7 @@
       "id": "curr_eur",
       "name": "Euro",
       "code": "EUR",
-      "symbol": "\u20ac",
+      "symbol": "€",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -730,7 +730,7 @@
       "id": "curr_gbp",
       "name": "British Pound",
       "code": "GBP",
-      "symbol": "\u00a3",
+      "symbol": "£",
       "placement": "prefix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -739,7 +739,7 @@
       "id": "curr_aed",
       "name": "UAE Dirham",
       "code": "AED",
-      "symbol": "\u062f.\u0625",
+      "symbol": "د.إ",
       "placement": "suffix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -748,7 +748,7 @@
       "id": "curr_sar",
       "name": "Saudi Riyal",
       "code": "SAR",
-      "symbol": "\ufdfc",
+      "symbol": "﷼",
       "placement": "suffix",
       "decimalPlaces": 2,
       "isDefault": false
@@ -814,5 +814,112 @@
       "isDefault": false
     }
   ],
-  "accounts": []
+  "accounts": [],
+  "customer_groups": [
+    {
+      "id": "cg_retail",
+      "name": "Retail Standard",
+      "percentage": 0,
+      "calculationPercentage": 0,
+      "description": "Standard consumer retail pricing (0% adjustment)",
+      "createdDate": "2026-01-01"
+    },
+    {
+      "id": "cg_vip",
+      "name": "VIP Platinum",
+      "percentage": -10,
+      "calculationPercentage": -10,
+      "description": "Loyal VIP customer group with 10% discount on selling price",
+      "createdDate": "2026-01-01"
+    },
+    {
+      "id": "cg_wholesale",
+      "name": "Wholesale Tier",
+      "percentage": -20,
+      "calculationPercentage": -20,
+      "description": "Bulk wholesale buyers with 20% discount on selling price",
+      "createdDate": "2026-01-01"
+    },
+    {
+      "id": "cg_friends",
+      "name": "Friends & Family",
+      "percentage": -15,
+      "calculationPercentage": -15,
+      "description": "Special relationship pricing with 15% discount",
+      "createdDate": "2026-01-01"
+    }
+  ],
+  "tax_rates": [
+    {
+      "id": "tax_rate_gst_18",
+      "name": "GST 18%",
+      "rate": 18,
+      "amount": 18
+    },
+    {
+      "id": "tr_cgst_9",
+      "name": "CGST 9%",
+      "rate": 9,
+      "amount": 9,
+      "code": "GST_9",
+      "type": "cgst"
+    },
+    {
+      "id": "tr_sgst_9",
+      "name": "SGST 9%",
+      "rate": 9,
+      "amount": 9,
+      "code": "GST_9",
+      "type": "sgst"
+    }
+  ],
+  "tax_groups": [
+    {
+      "id": "tax_group_gst_18",
+      "name": "GST 18%",
+      "rate": 18,
+      "rateIds": [
+        "tax_rate_gst_18"
+      ]
+    }
+  ],
+  "taxRates": [
+    {
+      "id": "tax_rate_gst_18",
+      "name": "GST 18%",
+      "rate": 18
+    },
+    {
+      "id": "tax_rate_gst_5",
+      "name": "GST 5%",
+      "rate": 5
+    },
+    {
+      "id": "tax_rate_gst_12",
+      "name": "GST 12%",
+      "rate": 12
+    },
+    {
+      "id": "tax_rate_gst_28",
+      "name": "GST 28%",
+      "rate": 28
+    }
+  ],
+  "taxGroups": [
+    {
+      "id": "tax_group_gst_18",
+      "name": "GST 18%",
+      "rate": 18,
+      "rateIds": [
+        "tax_rate_gst_18"
+      ]
+    }
+  ],
+  "warranties": [],
+  "racks": [],
+  "expenses": [],
+  "stockAdjustments": [],
+  "stock_adjustments": [],
+  "stockTransfers": [],
+  "stock_transfers": []
 }

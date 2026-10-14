@@ -594,6 +594,22 @@ async function startServer() {
         }
       }
 
+      if (updates.tax_rates !== undefined) {
+        current.tax_rates = updates.tax_rates;
+        current.taxRates = updates.tax_rates;
+      } else if (updates.taxRates !== undefined) {
+        current.tax_rates = updates.taxRates;
+        current.taxRates = updates.taxRates;
+      }
+
+      if (updates.tax_groups !== undefined) {
+        current.tax_groups = updates.tax_groups;
+        current.taxGroups = updates.tax_groups;
+      } else if (updates.taxGroups !== undefined) {
+        current.tax_groups = updates.taxGroups;
+        current.taxGroups = updates.taxGroups;
+      }
+
       // Handle deleted ID tracking
       if (Array.isArray(updates.deleted_product_ids) && Array.isArray(current.products)) {
         current.products = current.products.filter((p: any) => !updates.deleted_product_ids.includes(p.id));
@@ -660,6 +676,11 @@ async function startServer() {
         syncData.users.unshift(sysStatus.adminUser);
       }
     }
+
+    if (syncData.tax_rates && !syncData.taxRates) syncData.taxRates = syncData.tax_rates;
+    if (syncData.taxRates && !syncData.tax_rates) syncData.tax_rates = syncData.taxRates;
+    if (syncData.tax_groups && !syncData.taxGroups) syncData.taxGroups = syncData.tax_groups;
+    if (syncData.taxGroups && !syncData.tax_groups) syncData.tax_groups = syncData.taxGroups;
 
     return res.json({
       success: true,

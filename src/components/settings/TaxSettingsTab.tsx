@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useErp } from '../../context/ErpContext';
 import { TaxRate, TaxGroup, TaxSystemType, TaxCalculationMode } from '../../types/erp';
+import { getApiUrl } from '../../utils/apiBase';
 import {
   Percent,
   Plus,
@@ -162,11 +163,11 @@ export const TaxSettingsTab: React.FC = () => {
   const [simDiscount, setSimDiscount] = useState<number>(0);
   const [simSelectedGroupId, setSimSelectedGroupId] = useState<string>(defaultTaxGroupId);
 
-  // Handle Master Save
+  // Handle Master Save with direct sync push
   const handleSaveMasterTax = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const effectiveInlineTax = enableTax && taxSystem !== 'disabled' ? enableInlineTax : false;
-    updateSettings({
+    const newSettings = {
       enableTax,
       taxSystem,
       taxCalculationType: taxCalcType,
@@ -179,7 +180,25 @@ export const TaxSettingsTab: React.FC = () => {
       isInterstate,
       defaultTaxGroupId,
       defaultTaxRate: taxGroups.find((g) => g.id === defaultTaxGroupId)?.totalRate || 18,
-    });
+    };
+    updateSettings(newSettings);
+
+    try {
+      fetch(getApiUrl('api/sync.php?action=push'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: {
+            settings: { ...settings, ...newSettings },
+            tax_rates: taxRates,
+            taxRates: taxRates,
+            tax_groups: taxGroups,
+            taxGroups: taxGroups,
+          },
+        }),
+      }).catch(() => {});
+    } catch {}
+
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
