@@ -695,8 +695,13 @@ export const ImportPurchasesPage: React.FC<ImportPurchasesPageProps> = ({ onBack
       });
 
       if (autoCreateProducts && newProductsToCreate.length > 0) {
-        addProducts(newProductsToCreate);
-        newProductsToCreate.forEach((mappedProd: any) => {
+        // IMPORTANT: addProducts() assigns the REAL generated ids. We must map the *returned*
+        // products (not the input objects, which have no id) into productMap, otherwise every
+        // imported line item would fall back to a phantom `prod_imp_<idx>` id that never matches
+        // the product actually stored in All Products — which is exactly why imported purchase
+        // items did not synchronize with the inventory catalog.
+        const createdProducts = addProducts(newProductsToCreate);
+        createdProducts.forEach((mappedProd: any) => {
           productMap.set(mappedProd.name.toLowerCase(), mappedProd);
           if (mappedProd.sku) productMap.set(mappedProd.sku.toLowerCase(), mappedProd);
           if (mappedProd.barcode) productMap.set(mappedProd.barcode.toLowerCase(), mappedProd);

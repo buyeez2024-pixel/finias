@@ -1483,8 +1483,17 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
       }
       onBack();
     } else {
-      addProduct(productPayload, { ignoreLotDuplicate: !!lockedLotNumber });
+      const createdProduct = addProduct(productPayload, { ignoreLotDuplicate: !!lockedLotNumber });
       setIsSaving(false);
+
+      // addProduct() returns undefined when creation was rejected (e.g. duplicate LOT number).
+      // In that case we must NOT report a "saved" product — doing so previously injected an
+      // orphaned product id into the purchase line items that never existed under All Products.
+      if (!createdProduct) {
+        setFormError('Product could not be saved. Review the highlighted issue above (for example a duplicate LOT number) and try again.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
 
       if (andAddAnother) {
         setToastMessage(`Product "${name.trim()}" created successfully! Ready for next item.`);
@@ -1498,7 +1507,14 @@ export const ProductFormPage: React.FC<ProductFormPageProps> = ({
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         if (onSaved) {
-          onSaved({ ...productPayload, id: `prod_${Date.now()}`, currentStock: totalAllocatedStock }, true);
+          // Use the REAL persisted product (with its true generated id) so downstream consumers
+          // (e.g. the purchase form line item) reference a product that actually exists in the
+          // catalog. A fabricated `prod_<timestamp>` id here caused purchase items to become
+          // orphaned and never show up under All Products.
+          onSaved(
+            { ...createdProduct, currentStock: createdProduct.currentStock ?? totalAllocatedStock },
+            true
+          );
         }
         onBack();
       }
