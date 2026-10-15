@@ -296,8 +296,8 @@ interface ErpContextType {
   // Catalog & Inventory
   products: Product[];
   filteredProducts: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'currentStock'>, options?: { ignoreLotDuplicate?: boolean }) => void;
-  addProducts: (products: Omit<Product, 'id' | 'currentStock'>[]) => void;
+  addProduct: (product: Omit<Product, 'id' | 'currentStock'>, options?: { ignoreLotDuplicate?: boolean }) => Product | undefined;
+  addProducts: (products: Omit<Product, 'id' | 'currentStock'>[]) => Product[];
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string, force?: boolean) => void;
   adjustStock: (adjustment: Omit<StockAdjustment, 'id' | 'referenceNo' | 'date'>) => void;
@@ -1308,37 +1308,56 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   });
 
-  const setProducts = (updater: Product[] | ((prev: Product[]) => Product[])) => {
-    setProductsState((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      return (Array.isArray(next) ? next : []).map((p: any) => {
-        const sanitized = {
-          ...p,
-          category: getCategoryName(p.category),
-          brand: getBrandName(p.brand),
-        };
-        let lots = Array.isArray(sanitized.lots) ? [...sanitized.lots] : [];
-        if (lots.length > 1) {
-          const hasRealLots = lots.some((l: any) => Number(l.currentStock) > 0 && !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
-          if (hasRealLots) {
-            lots = lots.filter((l: any) => Number(l.currentStock) > 0 || !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
-          }
+  // Synchronous mirror of the newest products list.
+  // React state updates are asynchronous, so inside a single handler
+  // (e.g. createPurchase -> setProducts -> triggerImmediateSyncPush) the `products` closure still
+  // holds the PREVIOUS value. Pushing that stale array to the central sync store is exactly what
+  // silently dropped / reverted newly purchased products. This ref is updated the instant
+  // setProducts is called, so every sync push carries the true latest inventory.
+  const productsRef = useRef<Product[]>(productsState);
+
+  const sanitizeProductsList = (list: any): Product[] =>
+    (Array.isArray(list) ? list : []).map((p: any) => {
+      const sanitized = {
+        ...p,
+        category: getCategoryName(p.category),
+        brand: getBrandName(p.brand),
+      };
+      let lots = Array.isArray(sanitized.lots) ? [...sanitized.lots] : [];
+      if (lots.length > 1) {
+        const hasRealLots = lots.some((l: any) => Number(l.currentStock) > 0 && !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
+        if (hasRealLots) {
+          lots = lots.filter((l: any) => Number(l.currentStock) > 0 || !/^LOT-\d{4}-00\d$/i.test(l.lotNumber));
         }
-        let stock = sanitized.currentStock;
-        if (lots.length > 0) {
-          const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
-          if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
-        }
-        if ((sanitized.type === 'variable' || (sanitized.variations && sanitized.variations.length > 0)) && sanitized.variations) {
-          const totalVarStock = sanitized.variations.reduce((s: number, v: any) => s + (Number(v.currentStock ?? v.openingStock ?? 0)), 0);
-          if (totalVarStock > 0 || stock === 0) stock = totalVarStock;
-        }
-        return { ...sanitized, lots, currentStock: stock, stock };
-      });
+      }
+      let stock = sanitized.currentStock;
+      if (lots.length > 0) {
+        const totalLotStock = lots.reduce((s: number, l: any) => s + (Number(l.currentStock) || 0), 0);
+        if (totalLotStock > 0 || stock === 0) stock = totalLotStock;
+      }
+      if ((sanitized.type === 'variable' || (sanitized.variations && sanitized.variations.length > 0)) && sanitized.variations) {
+        const totalVarStock = sanitized.variations.reduce((s: number, v: any) => s + (Number(v.currentStock ?? v.openingStock ?? 0)), 0);
+        if (totalVarStock > 0 || stock === 0) stock = totalVarStock;
+      }
+      return { ...sanitized, lots, currentStock: stock, stock };
     });
+
+  const setProducts = (updater: Product[] | ((prev: Product[]) => Product[])) => {
+    // Always derive from the synchronous ref, never from a possibly stale render closure.
+    const prev = productsRef.current;
+    const next = typeof updater === 'function' ? updater(prev) : updater;
+    const sanitized = sanitizeProductsList(next);
+    productsRef.current = sanitized;
+    setProductsState(sanitized);
   };
 
   const products = productsState;
+
+  // Keep the synchronous mirror aligned even when productsState is set directly
+  // (purgeAllData, demo-data load, remote hydration), not only via setProducts().
+  useEffect(() => {
+    productsRef.current = productsState;
+  }, [productsState]);
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_categories`);
@@ -4060,6 +4079,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedProducts = [newProduct, ...products];
     setProducts(updatedProducts);
     triggerImmediateSyncPush({ products: updatedProducts });
+    return newProduct;
   };
 
   const updateProduct = (id: string, updateData: Partial<Product>) => {
@@ -6960,7 +6980,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTransactions((prev) => {
       const updated = [newSale, ...prev];
-      triggerImmediateSyncPush({ transactions: updated, products, customers });
+      triggerImmediateSyncPush({ transactions: updated, products: productsRef.current, customers });
       return updated;
     });
     setLastCompletedSale(newSale);
@@ -7391,6 +7411,92 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const directTax = Number(purchaseData.taxAmount) || 0;
     const finalPurchaseTax = Math.max(directTax, itemsTax);
 
+    // ---- Self-heal: guarantee every purchased line item exists in the product catalog ----
+    // Purchase line items can reference products that were never actually persisted under
+    // All Products (e.g. bulk-imported rows that fell back to a phantom `prod_imp_<n>` id, or
+    // inline-created items whose id did not match the saved product). Those orphaned items are
+    // exactly why a purchase could list 4 products while the catalog only showed 3. Before any
+    // stock is applied we materialize the missing products and re-point the line items at them,
+    // so the purchase detail and All Products always reconcile one-to-one.
+    if ((purchaseData.type || 'purchase') !== 'purchase_return') {
+      const existingProducts = productsRef.current;
+      const purchaseLocId = purchaseData.locationId || selectedLocationId || locations[0]?.id || 'loc_1';
+      const missingProducts: Product[] = [];
+      const createdKeys = new Set<string>();
+
+      reconciledItems.forEach((it: any) => {
+        if (!it) return;
+        const skuKey = it.sku ? String(it.sku).trim().toLowerCase() : '';
+        const nameKey = it.productName ? String(it.productName).trim().toLowerCase() : '';
+
+        const alreadyExists = existingProducts.some((p) =>
+          (it.productId && p.id === it.productId) ||
+          (skuKey && p.sku && String(p.sku).trim().toLowerCase() === skuKey) ||
+          (nameKey && p.name && String(p.name).trim().toLowerCase() === nameKey)
+        );
+        if (alreadyExists) return;
+
+        // Avoid creating the same missing product twice across multiple line items.
+        const dedupeKey = skuKey || nameKey || `idx_${missingProducts.length}`;
+        if (createdKeys.has(dedupeKey)) {
+          const existing = missingProducts.find((mp: any) =>
+            (skuKey && mp.sku && String(mp.sku).trim().toLowerCase() === skuKey) ||
+            (nameKey && mp.name && String(mp.name).trim().toLowerCase() === nameKey)
+          );
+          if (existing) it.productId = existing.id;
+          return;
+        }
+        createdKeys.add(dedupeKey);
+
+        const cost = Number(it.costPrice || it.unitPrice) || 0;
+        const margin = it.marginPercent !== undefined && it.marginPercent !== null && !isNaN(Number(it.marginPercent))
+          ? Number(it.marginPercent)
+          : (settings.defaultProfitPercent ? Number(settings.defaultProfitPercent) : 25);
+        const selling = Number(it.sellingPrice) > 0
+          ? Number(it.sellingPrice)
+          : Math.round(cost * (1 + margin / 100) * 100) / 100;
+        const itemLot = it.lotNumber || purchaseData.lotNumber;
+        const newId = `prod_pur_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const createdProd = {
+          id: newId,
+          name: it.productName || `Purchased Item ${missingProducts.length + 1}`,
+          sku: it.sku || `SKU-PUR-${Math.floor(10000 + Math.random() * 90000)}`,
+          barcode: '',
+          type: 'single',
+          category: 'General',
+          unit: it.unit || 'Pcs',
+          costPrice: cost,
+          sellingPrice: selling,
+          profitMargin: margin,
+          taxRate: Number(it.taxRate) || 0,
+          alertQuantity: 0,
+          currentStock: 0,
+          stock: 0,
+          openingStock: 0,
+          locationStocks: { [purchaseLocId]: 0 },
+          lots: [],
+          lotNumber: itemLot,
+          source: 'purchase',
+          creationSource: 'direct_purchase',
+          isDirectPurchase: true,
+          createdAt: new Date().toISOString(),
+          image: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=300&q=80',
+        } as unknown as Product;
+
+        missingProducts.push(createdProd);
+        it.productId = createdProd.id;
+        if (!it.sku) it.sku = createdProd.sku;
+        if (!it.productName) it.productName = createdProd.name;
+      });
+
+      if (missingProducts.length > 0) {
+        // setProducts updates productsRef synchronously, so the stock application below (and the
+        // sync push further down) already sees these newly created catalog entries.
+        setProducts((prev) => [...missingProducts, ...prev]);
+      }
+    }
+
     const newPurchase: Transaction = {
       id: `txn_pur_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`,
       invoiceNo,
@@ -7658,7 +7764,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
       }
-      triggerImmediateSyncPush({ transactions: updated, products, suppliers });
+      triggerImmediateSyncPush({ transactions: updated, products: productsRef.current, suppliers });
       return updated;
     });
 
@@ -7830,7 +7936,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           taxAmount: finalPurchaseTax,
         };
       });
-      triggerImmediateSyncPush({ transactions: updated, products, suppliers });
+      triggerImmediateSyncPush({ transactions: updated, products: productsRef.current, suppliers });
       return updated;
     });
 
@@ -7977,7 +8083,7 @@ export const ErpProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
       }
-      triggerImmediateSyncPush({ transactions: remaining, products, suppliers });
+      triggerImmediateSyncPush({ transactions: remaining, products: productsRef.current, suppliers });
       return remaining;
     });
 
